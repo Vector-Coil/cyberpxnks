@@ -184,7 +184,7 @@ export class StatsService {
       [equipRows] = await this.pool.execute(
         `SELECT * FROM user_equipment_summary WHERE user_id = ? LIMIT 1`,
         [this.userId]
-      );
+      ) as any[];
     } catch (viewError) {
       // View might not exist, query directly
       console.warn('Equipment view not available, using direct query:', viewError);
