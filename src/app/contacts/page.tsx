@@ -1,0 +1,112 @@
+"use client";
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { FrameHeader, CxCard, NavStrip } from '../../components/CxShared';
+import CompactMeterStrip from '../../components/CompactMeterStrip';
+import { useNavData } from '../../hooks/useNavData';
+import type { NavData } from '../../types/common';
+import { getMeterData } from '../../lib/meterUtils';
+
+interface ContactItem {
+  id: number;
+  name: string;
+  image_url?: string;
+  unlocked_at?: string;
+  gigs: number;
+  messages: number;
+  intel: number;
+}
+
+export default function ContactsPage() {
+  const navData = useNavData(300187);
+  const [contacts, setContacts] = useState<ContactItem[]>([]);
+  const [userStats, setUserStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      try {
+        const [contactsRes, statsRes] = await Promise.all([
+          fetch('/api/contacts?fid=300187'),
+          fetch('/api/stats?fid=300187')
+        ]);
+        
+        if (!contactsRes.ok) {
+          const txt = await contactsRes.text();
+          throw new Error(`Failed to load contacts: ${contactsRes.status} ${txt}`);
+        }
+        const data: ContactItem[] = await contactsRes.json();
+        if (mounted) setContacts(data);
+        
+        if (statsRes.ok) {
+          const stats = await statsRes.json();
+          if (mounted) setUserStats(stats);
+        }
+      } catch (err: any) {
+        console.error(err);
+        if (mounted) setError(err.message || 'Unknown error');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    load();
+    return () => { mounted = false; };
+  }, []);
+
+  return (
+    <div className="frame-container frame-main">
+        <div className="frame-body pt-6 pb-2 px-6">
+          <NavStrip 
+            username={navData.username}
+            userProfileImage={navData.profileImage}
+            cxBalance={navData.cxBalance}
+          />
+        </div>
+        <CompactMeterStrip meters={getMeterData(userStats)} />
+        <div className="pt-5 pb-2 px-6 flex flex-row gap-1">
+          <a href="/dashboard" className="w-[25px] h-[25px] rounded-full overflow-hidden bg-gray-700 flex  items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors">
+            <span className="material-symbols-outlined text-white text-xl">chevron_left</span>
+          </a>
+          <div className="masthead">CONTACTS</div>
+        </div>
+      <div className="frame-body">
+
+        {loading && <div className="p-4 text-gray-400">Loading contacts...</div>}
+        {error && <div className="p-4 text-red-400">{error}</div>}
+
+        <div className="space-y-2">
+          {contacts.map((c) => (
+            <Link key={c.id} href={`/contacts/${c.id}`} className="block">
+              <CxCard className="cursor-pointer hover:shadow-lg">
+                <div className="flex items-center gap-4">
+
+                  <div className="w-16 h-16 bg-gray-700 overflow-hidden flex-shrink-0">
+                    {c.image_url ? <img src={c.image_url} alt={c.name} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-600"></div>}
+                  </div>
+
+                  <div className="flex-1">
+
+                    <div className="flex items-center justify-between">
+                      <div className="card-title uppercase">{c.name?.toUpperCase()}</div>
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-2">
+                      {c.gigs > 0 && (<div className="px-2 py-0.5 bg-fuchsia-600 text-white text-xs rounded-full">{c.gigs} GIGS</div>)}
+                      {c.messages > 0 && (<div className="px-2 py-0.5 bg-bright-blue text-black text-xs font-bold rounded-full">{c.messages} MESSAGES</div>)}
+                      {c.intel > 0 && (<div className="px-2 py-0.5 bg-lime-400 text-black text-xs rounded-full">{c.intel} INTEL</div>)}
+                    </div>
+
+                  </div>
+
+                </div>
+              </CxCard>
+            </Link>
+          ))}
+        </div>
+
+      </div>
+    </div>
+  );
+}

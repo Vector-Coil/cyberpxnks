@@ -1,0 +1,107 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getDbPool } from '../../../../lib/db';
+
+export async function GET(request: NextRequest) {
+  try {
+    const pool = await getDbPool();
+
+    // Fetch all users' history across all city zones with their secret names and zone info
+    const [historyRows] = await pool.execute<any[]>(
+      `SELECT 
+        uzh.id,
+        uzh.user_id,
+        uzh.zone_id,
+        uzh.action_type,
+        uzh.timestamp,
+        uzh.poi_id,
+        u.username,
+        u.rednet_id,
+        u.subversive_id,
+        poi.name as poi_name,
+        poi.subnet_id,
+        z.name as zone_name,
+        z.id as zone_id,
+        zd.name as district_name,
+        discovered_zone.name as discovered_zone_name
+      FROM user_zone_history uzh
+      JOIN users u ON uzh.user_id = u.id
+      JOIN zones z ON uzh.zone_id = z.id
+      LEFT JOIN zone_districts zd ON z.district = zd.id
+      LEFT JOIN points_of_interest poi ON uzh.poi_id = poi.id
+      LEFT JOIN zones discovered_zone ON uzh.gains_data LIKE CONCAT('%', discovered_zone.name, '%') AND uzh.action_type = 'Discovered'
+      WHERE uzh.result_status IN ('completed', 'success', 'Complete')
+      AND z.zone_type = 1
+      ORDER BY uzh.timestamp DESC
+      LIMIT 100`,
+      []
+    );
+
+    // Format each history entry into a public message
+    const formattedHistory = historyRows.map((row: any) => {
+      let alias = row.username || 'Unknown';
+      let message = '';
+
+      // Build location suffix
+      const locationSuffix = row.district_name 
+        ? ` at ${row.zone_name} in ${row.district_name} district`
+        : ` at ${row.zone_name}`;
+
+      switch (row.action_type) {
+        case 'Breached':
+          // Use username for breaches
+          const subnetName = row.subnet_id ? `subnet ${row.subnet_id}` : 'an';
+          const poiName = row.poi_name || 'terminal';
+          message = `[${alias}] breached the ${subnetName} access point${locationSuffix}`;
+          break;
+
+        case 'Discovered':
+          // Use username for discoveries
+          const discoveredZone = row.discovered_zone_name || 'a new zone';
+          message = `[${alias}] discovered ${discoveredZone}`;
+          break;
+
+        case 'Scouted':
+          // Use username for scouts
+          message = `[${alias}] scouted${locationSuffix}`;
+          break;
+
+        case 'Explored':
+          // Use username for explores
+          message = `[${alias}] explored the city`;
+          break;
+
+        case 'Recon':
+          // Use rednet_id for Recon actions (RedNet faction)
+          alias = row.rednet_id || 'RedNet Agent';
+          message = `[${alias}] performed reconnaissance${locationSuffix}`;
+          break;
+
+        case 'Fortify':
+          // Use subversive_id for Fortify actions (Subversive faction)
+          alias = row.subversive_id || 'Subversive';
+          message = `[${alias}] fortified their position${locationSuffix}`;
+          break;
+
+        default:
+          message = `[${alias}] performed ${row.action_type.toLowerCase()}${locationSuffix}`;
+      }
+
+      return {
+        id: row.id,
+        message,
+        timestamp: row.timestamp,
+        zone_id: row.zone_id,
+        zone_name: row.zone_name,
+        district_name: row.district_name
+      };
+    });
+
+    return NextResponse.json({ history: formattedHistory });
+  } catch (err: any) {
+    console.error('City all history API error:', err);
+    return NextResponse.json(
+      { error: err.message || 'Failed to fetch city history' },
+      { status: 500 }
+    );
+  }
+}
