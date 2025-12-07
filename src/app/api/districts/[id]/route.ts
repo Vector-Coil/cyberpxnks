@@ -3,7 +3,7 @@ import { getDbPool } from '~/lib/db';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const fid = req.nextUrl.searchParams.get('fid');
@@ -11,7 +11,8 @@ export async function GET(
       return NextResponse.json({ error: 'Missing fid' }, { status: 400 });
     }
 
-    const districtId = parseInt(params.id, 10);
+    const { id } = await params;
+    const districtId = parseInt(id, 10);
     if (Number.isNaN(districtId)) {
       return NextResponse.json({ error: 'Invalid district ID' }, { status: 400 });
     }

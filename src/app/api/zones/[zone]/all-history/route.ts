@@ -3,10 +3,11 @@ import { getDbPool } from '../../../../../lib/db';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { zone: string } }
+  { params }: { params: Promise<{ zone: string }> }
 ) {
   try {
-    const zoneId = parseInt(params.zone, 10);
+    const { zone } = await params;
+    const zoneId = parseInt(zone, 10);
     if (Number.isNaN(zoneId)) {
       return NextResponse.json({ error: 'Invalid zone ID' }, { status: 400 });
     }

@@ -3,12 +3,13 @@ import { getDbPool } from '../../../../lib/db';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { searchParams } = new URL(request.url);
     const fid = parseInt(searchParams.get('fid') || '300187', 10);
-    const itemId = parseInt(params.id, 10);
+    const itemId = parseInt(id, 10);
 
     if (Number.isNaN(itemId)) {
       return NextResponse.json({ error: 'Invalid item ID' }, { status: 400 });

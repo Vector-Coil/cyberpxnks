@@ -13,9 +13,10 @@ import { FieldPacket } from 'mysql2/promise';
 export async function GET(
   request: NextRequest, 
   // Accessing the 'fid' parameter from the 'params' object
-  { params }: { params: { fid: string } } 
+  { params }: { params: Promise<{ fid: string }> } 
 ) {
-  const fid = params.fid;
+  const resolvedParams = await params;
+  const fid = resolvedParams.fid;
 
   if (!fid) {
     return NextResponse.json({ error: 'Missing Farcaster ID (FID)' }, { status: 400 });
