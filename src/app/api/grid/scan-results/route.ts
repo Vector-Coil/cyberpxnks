@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     // Roll for reward type
     const rewardType = rollEncounterReward();
     
-    let discoveredSubnet: DiscoveredSubnet | null = null;
+    const discoveredSubnet: DiscoveredSubnet | null = null;
     let encounter = null;
 
     if (rewardType === 'discovery') {
