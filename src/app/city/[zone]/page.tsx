@@ -56,10 +56,17 @@ interface POI {
   unlock_method: string;
 }
 
-export default function ZoneDetailPage({ params }: { params: { zone: string } }) {
+export default function ZoneDetailPage({ params }: { params: Promise<{ zone: string }> }) {
   const router = useRouter();
-  const zoneId = parseInt(params.zone, 10);
+  const [zoneId, setZoneId] = useState<number | null>(null);
   const navData = useNavData(300187);
+  
+  // Resolve params on mount
+  useEffect(() => {
+    params.then(({ zone }) => {
+      setZoneId(parseInt(zone, 10));
+    });
+  }, [params]);
 
   const [zone, setZone] = useState<Zone | null>(null);
   const [history, setHistory] = useState<ZoneHistory[]>([]);
@@ -101,7 +108,7 @@ export default function ZoneDetailPage({ params }: { params: { zone: string } })
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
-    if (Number.isNaN(zoneId)) return;
+    if (!zoneId || Number.isNaN(zoneId)) return;
 
     async function loadData() {
       try {

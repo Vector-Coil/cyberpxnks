@@ -6,7 +6,7 @@ import { getNavStripData } from '../../../lib/navUtils';
 import ActivitySection from './ActivitySection';
 import ProfileLayout from './ProfileLayout';
 
-export default async function ProfilePage({ params }: { params: { username: string } }) {
+export default async function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const p = await params;
   const username = p.username;
 

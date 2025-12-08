@@ -43,8 +43,9 @@ interface EncounterDetails {
   zoneId: number;
 }
 
-export default function EncounterPage({ params }: { params: { id: string } }) {
+export default function EncounterPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const [encounterId, setEncounterId] = useState<number | null>(null);
   const [encounter, setEncounter] = useState<EncounterDetails | null>(null);
   const [actions, setActions] = useState<EncounterAction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,12 +54,20 @@ export default function EncounterPage({ params }: { params: { id: string } }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    params.then(({ id }) => {
+      setEncounterId(parseInt(id, 10));
+    });
+  }, [params]);
+
+  useEffect(() => {
+    if (!encounterId) return;
     fetchEncounter();
-  }, []);
+  }, [encounterId]);
 
   const fetchEncounter = async () => {
+    if (!encounterId) return;
     try {
-      const res = await fetch(`/api/encounters/${params.id}?fid=300187`);
+      const res = await fetch(`/api/encounters/${encounterId}?fid=300187`);
       if (res.ok) {
         const data = await res.json();
         setEncounter(data.encounter);

@@ -29,9 +29,9 @@ interface HistoryEntry {
   zone_name: string;
 }
 
-export default function DistrictDetailPage({ params }: { params: { id: string } }) {
+export default function DistrictDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const districtId = parseInt(params.id, 10);
+  const [districtId, setDistrictId] = useState<number | null>(null);
   const navData = useNavData(300187);
 
   const [district, setDistrict] = useState<District | null>(null);
@@ -40,7 +40,13 @@ export default function DistrictDetailPage({ params }: { params: { id: string } 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (Number.isNaN(districtId)) return;
+    params.then(({ id }) => {
+      setDistrictId(parseInt(id, 10));
+    });
+  }, [params]);
+
+  useEffect(() => {
+    if (!districtId || Number.isNaN(districtId)) return;
 
     async function loadData() {
       try {

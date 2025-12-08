@@ -32,15 +32,21 @@ interface ItemData {
   upgrade: number;
 }
 
-export default function GearItemPage({ params }: { params: { item: string } }) {
+export default function GearItemPage({ params }: { params: Promise<{ item: string }> }) {
   const router = useRouter();
-  const itemId = parseInt(params.item, 10);
+  const [itemId, setItemId] = useState<number | null>(null);
   const navData = useNavData(300187);
   const [itemData, setItemData] = useState<ItemData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (Number.isNaN(itemId)) return;
+    params.then(({ item }) => {
+      setItemId(parseInt(item, 10));
+    });
+  }, [params]);
+
+  useEffect(() => {
+    if (!itemId || Number.isNaN(itemId)) return;
     loadData();
   }, [itemId]);
 
