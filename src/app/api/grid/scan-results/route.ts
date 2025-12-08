@@ -51,8 +51,8 @@ export async function POST(request: NextRequest) {
     // Roll for reward type
     const rewardType = rollEncounterReward();
     
-    const discoveredSubnet: DiscoveredSubnet | null = null;
-    let encounter = null;
+    let discoveredSubnet: DiscoveredSubnet | null = null;
+    let encounter: any = null;
 
     if (rewardType === 'discovery') {
       // TODO: Add subnet/protocol discovery logic here when ready
@@ -75,11 +75,13 @@ export async function POST(request: NextRequest) {
 
     // Build gains text
     let gainsText = `+${xpGained} XP`;
-    if (discoveredSubnet) {
-      gainsText += `, Discovered ${discoveredSubnet.name}`;
-    } else if (encounter) {
+    if (encounter) {
       gainsText += `, Encountered ${encounter.name}`;
     }
+    // TODO: Add subnet discovery text when discovery logic is implemented
+    // if (discoveredSubnet !== null) {
+    //   gainsText += `, Discovered ${discoveredSubnet.name}`;
+    // }
 
     // Update history record
     await dbPool.query(
