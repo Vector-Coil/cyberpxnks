@@ -57,10 +57,6 @@ interface UserStatsData {
     cache_mod: number;
 }
 
-interface DashboardProps {
-    initialStats: UserStatsData | null;
-}
-
 /*
 // 2. Mock Data Fetching Function (Simulates fetching from the DB via an API)
 const fetchUserStats = (): Promise<UserStats> => {
@@ -349,9 +345,9 @@ const ButtonCx: React.FC<ButtonCxProps> = ({ label, icon, link, style, size }) =
   </a>
 );
 
-export default function Dashboard({ initialStats }: DashboardProps) {
+export default function Dashboard() {
     const navData = useNavData(300187);
-    const [stats, setStats] = useState<UserStatsData | null>(initialStats);
+    const [stats, setStats] = useState<UserStatsData | null>(null);
     const [activeJobs, setActiveJobs] = useState<any[]>([]);
     const [jobTimers, setJobTimers] = useState<Map<string, string>>(new Map());
     const [equippedSlimsoft, setEquippedSlimsoft] = useState<any[]>([]);
