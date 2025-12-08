@@ -6,8 +6,8 @@ export async function GET(
   { params }: { params: Promise<{ zone: string }> }
 ) {
   try {
-    const { zone } = await params;
-    const zoneId = parseInt(zone, 10);
+    const { zone: zoneParam } = await params;
+    const zoneId = parseInt(zoneParam, 10);
     
     if (Number.isNaN(zoneId)) {
       return NextResponse.json({ error: 'Invalid zone ID' }, { status: 400 });
