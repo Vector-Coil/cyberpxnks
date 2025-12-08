@@ -3,9 +3,12 @@ import { FrameHeader, CxCard, NavStrip } from '../../components/CxShared';
 import { getDbPool } from '../../lib/db';
 import { getNavStripData } from '../../lib/navUtils';
 
-export default async function GigsPage({ searchParams }: { searchParams?: { [key: string]: string | string[] | undefined } }) {
+export default async function GigsPage({ searchParams }: { searchParams?: Promise<{ [key: string]: string | string[] | undefined }> }) {
   let gigs: Array<any> = [];
   let errorMsg = '';
+  
+  // Await searchParams
+  const resolvedSearchParams = await searchParams;
   
   // Fetch NavStrip data for test user
   const navData = await getNavStripData(300187);
@@ -155,7 +158,7 @@ export default async function GigsPage({ searchParams }: { searchParams?: { [key
   }
 
   // Determine sort mode from query string
-  const sortRaw = (searchParams?.sort ?? 'newest');
+  const sortRaw = (resolvedSearchParams?.sort ?? 'newest');
   const sortMode = Array.isArray(sortRaw) ? (sortRaw[0] ?? 'newest') : String(sortRaw);
   const isContactMode = sortMode.toLowerCase() === 'contact';
 
