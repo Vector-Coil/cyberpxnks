@@ -88,7 +88,7 @@ export default function EncounterPage({ params }: { params: Promise<{ id: string
     setError(null);
 
     try {
-      const res = await fetch(`/api/encounters/${params.id}/action`, {
+      const res = await fetch(`/api/encounters/${encounterId}/action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fid: 300187, actionId })
@@ -113,7 +113,7 @@ export default function EncounterPage({ params }: { params: Promise<{ id: string
     setProcessing(true);
 
     try {
-      const res = await fetch(`/api/encounters/${params.id}/flee`, {
+      const res = await fetch(`/api/encounters/${encounterId}/flee`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fid: 300187 })
