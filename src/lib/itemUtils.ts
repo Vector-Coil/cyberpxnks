@@ -23,8 +23,8 @@ export function getItemTypeColor(itemType: string): string {
 /**
  * Get border class for item card based on equipped status
  */
-export function getItemBorderClass(item: { is_equipped?: boolean }): string {
-  if (item.is_equipped) {
+export function getItemBorderClass(item: { is_equipped?: boolean | number }): string {
+  if (item.is_equipped === true || item.is_equipped === 1) {
     return 'border-2 border-bright-blue';
   }
   return 'border border-charcoal';
