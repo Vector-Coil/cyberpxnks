@@ -40,9 +40,9 @@ export default function Home() {
             console.log('✓ User FID from SDK context:', fid);
             setIsChecking(true);
             
-            const isRegistered = await checkMySQLRegistration(fid);
+            const result = await checkMySQLRegistration(fid);
             
-            if (isRegistered) {
+            if (result.success) {
               console.log('User is registered, routing to dashboard');
               router.push('/dashboard');
             } else {
@@ -60,9 +60,9 @@ export default function Home() {
           console.log('✓ User FID from Neynar:', neynarUser.fid);
           setIsChecking(true);
           
-          const isRegistered = await checkMySQLRegistration(neynarUser.fid);
+          const result = await checkMySQLRegistration(neynarUser.fid);
           
-          if (isRegistered) {
+          if (result.success) {
             console.log('User is registered, routing to dashboard');
             router.push('/dashboard');
           } else {
@@ -94,9 +94,9 @@ export default function Home() {
         setIsChecking(true);
         
         try {
-          const isRegistered = await checkMySQLRegistration(neynarUser.fid);
+          const result = await checkMySQLRegistration(neynarUser.fid);
           
-          if (isRegistered) {
+          if (result.success) {
             console.log('User is registered, routing to dashboard');
             router.push('/dashboard');
           } else {
