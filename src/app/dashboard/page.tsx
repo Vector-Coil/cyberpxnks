@@ -651,7 +651,7 @@ export default function Dashboard() {
                     <div className="text-xl text-red-400 font-mono mb-4">ERROR 404: USER NOT INITIALIZED</div>
                     <p className="text-gray-300 text-center mb-4">Your cybernetic profile hasn't been initialized yet.</p>
                     <button 
-                      onClick={() => router.push('/onboard')}
+                      onClick={() => router.push('/onboarding')}
                       className="px-6 py-3 bg-gradient-to-r from-purple-600 to-cyan-600 text-white font-mono uppercase tracking-wider rounded-lg hover:from-purple-500 hover:to-cyan-500 transition-all"
                     >
                       Initialize Profile

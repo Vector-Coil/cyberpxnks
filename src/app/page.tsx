@@ -47,7 +47,7 @@ export default function Home() {
               router.push('/dashboard');
             } else {
               console.log('User not registered, routing to onboarding');
-              router.push('/onboard');
+              router.push('/onboarding');
             }
             return;
           }
@@ -67,7 +67,7 @@ export default function Home() {
             router.push('/dashboard');
           } else {
             console.log('User not registered, routing to onboarding');
-            router.push('/onboard');
+            router.push('/onboarding');
           }
           return;
         }
@@ -101,11 +101,11 @@ export default function Home() {
             router.push('/dashboard');
           } else {
             console.log('User not registered, routing to onboarding');
-            router.push('/onboard');
+            router.push('/onboarding');
           }
         } catch (error) {
           console.error('Error checking registration:', error);
-          router.push('/onboard');
+          router.push('/onboarding');
         }
       };
       
