@@ -359,6 +359,8 @@ export default function Dashboard() {
     const [equippedSlimsoft, setEquippedSlimsoft] = useState<any[]>([]);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+    const [statsError, setStatsError] = useState<string | null>(null);
+    const [statsError, setStatsError] = useState<string | null>(null);
 
   // Get authenticated user's FID from SDK or Neynar
   useEffect(() => {
@@ -417,7 +419,13 @@ export default function Dashboard() {
         // Process calculated stats (static until hardware/stat allocation changes)
         if (statsRes.ok && mounted) {
           const statsData = await statsRes.json();
+          console.log('Stats data loaded:', statsData);
           setStats(statsData);
+        } else {
+          console.error('Stats API failed:', statsRes.status, statsRes.statusText);
+          const errorData = await statsRes.text();
+          console.error('Stats API error response:', errorData);
+          setStatsError(`API Error ${statsRes.status}: ${errorData.substring(0, 200)}`);
         }
 
         // Process regeneration (only affects meters: consciousness, stamina, charge, thermal, neural)
@@ -657,6 +665,11 @@ export default function Dashboard() {
                       <div className="text-gray-300">FID: <span className="text-white">{userFid || 'null'}</span></div>
                       <div className="text-gray-300">Username: <span className="text-white">{neynarUser?.username || 'unknown'}</span></div>
                       <div className="text-gray-300">Display Name: <span className="text-white">{neynarUser?.display_name || 'unknown'}</span></div>
+                      <div className="text-cyan-400 mt-3 mb-2">Stats API Debug:</div>
+                      <div className="text-gray-300">Stats Loaded: <span className="text-white">{stats ? 'YES' : 'NO'}</span></div>
+                      {statsError && (
+                        <div className="text-red-400 mt-2 text-xs break-words">Error: {statsError}</div>
+                      )}
                     </div>
                     
                     <button 
