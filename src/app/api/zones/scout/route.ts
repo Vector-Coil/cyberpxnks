@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
 
     // Log scout start activity
     await logActivity(
-      userId,
+      user.id,
       'action',
       'scout_started',
       60, // 1 minute in seconds (testing)
