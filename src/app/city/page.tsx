@@ -191,7 +191,6 @@ export default function CityPage() {
     setShowResults(false);
     setExploreResults(null);
     setActiveExplore(null);
-    setTimeRemaining('');
     
     // Reload zones to show newly discovered zone
     fetch('/api/zones?fid=300187')
