@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
       'scout_started',
       60, // 1 minute in seconds (testing)
       zoneId,
-      `Started scouting ${zone.name}`
+      `Started scouting zone ${zoneId}`
     );
 
     // Fetch updated stats
