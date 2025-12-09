@@ -41,12 +41,13 @@ export default function Home() {
             setIsChecking(true);
             
             const result = await checkMySQLRegistration(fid);
+            console.log('Registration check result:', JSON.stringify(result));
             
             if (result.success) {
-              console.log('User is registered, routing to dashboard');
+              console.log('✅ User is registered, routing to dashboard');
               router.push('/dashboard');
             } else {
-              console.log('User not registered, routing to onboarding');
+              console.log('❌ User not registered, routing to onboarding. Error:', result.error);
               router.push('/onboarding');
             }
             return;
@@ -61,12 +62,13 @@ export default function Home() {
           setIsChecking(true);
           
           const result = await checkMySQLRegistration(neynarUser.fid);
+          console.log('Registration check result:', JSON.stringify(result));
           
           if (result.success) {
-            console.log('User is registered, routing to dashboard');
+            console.log('✅ User is registered, routing to dashboard');
             router.push('/dashboard');
           } else {
-            console.log('User not registered, routing to onboarding');
+            console.log('❌ User not registered, routing to onboarding. Error:', result.error);
             router.push('/onboarding');
           }
           return;
@@ -95,12 +97,13 @@ export default function Home() {
         
         try {
           const result = await checkMySQLRegistration(neynarUser.fid);
+          console.log('Registration check result (Neynar watch):', JSON.stringify(result));
           
           if (result.success) {
-            console.log('User is registered, routing to dashboard');
+            console.log('✅ User is registered, routing to dashboard');
             router.push('/dashboard');
           } else {
-            console.log('User not registered, routing to onboarding');
+            console.log('❌ User not registered, routing to onboarding. Error:', result.error);
             router.push('/onboarding');
           }
         } catch (error) {
