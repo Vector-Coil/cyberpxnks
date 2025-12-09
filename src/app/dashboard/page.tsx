@@ -1,6 +1,9 @@
 "use client";
 import React, { useState, useEffect} from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { sdk } from '@farcaster/miniapp-sdk';
+import { useNeynarContext } from '@neynar/react';
 import { useDailyFarcasterSync } from '../../hooks/useDailyFarcasterSync';
 import NavDrawer from '../../components/NavDrawer';
 import { useNavData } from '../../hooks/useNavData';
@@ -346,29 +349,69 @@ const ButtonCx: React.FC<ButtonCxProps> = ({ label, icon, link, style, size }) =
 );
 
 export default function Dashboard() {
-    const navData = useNavData(300187);
+    const router = useRouter();
+    const { user: neynarUser } = useNeynarContext();
+    const [userFid, setUserFid] = useState<number | null>(null);
+    const navData = useNavData(userFid || 0);
     const [stats, setStats] = useState<UserStatsData | null>(null);
     const [activeJobs, setActiveJobs] = useState<any[]>([]);
     const [jobTimers, setJobTimers] = useState<Map<string, string>>(new Map());
     const [equippedSlimsoft, setEquippedSlimsoft] = useState<any[]>([]);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-    //const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+
+  // Get authenticated user's FID from SDK or Neynar
+  useEffect(() => {
+    const getAuthenticatedFid = async () => {
+      try {
+        // Try SDK context first (mini-app)
+        try {
+          const context = await sdk.context;
+          if (context?.user?.fid) {
+            setUserFid(context.user.fid);
+            setIsLoadingAuth(false);
+            return;
+          }
+        } catch (sdkError) {
+          console.log('No SDK context available');
+        }
+
+        // Try Neynar context (web)
+        if (neynarUser?.fid) {
+          setUserFid(neynarUser.fid);
+          setIsLoadingAuth(false);
+          return;
+        }
+
+        // No authentication found - redirect to landing
+        console.log('No authenticated user found, redirecting to landing');
+        router.push('/');
+      } catch (error) {
+        console.error('Error getting authenticated FID:', error);
+        router.push('/');
+      }
+    };
+
+    getAuthenticatedFid();
+  }, [neynarUser, router]);
 
   // Sync user data from Farcaster once per day
-  useDailyFarcasterSync(300187);
+  useDailyFarcasterSync(userFid || 0);
 
   // Fetch live stats with regeneration and alert counts on mount
   useEffect(() => {
+    if (!userFid || isLoadingAuth) return;
+
     let mounted = true;
     async function load() {
       try {
         // Parallelize all independent API calls for faster loading
         const [statsRes, regenRes, alertsRes, jobsRes, hardwareRes] = await Promise.all([
-          fetch('/api/stats?fid=300187'),  // Fetch calculated stats (tech stats + hardware modifiers)
-          fetch('/api/regenerate?fid=300187', { method: 'POST' }),  // Regenerate time-based meters
-          fetch('/api/alerts?fid=300187'),
-          fetch('/api/active-jobs?fid=300187'),
-          fetch('/api/hardware?fid=300187')  // Fetch hardware including equipped slimsoft
+          fetch(`/api/stats?fid=${userFid}`),  // Fetch calculated stats (tech stats + hardware modifiers)
+          fetch(`/api/regenerate?fid=${userFid}`, { method: 'POST' }),  // Regenerate time-based meters
+          fetch(`/api/alerts?fid=${userFid}`),
+          fetch(`/api/active-jobs?fid=${userFid}`),
+          fetch(`/api/hardware?fid=${userFid}`)  // Fetch hardware including equipped slimsoft
         ]);
 
         // Process calculated stats (static until hardware/stat allocation changes)
@@ -383,7 +426,7 @@ export default function Dashboard() {
           if (regenData.intervalsElapsed > 0) {
             console.log(`Regenerated ${regenData.intervalsElapsed} intervals (${regenData.intervalsElapsed * 15} minutes)`);
             // Refetch stats to get updated current meter values
-            const updatedStatsRes = await fetch('/api/stats?fid=300187');
+            const updatedStatsRes = await fetch(`/api/stats?fid=${userFid}`);
             if (updatedStatsRes.ok && mounted) {
               const updatedStats = await updatedStatsRes.json();
               setStats(updatedStats);
@@ -440,7 +483,7 @@ export default function Dashboard() {
 
     load();
     return () => { mounted = false; };
-  }, []);
+  }, [userFid, isLoadingAuth]);
 
   // Countdown timer for active jobs
   useEffect(() => {
@@ -588,13 +631,31 @@ export default function Dashboard() {
     }
     */
 
-    // Display an error state if no stats were found
+    // Show loading state while authenticating
+    if (isLoadingAuth || !userFid) {
+        return (
+             <div className="frame-container frame-main flex items-center justify-center min-h-screen">
+                 <div className="flex flex-col items-center">
+                    <div className="animate-spin inline-block w-12 h-12 border-4 border-t-cyan-400 border-purple-600 rounded-full mb-4"></div>
+                    <p className="text-cyan-400 text-lg font-mono">AUTHENTICATING...</p>
+                 </div>
+             </div>
+        );
+    }
+
+    // Display an error state if no stats were found (user needs onboarding)
     if (!stats) {
         return (
              <div className="frame-container frame-main flex items-center justify-center min-h-screen">
                  <div className="flex flex-col items-center p-8 bg-gray-800/50 rounded-lg shadow-2xl">
-                    <div className="text-xl text-red-400 font-mono mb-4">ERROR 404: USER NOT FOUND</div>
-                    <p className="text-gray-300 text-center">We couldn't retrieve your cybernetic stats. Are you initialized?</p>
+                    <div className="text-xl text-red-400 font-mono mb-4">ERROR 404: USER NOT INITIALIZED</div>
+                    <p className="text-gray-300 text-center mb-4">Your cybernetic profile hasn't been initialized yet.</p>
+                    <button 
+                      onClick={() => router.push('/onboard')}
+                      className="px-6 py-3 bg-gradient-to-r from-purple-600 to-cyan-600 text-white font-mono uppercase tracking-wider rounded-lg hover:from-purple-500 hover:to-cyan-500 transition-all"
+                    >
+                      Initialize Profile
+                    </button>
                  </div>
              </div>
         );
