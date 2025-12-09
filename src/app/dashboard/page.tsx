@@ -360,7 +360,6 @@ export default function Dashboard() {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isLoadingAuth, setIsLoadingAuth] = useState(true);
     const [statsError, setStatsError] = useState<string | null>(null);
-    const [statsError, setStatsError] = useState<string | null>(null);
 
   // Get authenticated user's FID from SDK or Neynar
   useEffect(() => {
