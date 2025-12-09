@@ -12,9 +12,13 @@ export async function POST(request: Request) {
     }
 
     // Get domain from environment or request
+    // For Vercel deployments, use the host header
+    const host = request.headers.get('host') || 'localhost';
     const domain = process.env.NEXT_PUBLIC_URL
       ? new URL(process.env.NEXT_PUBLIC_URL).hostname
-      : request.headers.get('host') || 'localhost';
+      : host.split(':')[0]; // Remove port if present
+
+    console.log('Validating token with domain:', domain);
 
     try {
       // Use the official QuickAuth library to verify the JWT
@@ -22,6 +26,8 @@ export async function POST(request: Request) {
         token,
         domain,
       });
+
+      console.log('Token validated successfully for FID:', payload.sub);
 
       return NextResponse.json({
         success: true,
@@ -31,8 +37,12 @@ export async function POST(request: Request) {
       });
     } catch (e) {
       if (e instanceof Errors.InvalidTokenError) {
-        console.info('Invalid token:', e.message);
-        return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+        console.error('Invalid token error:', e.message, 'Domain used:', domain);
+        return NextResponse.json({ 
+          error: 'Invalid token',
+          details: e.message,
+          domain: domain 
+        }, { status: 401 });
       }
       throw e;
     }

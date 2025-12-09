@@ -78,17 +78,23 @@ export function useQuickAuth(): UseQuickAuthReturn {
     authToken: string,
   ): Promise<AuthenticatedUser | null> => {
     try {
+      console.log('Validating token with server...');
       const validationResponse = await fetch('/api/auth/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: authToken }),
       });
 
+      console.log('Validation response status:', validationResponse.status);
+
       if (validationResponse.ok) {
         const responseData = await validationResponse.json();
+        console.log('Validation successful:', responseData);
         return responseData.user;
       }
 
+      const errorData = await validationResponse.json();
+      console.error('Validation failed:', errorData);
       return null;
     } catch (error) {
       console.error('Token validation failed:', error);
@@ -144,26 +150,53 @@ export function useQuickAuth(): UseQuickAuthReturn {
     try {
       setStatus('loading');
 
+      console.log('Getting QuickAuth token...');
+      console.log('SDK context available:', sdk.context);
+      
       // Get QuickAuth session token
-      const { token } = await sdk.quickAuth.getToken();
+      let result;
+      try {
+        result = await sdk.quickAuth.getToken();
+        console.log('✓ QuickAuth getToken() completed');
+        console.log('QuickAuth result:', result);
+        console.log('Result type:', typeof result);
+        console.log('Result keys:', result ? Object.keys(result) : 'null');
+        console.log('Result.token:', result?.token);
+        console.log('Result as JSON:', JSON.stringify(result));
+      } catch (getTokenError) {
+        console.error('✗ QuickAuth getToken() failed:', getTokenError);
+        console.error('Error type:', typeof getTokenError);
+        console.error('Error message:', getTokenError instanceof Error ? getTokenError.message : 'Unknown');
+        throw getTokenError;
+      }
 
+      const { token } = result || {};
+      console.log('Token received:', token ? 'Yes' : 'No');
+      
       if (token) {
+        console.log('Token length:', token.length);
         // Validate the token with our server-side API
         const validatedUserSession = await validateTokenWithServer(token);
 
         if (validatedUserSession) {
           // Authentication successful, update user state
+          console.log('Authentication successful!');
           setAuthenticatedUser(validatedUserSession);
           setStatus('authenticated');
           return true;
+        } else {
+          console.log('Token validation failed');
         }
+      } else {
+        console.log('No token returned from QuickAuth');
       }
 
       // Authentication failed, clear user state
       setStatus('unauthenticated');
       return false;
     } catch (error) {
-      console.error('Sign-in process failed:', error);
+      console.error('Sign-in process failed with error:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       setStatus('unauthenticated');
       return false;
     }

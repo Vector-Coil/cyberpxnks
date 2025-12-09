@@ -228,6 +228,57 @@ body {
   background-image: url('/images/Cyberspace.png');
 }
 
+.frame-landing::before {
+  background-image: url('/pixelcity_narrow.png');
+}
+
+/* Gradient overlay for landing page */
+.frame-landing::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 424px;
+  background: linear-gradient(135deg, 
+    rgba(126, 34, 206, 0.6) 0%,    /* purple-900 */
+    rgba(0, 0, 0, 0.85) 35%,       /* black */
+    rgba(0, 0, 0, 0.85) 65%,       /* black */
+    rgba(8, 145, 178, 0.6) 100%    /* cyan-900 */
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Custom styling for Neynar Auth Button to match app theme */
+.neynar-auth-button-custom button {
+  width: 100% !important;
+  padding: 14px 24px !important;
+  background: linear-gradient(135deg, #7e22ce 0%, #0891b2 100%) !important;
+  border: 2px solid #06b6d4 !important;
+  border-radius: 8px !important;
+  font-family: 'Courier New', monospace !important;
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.1em !important;
+  color: #ffffff !important;
+  text-transform: uppercase !important;
+  transition: all 0.3s ease !important;
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.3) !important;
+}
+
+.neynar-auth-button-custom button:hover {
+  background: linear-gradient(135deg, #9333ea 0%, #06b6d4 100%) !important;
+  border-color: #22d3ee !important;
+  box-shadow: 0 0 30px rgba(6, 182, 212, 0.5) !important;
+  transform: translateY(-2px) !important;
+}
+
+.neynar-auth-button-custom button:active {
+  transform: translateY(0) !important;
+}
+
 .frame-header {
     width: 100%;
     padding: 5px 20px;
