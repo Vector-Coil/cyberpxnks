@@ -3,16 +3,14 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
 
-  // Disable ESLint during build for faster deployment (fix issues later)
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-
   // Enable compression for better performance
   compress: true,
   
   // Reduce page data size
   poweredByHeader: false,
+
+  // Turbopack config (empty to acknowledge we're using Turbopack in Next.js 16)
+  turbopack: {},
 
   experimental: {
     // Note: `serverExternalPackages` is not recognized by this Next.js version's config schema
@@ -21,7 +19,7 @@ const nextConfig: NextConfig = {
     // (API routes, server components, or inside `if (typeof window === 'undefined')` guards).
   },
 
-    webpack: (config, { isServer }) => {
+  webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
