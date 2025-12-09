@@ -647,9 +647,18 @@ export default function Dashboard() {
     if (!stats) {
         return (
              <div className="frame-container frame-main flex items-center justify-center min-h-screen">
-                 <div className="flex flex-col items-center p-8 bg-gray-800/50 rounded-lg shadow-2xl">
+                 <div className="flex flex-col items-center p-8 bg-gray-800/50 rounded-lg shadow-2xl max-w-md">
                     <div className="text-xl text-red-400 font-mono mb-4">ERROR 404: USER NOT INITIALIZED</div>
                     <p className="text-gray-300 text-center mb-4">Your cybernetic profile hasn't been initialized yet.</p>
+                    
+                    {/* Debug info */}
+                    <div className="w-full bg-gray-900/50 rounded p-4 mb-4 font-mono text-sm">
+                      <div className="text-cyan-400 mb-2">Authentication Debug:</div>
+                      <div className="text-gray-300">FID: <span className="text-white">{userFid || 'null'}</span></div>
+                      <div className="text-gray-300">Username: <span className="text-white">{neynarUser?.username || 'unknown'}</span></div>
+                      <div className="text-gray-300">Display Name: <span className="text-white">{neynarUser?.displayName || 'unknown'}</span></div>
+                    </div>
+                    
                     <button 
                       onClick={() => router.push('/onboarding')}
                       className="px-6 py-3 bg-gradient-to-r from-purple-600 to-cyan-600 text-white font-mono uppercase tracking-wider rounded-lg hover:from-purple-500 hover:to-cyan-500 transition-all"
