@@ -656,7 +656,7 @@ export default function Dashboard() {
                       <div className="text-cyan-400 mb-2">Authentication Debug:</div>
                       <div className="text-gray-300">FID: <span className="text-white">{userFid || 'null'}</span></div>
                       <div className="text-gray-300">Username: <span className="text-white">{neynarUser?.username || 'unknown'}</span></div>
-                      <div className="text-gray-300">Display Name: <span className="text-white">{neynarUser?.displayName || 'unknown'}</span></div>
+                      <div className="text-gray-300">Display Name: <span className="text-white">{neynarUser?.display_name || 'unknown'}</span></div>
                     </div>
                     
                     <button 
