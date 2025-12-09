@@ -180,7 +180,6 @@ export default function Home() {
           <div className="pt-4 w-full max-w-[340px] neynar-auth-button-custom">
             <NeynarAuthButton 
               label="CONNECT WITH FARCASTER"
-              variant="farcaster"
             />
           </div>
         )}
