@@ -133,7 +133,9 @@ export async function POST(request: NextRequest) {
         current_consciousness: updatedStats.current.consciousness,
         max_consciousness: updatedStats.max.consciousness,
         current_stamina: updatedStats.current.stamina,
-        current_bandwidth: updatedStats.current.bandwidth
+        max_stamina: updatedStats.max.stamina,
+        current_bandwidth: updatedStats.current.bandwidth,
+        max_bandwidth: updatedStats.max.bandwidth
       }
     });
   } catch (error) {

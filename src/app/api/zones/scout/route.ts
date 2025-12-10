@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool, logActivity } from '../../../../lib/db';
+import { StatsService } from '../../../../lib/statsService';
 
 export async function POST(request: NextRequest) {
   try {
@@ -115,11 +116,19 @@ export async function POST(request: NextRequest) {
       `Started scouting zone ${zoneId}`
     );
 
-    // Fetch updated stats
-    const [updatedStatsRows] = await pool.execute<any[]>(
-      'SELECT * FROM user_stats WHERE user_id = ? LIMIT 1',
-      [user.id]
-    );
+    // Fetch updated stats using StatsService
+    const statsService = new StatsService(pool, user.id);
+    const fullStats = await statsService.getStats();
+    const updatedStats = {
+      current_consciousness: fullStats.current.consciousness,
+      max_consciousness: fullStats.max.consciousness,
+      current_stamina: fullStats.current.stamina,
+      max_stamina: fullStats.max.stamina,
+      current_bandwidth: fullStats.current.bandwidth,
+      max_bandwidth: fullStats.max.bandwidth,
+      current_charge: fullStats.current.charge,
+      max_charge: fullStats.max.charge
+    };
 
     // Fetch the created scout action
     const [scoutRows] = await pool.execute<any[]>(
@@ -130,7 +139,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       scoutAction: scoutRows[0],
-      updatedStats: updatedStatsRows[0]
+      updatedStats
     });
   } catch (err: any) {
     console.error('Scout API error:', err);

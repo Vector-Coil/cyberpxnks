@@ -152,11 +152,23 @@ export async function POST(request: NextRequest) {
       `Started breaching ${poi.name}`
     );
 
-    // Get updated stats
-    const [updatedStatsRows] = await pool.execute<any[]>(
-      'SELECT * FROM user_stats WHERE user_id = ? LIMIT 1',
-      [user.id]
-    );
+    // Get updated stats using StatsService
+    const updatedStatsService = new StatsService(pool, user.id);
+    const updatedFullStats = await updatedStatsService.getStats();
+    const updatedStats = {
+      current_consciousness: updatedFullStats.current.consciousness,
+      max_consciousness: updatedFullStats.max.consciousness,
+      current_stamina: updatedFullStats.current.stamina,
+      max_stamina: updatedFullStats.max.stamina,
+      current_bandwidth: updatedFullStats.current.bandwidth,
+      max_bandwidth: updatedFullStats.max.bandwidth,
+      current_charge: updatedFullStats.current.charge,
+      max_charge: updatedFullStats.max.charge,
+      current_thermal: updatedFullStats.current.thermal,
+      max_thermal: updatedFullStats.max.thermal,
+      current_neural: updatedFullStats.current.neural,
+      max_neural: updatedFullStats.max.neural
+    };
 
     return NextResponse.json({
       success: true,
@@ -165,7 +177,7 @@ export async function POST(request: NextRequest) {
         action_type: 'Breached',
         end_time: endTime.toISOString()
       },
-      updatedStats: updatedStatsRows[0]
+      updatedStats
     });
   } catch (err: any) {
     console.error('Breach API error:', err);

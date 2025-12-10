@@ -111,13 +111,8 @@ export async function POST(request: NextRequest) {
       'Started Overnet Scan'
     );
 
-    // Get updated stats
-    const [updatedStatsRows] = await dbPool.query<RowDataPacket[]>(
-      `SELECT current_charge, current_bandwidth, current_neural, current_thermal
-       FROM user_stats 
-       WHERE user_id = ?`,
-      [userId]
-    );
+    // Get updated stats using StatsService (reuse existing instance)
+    const updatedFullStats = await statsService.getStats();
 
     return NextResponse.json({
       success: true,
@@ -127,7 +122,16 @@ export async function POST(request: NextRequest) {
         end_time: endTime,
         result_status: null
       },
-      updatedStats: updatedStatsRows[0]
+      updatedStats: {
+        current_charge: updatedFullStats.current.charge,
+        max_charge: updatedFullStats.max.charge,
+        current_bandwidth: updatedFullStats.current.bandwidth,
+        max_bandwidth: updatedFullStats.max.bandwidth,
+        current_neural: updatedFullStats.current.neural,
+        max_neural: updatedFullStats.max.neural,
+        current_thermal: updatedFullStats.current.thermal,
+        max_thermal: updatedFullStats.max.thermal
+      }
     });
   } catch (error) {
     console.error('Error starting Overnet Scan:', error);
