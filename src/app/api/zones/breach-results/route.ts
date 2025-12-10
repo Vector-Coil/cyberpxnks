@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool, logActivity } from '../../../../lib/db';
+import { rollEncounterReward, getRandomEncounter } from '../../../../lib/encounterUtils';
+import { RowDataPacket } from 'mysql2/promise';
 
 export async function POST(request: NextRequest) {
   try {
@@ -85,14 +87,47 @@ export async function POST(request: NextRequest) {
       [xpGained, user.id]
     );
 
+    // Get user's street cred for encounter filtering
+    const [userDataRows] = await pool.execute<RowDataPacket[]>(
+      'SELECT street_cred FROM users WHERE id = ? LIMIT 1',
+      [user.id]
+    );
+    const userStreetCred = userDataRows[0]?.street_cred || 0;
+
+    // Roll for reward type (encounter chance on breach)
+    const rewardType = rollEncounterReward();
+    
+    let encounter = null;
+    if (rewardType === 'encounter') {
+      // Get random encounter for city context with the specific zone
+      encounter = await getRandomEncounter(pool, breach.zone_id, 'city', userStreetCred);
+      
+      if (encounter) {
+        // Log encounter trigger
+        await logActivity(
+          user.id,
+          'encounter',
+          'triggered',
+          null,
+          encounter.id,
+          `Encountered ${encounter.name} while breaching zone ${breach.zone_id}`
+        );
+      }
+    }
+
     // Restore bandwidth (increment by 1, will be capped by validation elsewhere)
     await pool.execute(
       'UPDATE user_stats SET current_bandwidth = current_bandwidth + 1 WHERE user_id = ?',
       [user.id]
     );
 
+    // Build gains text
+    let gainsText = `+${xpGained} XP`;
+    if (encounter) {
+      gainsText += `, Encountered ${encounter.name}`;
+    }
+
     // Mark breach as complete with gains_data for display
-    const gainsText = `+${xpGained} XP`;
     await pool.execute(
       `UPDATE user_zone_history 
        SET result_status = 'completed', xp_data = ?, gains_data = ?
@@ -144,6 +179,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       xpGained,
+      rewardType,
+      encounter: encounter ? {
+        id: encounter.id,
+        name: encounter.name,
+        type: encounter.encounter_type,
+        sentiment: encounter.default_sentiment,
+        imageUrl: encounter.image_url
+      } : null,
       updatedStats: updatedStatsRows[0],
       levelUp: levelUpData?.leveledUp ? levelUpData : null
     });

@@ -136,7 +136,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
               <div className="text-center w-full">
                 <div className="font-bold uppercase mb-3" style={{ color: 'var(--fuschia)' }}>Class</div>
                 {user.class_image_url ? (
-                  <div className="w-16 h-16 mx-auto mb-2">
+                  <div className="w-24 h-24 mx-auto mb-2">
                     <img src={user.class_image_url} alt={user.class_name} className="w-full h-full object-contain" />
                   </div>
                 ) : null}

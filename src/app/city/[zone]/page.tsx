@@ -280,6 +280,7 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
       if (res.ok) {
         const data = await res.json();
         setScoutResults(data);
+        setShowResults(true);
         setActiveScout(null);
         
         // Update user stats
@@ -772,15 +773,17 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
                       return (
                         <button 
                           key={action.item_id} 
-                          className="btn-cx btn-cx-action btn-cx-full flex flex-col items-center justify-center py-4" 
+                          className="btn-cx btn-cx-action btn-cx-full relative flex items-center justify-center py-4" 
                           disabled
                         >
                           {action.slimsoft_image_url && (
-                            <img 
-                              src={action.slimsoft_image_url} 
-                              alt={actionName} 
-                              className="w-[50px] h-[50px] mb-2"
-                            />
+                            <div className="absolute left-4">
+                              <img 
+                                src={action.slimsoft_image_url} 
+                                alt={actionName} 
+                                className="w-[50px] h-[50px]"
+                              />
+                            </div>
                           )}
                           <span 
                             className="text-xl"

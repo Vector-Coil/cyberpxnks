@@ -414,17 +414,19 @@ export default function GridPage() {
               No equipped slimsoft
             </div>
           ) : slimsoftEffects.length === 1 ? (
-            // Single action: full width button
+            // Single action: full width button with left-aligned image and centered text
             <button 
-              className="btn-cx btn-cx-action btn-cx-full mb-3 flex flex-col items-center justify-center py-4"
+              className="btn-cx btn-cx-action btn-cx-full mb-3 relative flex items-center justify-center py-4"
               disabled
             >
               {slimsoftEffects[0].slimsoft_image_url && (
-                <img 
-                  src={slimsoftEffects[0].slimsoft_image_url} 
-                  alt={slimsoftEffects[0].effect_name} 
-                  className="w-[50px] h-[50px] mb-2"
-                />
+                <div className="absolute left-4">
+                  <img 
+                    src={slimsoftEffects[0].slimsoft_image_url} 
+                    alt={slimsoftEffects[0].effect_name} 
+                    className="w-[50px] h-[50px]"
+                  />
+                </div>
               )}
               <span 
                 className="text-xl"

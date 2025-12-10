@@ -369,7 +369,13 @@ export default function CityPage() {
             {zones.map((zone) => (
               
               <CxCard key={zone.id} href={`/city/${zone.id}`}>
-                <div className="flex flex-col gap-2">
+                {zone.image_url && (
+                  <div 
+                    className="absolute inset-0 bg-cover bg-center opacity-20 rounded-lg"
+                    style={{ backgroundImage: `url(${zone.image_url})` }}
+                  />
+                )}
+                <div className="relative flex flex-col gap-2">
 
                   <div className="flex direction-row justify-between items-center">
                     {zone.district_name && (

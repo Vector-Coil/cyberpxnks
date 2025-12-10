@@ -88,29 +88,12 @@ export default function PoiCard({
         {/* Right side: Breach Button or Status (1/3 width) */}
         <div className="w-1/3 flex flex-col justify-center">
           {breachResults && selectedPoi?.id === poiItem.id ? (
-            <>
-              <div className="modal-base mb-2">
-                <div className="modal-title mb-2">BREACH RESULTS</div>
-                <div className="modal-body">
-                  <div className="modal-body-data space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-300">Gained XP</span>
-                      <span className="pill-cloud-gray">{breachResults.xpGained} XP</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-300">Terminal</span>
-                      <span className="text-white">{poiItem.name}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <button 
-                className="btn-cx btn-cx-secondary btn-cx-full"
-                onClick={onBackFromBreachResults}
-              >
-                DISMISS
-              </button>
-            </>
+            <button 
+              className="btn-cx btn-cx-secondary btn-cx-full"
+              onClick={onBackFromBreachResults}
+            >
+              DISMISS
+            </button>
           ) : activeBreach ? (
             <>
               <button 
@@ -122,7 +105,7 @@ export default function PoiCard({
                 }}
                 disabled={!isBreachComplete}
               >
-                {isBreachComplete ? 'VIEW RESULTS' : 'BREACH IN PROGRESS'}
+                {isBreachComplete ? 'RESULTS' : 'IN PROGRESS'}
               </button>
               <div className="text-white text-center text-xs">{timeLeft}</div>
             </>
@@ -137,6 +120,66 @@ export default function PoiCard({
           )}
         </div>
       </div>
+      
+      {/* Results Row - Full Width Below */}
+      {breachResults && selectedPoi?.id === poiItem.id && (
+        <div className="mt-4 pt-4 border-t border-gray-700">
+          <div className="mb-3">
+            <div className="text-fuschia font-bold uppercase text-sm mb-2">Breach Results</div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-300 text-sm">XP Gained</span>
+                <span className="pill-cloud-gray">{breachResults.xpGained} XP</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-300 text-sm">Terminal</span>
+                <span className="text-white text-sm">{poiItem.name}</span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Encounter Card */}
+          {breachResults.encounter && (
+            <div className="mb-3 border-2 border-yellow-500/50 rounded p-3 bg-yellow-900/10">
+              <div className="text-yellow-400 font-bold uppercase text-sm mb-2">⚠ Encounter Detected</div>
+              <div className="text-gray-300 text-sm mb-3">
+                You've encountered <span className="text-white font-semibold">{breachResults.encounter.name}</span>, 
+                a <span className="text-cyan-400">{breachResults.encounter.type}</span> with{' '}
+                <span className={`font-semibold ${
+                  breachResults.encounter.sentiment === 'attack' ? 'text-red-500' :
+                  breachResults.encounter.sentiment === 'hostile' ? 'text-orange-500' :
+                  breachResults.encounter.sentiment === 'neutral' ? 'text-yellow-400' :
+                  'text-green-400'
+                }`}>{breachResults.encounter.sentiment}</span> intentions.
+              </div>
+              <div className="flex gap-2">
+                <button 
+                  className="btn-cx btn-cx-primary flex-1 text-sm py-2"
+                  onClick={() => window.location.href = `/encounters/${breachResults.encounter.id}`}
+                >
+                  OPEN ENCOUNTER
+                </button>
+                <button 
+                  className="btn-cx btn-cx-secondary flex-1 text-sm py-2"
+                  onClick={onBackFromBreachResults}
+                >
+                  RUN AWAY
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {/* Dismiss button (only show if no encounter or after handling encounter) */}
+          {!breachResults.encounter && (
+            <button 
+              className="btn-cx btn-cx-secondary btn-cx-full"
+              onClick={onBackFromBreachResults}
+            >
+              DISMISS
+            </button>
+          )}
+        </div>
+      )}
     </CxCard>
   );
 }
