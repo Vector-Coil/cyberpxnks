@@ -202,6 +202,14 @@ export default function CityPage() {
       .then(zonesData => {
         setZones(zonesData);
       });
+    
+    // Reload history to show completed action
+    fetch('/api/city/all-history')
+      .then(res => res.json())
+      .then(data => {
+        setHistory(data.history || []);
+      })
+      .catch(err => console.error('Failed to reload history:', err));
   };
 
   return (

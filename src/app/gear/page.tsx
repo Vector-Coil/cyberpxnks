@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { NavStrip, CxCard } from '../../components/CxShared';
 import Link from 'next/link';
 import CompactMeterStrip from '../../components/CompactMeterStrip';
+import NavDrawer from '../../components/NavDrawer';
 import { useNavData } from '../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../hooks/useAuthenticatedUser';
 import { getItemTypeColor, getItemBorderClass } from '../../lib/itemUtils';
@@ -34,6 +35,7 @@ export default function GearPage() {
   const [userStats, setUserStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'acquisition' | 'alphabetical' | 'type'>('acquisition');
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (userFid && !isAuthLoading) {
@@ -82,14 +84,23 @@ export default function GearPage() {
   };
 
   return (
-    <div className="frame-container frame-main">
-      <div className="frame-body pt-6 pb-2 px-6 mb-2">
-        <NavStrip 
-          username={navData.username}
-          userProfileImage={navData.profileImage}
-          cxBalance={navData.cxBalance}
-        />
-      </div>
+    <>
+      <NavDrawer 
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        username={navData.username}
+        profileImage={navData.profileImage}
+        cxBalance={navData.cxBalance}
+      />
+      <div className="frame-container frame-main">
+        <div className="frame-body pt-6 pb-2 px-6 mb-2">
+          <NavStrip 
+            username={navData.username}
+            userProfileImage={navData.profileImage}
+            cxBalance={navData.cxBalance}
+            onMenuClick={() => setIsDrawerOpen(true)}
+          />
+        </div>
       <CompactMeterStrip meters={getMeterData(userStats)} />
 
       <div className="pt-5 pb-2 px-6 flex flex-row gap-3">
@@ -224,5 +235,6 @@ export default function GearPage() {
         </CxCard>
       </div>
     </div>
+    </>
   );
 }
