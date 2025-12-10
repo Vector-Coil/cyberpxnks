@@ -85,7 +85,7 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
   const [newLevel, setNewLevel] = useState(0);
   
   // Use countdown timer hook for scout action
-  const { timeRemaining } = useCountdownTimer(activeScout?.end_time || null);
+  const { timeRemaining, isComplete: isScoutComplete } = useCountdownTimer(activeScout?.end_time || null);
   
   // Breach-related state
   const [showBreachModal, setShowBreachModal] = useState(false);
@@ -744,17 +744,11 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
                     ) : activeScout ? (
                       <div>
                         <button 
-                          className={`btn-cx btn-cx-pause btn-cx-full mb-2 ${!timeRemaining.startsWith('00:00:00') || isLoadingResults ? 'cursor-default opacity-75' : ''}`}
-                          onClick={() => {
-                            const now = new Date().getTime();
-                            const endTime = new Date(activeScout.end_time!).getTime();
-                            if (now >= endTime) {
-                              handleViewResults();
-                            }
-                          }}
-                          disabled={!timeRemaining.startsWith('00:00:00') || isLoadingResults}
+                          className={`btn-cx btn-cx-pause btn-cx-full mb-2 ${!isScoutComplete || isLoadingResults ? 'cursor-default opacity-75' : ''}`}
+                          onClick={handleViewResults}
+                          disabled={!isScoutComplete || isLoadingResults}
                         >
-                          {isLoadingResults ? 'LOADING RESULTS...' : timeRemaining.startsWith('00:00:00') ? 'VIEW RESULTS' : 'SCOUTING IN PROGRESS'}
+                          {isLoadingResults ? 'LOADING RESULTS...' : isScoutComplete ? 'VIEW RESULTS' : 'SCOUTING IN PROGRESS'}
                         </button>
                         <div className="text-white text-center text-xs">{timeRemaining}</div>
                       </div>

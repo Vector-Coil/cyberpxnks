@@ -85,7 +85,7 @@ export default function GridPage() {
   const [isLoadingScanResults, setIsLoadingScanResults] = useState(false);
   
   // Use countdown timer hook for active scan
-  const { timeRemaining } = useCountdownTimer(activeScan?.end_time || null);
+  const { timeRemaining, isComplete: isScanComplete } = useCountdownTimer(activeScan?.end_time || null);
 
   useEffect(() => {
     async function loadData() {
@@ -383,17 +383,11 @@ export default function GridPage() {
             ) : activeScan ? (
               <div>
                 <button 
-                  className={`btn-cx btn-cx-pause btn-cx-full mb-2 ${!timeRemaining.startsWith('00:00:00') || isLoadingScanResults ? 'cursor-default opacity-75' : ''}`}
-                  onClick={() => {
-                    const now = new Date().getTime();
-                    const endTime = new Date(activeScan.end_time).getTime();
-                    if (now >= endTime) {
-                      handleViewScanResults();
-                    }
-                  }}
-                  disabled={!timeRemaining.startsWith('00:00:00') || isLoadingScanResults}
+                  className={`btn-cx btn-cx-pause btn-cx-full mb-2 ${!isScanComplete || isLoadingScanResults ? 'cursor-default opacity-75' : ''}`}
+                  onClick={handleViewScanResults}
+                  disabled={!isScanComplete || isLoadingScanResults}
                 >
-                  {isLoadingScanResults ? 'LOADING RESULTS...' : timeRemaining.startsWith('00:00:00') ? 'VIEW RESULTS' : 'SCANNING IN PROGRESS'}
+                  {isLoadingScanResults ? 'LOADING RESULTS...' : isScanComplete ? 'VIEW RESULTS' : 'SCANNING IN PROGRESS'}
                 </button>
                 <div className="text-white text-center text-xs">{timeRemaining}</div>
               </div>

@@ -57,7 +57,7 @@ export default function CityPage() {
   const [cityHistory, setCityHistory] = useState<any[]>([]);
   
   // Use countdown timer hook for active explore
-  const { timeRemaining } = useCountdownTimer(activeExplore?.end_time || null);
+  const { timeRemaining, isComplete } = useCountdownTimer(activeExplore?.end_time || null);
 
   useEffect(() => {
     async function loadData() {
@@ -252,11 +252,11 @@ export default function CityPage() {
             <div className="flex flex-col justify-between gap-1">
               <div className="card-title mb-3">Explore</div>
               <button 
-                className={`btn-cx btn-cx-pause btn-cx-full mb-2 ${!timeRemaining.startsWith('00:00:00') || isLoadingResults ? 'cursor-default opacity-75' : ''}`}
+                className={`btn-cx btn-cx-pause btn-cx-full mb-2 ${!isComplete || isLoadingResults ? 'cursor-default opacity-75' : ''}`}
                 onClick={handleViewResults}
-                disabled={!timeRemaining.startsWith('00:00:00') || isLoadingResults}
+                disabled={!isComplete || isLoadingResults}
               >
-                {isLoadingResults ? 'LOADING RESULTS...' : timeRemaining.startsWith('00:00:00') ? 'VIEW RESULTS' : 'EXPLORING IN PROGRESS'}
+                {isLoadingResults ? 'LOADING RESULTS...' : isComplete ? 'VIEW RESULTS' : 'EXPLORING IN PROGRESS'}
               </button>
               <div className="text-white text-center text-xs">{timeRemaining}</div>
             </div>
