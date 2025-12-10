@@ -69,7 +69,7 @@ export default function ContactsPage() {
           />
         </div>
         <CompactMeterStrip meters={getMeterData(userStats)} />
-        <div className="pt-5 pb-2 px-6 flex flex-row gap-1">
+        <div className="pt-5 pb-2 px-6 flex flex-row gap-3">
           <a href="/dashboard" className="w-[25px] h-[25px] rounded-full overflow-hidden bg-gray-700 flex  items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors">
             <span className="material-symbols-outlined text-white text-xl">chevron_left</span>
           </a>

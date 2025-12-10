@@ -772,22 +772,22 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
                       return (
                         <button 
                           key={action.item_id} 
-                          className="btn-cx btn-cx-action btn-cx-full relative" 
+                          className="btn-cx btn-cx-action btn-cx-full flex flex-col items-center justify-center py-4" 
                           disabled
                         >
-                          <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                            {action.slimsoft_image_url && (
-                              <img 
-                                src={action.slimsoft_image_url} 
-                                alt={actionName} 
-                                className="w-4 h-4"
-                              />
-                            )}
-                            <span className="text-[10px] font-semibold opacity-75">
-                              {action.slimsoft_name}
-                            </span>
-                          </div>
-                          <span className="block text-center w-full">{actionName}</span>
+                          {action.slimsoft_image_url && (
+                            <img 
+                              src={action.slimsoft_image_url} 
+                              alt={actionName} 
+                              className="w-[50px] h-[50px] mb-2"
+                            />
+                          )}
+                          <span 
+                            className="text-xl"
+                            style={{ fontFamily: 'var(--font-mono)' }}
+                          >
+                            {actionName}
+                          </span>
                         </button>
                       );
                     })}

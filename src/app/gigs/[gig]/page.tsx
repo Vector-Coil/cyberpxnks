@@ -176,7 +176,7 @@ export default async function GigDetailPage({ params }: { params: any }) {
             cxBalance={navData.cxBalance}
           />
         </div>
-        <div className="pt-5 pb-2 px-6 flex flex-row gap-1">
+        <div className="pt-5 pb-2 px-6 flex flex-row gap-3">
           <a href="/gigs" className="w-[25px] h-[25px] rounded-full overflow-hidden bg-gray-700 flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors">
             <span className="material-symbols-outlined text-white text-xl">chevron_left</span>
           </a>

@@ -416,20 +416,18 @@ export default function GridPage() {
           ) : slimsoftEffects.length === 1 ? (
             // Single action: full width button
             <button 
-              className="btn-cx btn-cx-action btn-cx-full mb-3 flex items-center justify-between"
+              className="btn-cx btn-cx-action btn-cx-full mb-3 flex flex-col items-center justify-center py-4"
               disabled
             >
-              <div className="flex items-center gap-2">
-                {slimsoftEffects[0].slimsoft_image_url && (
-                  <img 
-                    src={slimsoftEffects[0].slimsoft_image_url} 
-                    alt={slimsoftEffects[0].effect_name} 
-                    className="w-[50px] h-[50px]"
-                  />
-                )}
-              </div>
+              {slimsoftEffects[0].slimsoft_image_url && (
+                <img 
+                  src={slimsoftEffects[0].slimsoft_image_url} 
+                  alt={slimsoftEffects[0].effect_name} 
+                  className="w-[50px] h-[50px] mb-2"
+                />
+              )}
               <span 
-                className="text-right text-xl"
+                className="text-xl"
                 style={{ fontFamily: 'var(--font-mono)' }}
               >
                 {slimsoftEffects[0].effect_name?.toUpperCase() || 'ACTION'}
