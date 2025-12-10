@@ -367,27 +367,27 @@ export default function CityPage() {
         ) : (
           <div className="space-y-3">
             {zones.map((zone) => (
-              
-              <CxCard key={zone.id} href={`/city/${zone.id}`}>
-                {zone.image_url && (
-                  <div 
-                    className="absolute inset-0 bg-cover bg-center opacity-20 rounded-lg"
-                    style={{ backgroundImage: `url(${zone.image_url})` }}
-                  />
-                )}
-                <div className="relative flex flex-col gap-2">
-
-                  <div className="flex direction-row justify-between items-center">
+              <a key={zone.id} href={`/city/${zone.id}`} className="block">
+                <div 
+                  className="cx-banner"
+                  style={zone.image_url ? { 
+                    backgroundImage: `url(${zone.image_url})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center'
+                  } : undefined}
+                >
+                  <div className="banner-left">
                     {zone.district_name && (
                       <div className="eyebrow uppercase">{zone.district_name}</div>
                     )}
-                    <span className="pill-cloud-gray uppercase">{zone.zone_type_name || zone.zone_type}</span>
+                    <div className="banner-heading-2">{zone.name}</div>
                   </div>
                   
-                  <div className="card-title">{zone.name}</div>
+                  <div className="banner-right">
+                    <span className="pill-cloud-gray uppercase">{zone.zone_type_name || zone.zone_type}</span>
+                  </div>
                 </div>
-              </CxCard>
-
+              </a>
             ))}
           </div>
         )}

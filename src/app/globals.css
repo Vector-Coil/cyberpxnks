@@ -336,6 +336,8 @@ body {
 
   /* CX Card */
   .card-cx {
+    position: relative;
+    overflow: hidden;
     background: var(--rich-black-25);
     border: solid 1px var(--fuschia);
     border-radius: 10px;
