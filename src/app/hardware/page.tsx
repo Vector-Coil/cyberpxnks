@@ -4,6 +4,7 @@ import { NavStrip, CxCard } from '../../components/CxShared';
 import ConfirmModal from '../../components/ConfirmModal';
 import CompactMeterStrip from '../../components/CompactMeterStrip';
 import { useNavData } from '../../hooks/useNavData';
+import { useAuthenticatedUser } from '../../hooks/useAuthenticatedUser';
 import NavDrawer from '../../components/NavDrawer';
 import { getMeterData } from '../../lib/meterUtils';
 
@@ -88,7 +89,8 @@ interface HardwareItem {
 }
 
 export default function HardwarePage() {
-  const navData = useNavData(300187);
+  const { userFid, isLoading: isAuthLoading } = useAuthenticatedUser();
+  const navData = useNavData(userFid || 0);
   const [cyberdecks, setCyberdecks] = useState<HardwareItem[]>([]);
   const [peripherals, setPeripherals] = useState<HardwareItem[]>([]);
   const [slimsoft, setSlimsoft] = useState<HardwareItem[]>([]);
@@ -111,8 +113,10 @@ export default function HardwarePage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (userFid && !isAuthLoading) {
+      loadData();
+    }
+  }, [userFid, isAuthLoading]);
 
   // Dismiss selected slimsoft when clicking outside
   useEffect(() => {
@@ -141,11 +145,13 @@ export default function HardwarePage() {
   }, [selectedSoftId, selectedIncompatibleId]);
 
   async function loadData() {
+    if (!userFid) return;
+    
     try {
       setLoading(true);
       const [hardwareRes, statsRes] = await Promise.all([
-        fetch('/api/hardware?fid=300187'),
-        fetch('/api/stats?fid=300187')
+        fetch(`/api/hardware?fid=${userFid}`),
+        fetch(`/api/stats?fid=${userFid}`)
       ]);
 
       if (hardwareRes.ok) {
@@ -162,7 +168,7 @@ export default function HardwarePage() {
       }
 
       // Fetch slimsoft effects
-      const effectsRes = await fetch('/api/slimsoft/effects?fid=300187');
+      const effectsRes = await fetch(`/api/slimsoft/effects?fid=${userFid}`);
       if (effectsRes.ok) {
         const effectsData = await effectsRes.json();
         setSlimsoftEffects(effectsData.effects || []);

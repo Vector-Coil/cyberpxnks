@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { NavStrip, CxCard } from '../../../components/CxShared';
 import { useNavData } from '../../../hooks/useNavData';
+import { useAuthenticatedUser } from '../../../hooks/useAuthenticatedUser';
 import { getItemTypeColor } from '../../../lib/itemUtils';
 
 interface ItemDetail {
@@ -34,8 +35,9 @@ interface ItemData {
 
 export default function GearItemPage({ params }: { params: Promise<{ item: string }> }) {
   const router = useRouter();
+  const { userFid, isLoading: isAuthLoading } = useAuthenticatedUser();
   const [itemId, setItemId] = useState<number | null>(null);
-  const navData = useNavData(300187);
+  const navData = useNavData(userFid || 0);
   const [itemData, setItemData] = useState<ItemData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -47,13 +49,17 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
 
   useEffect(() => {
     if (!itemId || Number.isNaN(itemId)) return;
-    loadData();
-  }, [itemId]);
+    if (userFid && !isAuthLoading) {
+      loadData();
+    }
+  }, [itemId, userFid, isAuthLoading]);
 
   async function loadData() {
+    if (!userFid) return;
+    
     try {
       setLoading(true);
-      const itemRes = await fetch(`/api/items/${itemId}?fid=300187`);
+      const itemRes = await fetch(`/api/items/${itemId}?fid=${userFid}`);
 
       if (itemRes.ok) {
         const data = await itemRes.json();

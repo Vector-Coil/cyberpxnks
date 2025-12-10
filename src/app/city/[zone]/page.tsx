@@ -8,6 +8,7 @@ import NavDrawer from '../../../components/NavDrawer';
 import PoiCard from '../../../components/PoiCard';
 import CompactMeterStrip from '../../../components/CompactMeterStrip';
 import { useNavData } from '../../../hooks/useNavData';
+import { useAuthenticatedUser } from '../../../hooks/useAuthenticatedUser';
 import { useCountdownTimer } from '../../../hooks/useCountdownTimer';
 import { getMeterData } from '../../../lib/meterUtils';
 
@@ -59,7 +60,8 @@ interface POI {
 export default function ZoneDetailPage({ params }: { params: Promise<{ zone: string }> }) {
   const router = useRouter();
   const [zoneId, setZoneId] = useState<number | null>(null);
-  const navData = useNavData(300187);
+  const { userFid, isLoading: isAuthLoading } = useAuthenticatedUser();
+  const navData = useNavData(userFid || 0);
   
   // Resolve params on mount
   useEffect(() => {
@@ -108,16 +110,16 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
-    if (!zoneId || Number.isNaN(zoneId)) return;
+    if (!zoneId || Number.isNaN(zoneId) || !userFid || isAuthLoading) return;
 
     async function loadData() {
       try {
         // Parallelize independent API calls for faster loading
         const [statsRes, zoneRes, effectsRes, hardwareRes] = await Promise.all([
-          fetch('/api/stats?fid=300187'),
-          fetch(`/api/zones/${zoneId}?fid=300187`),
-          fetch('/api/slimsoft/effects?fid=300187'),
-          fetch('/api/hardware?fid=300187')
+          fetch(`/api/stats?fid=${userFid}`),
+          fetch(`/api/zones/${zoneId}?fid=${userFid}`),
+          fetch(`/api/slimsoft/effects?fid=${userFid}`),
+          fetch(`/api/hardware?fid=${userFid}`)
         ]);
 
         // Process user stats
@@ -212,7 +214,7 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
       }
     }
     loadData();
-  }, [zoneId]);
+  }, [zoneId, userFid, isAuthLoading]);
 
   const handleLeaveZone = () => {
     router.push('/city');
@@ -236,7 +238,7 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
     
     setIsConfirming(true);
     try {
-      const res = await fetch(`/api/zones/scout?fid=300187`, {
+      const res = await fetch(`/api/zones/scout?fid=${userFid}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ zoneId, staminaCost })
@@ -249,7 +251,7 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
         setShowScoutModal(false);
         
         // Reload zone data to update history
-        const zoneRes = await fetch(`/api/zones/${zoneId}?fid=300187`);
+        const zoneRes = await fetch(`/api/zones/${zoneId}?fid=${userFid}`);
         if (zoneRes.ok) {
           const zoneData = await zoneRes.json();
           setHistory(zoneData.history || []);
@@ -269,7 +271,7 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
 
   const handleViewResults = async () => {
     try {
-      const res = await fetch(`/api/zones/scout-results?fid=300187`, {
+      const res = await fetch(`/api/zones/scout-results?fid=${userFid}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ historyId: activeScout?.id })
@@ -323,7 +325,7 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
     
     setIsBreachConfirming(true);
     try {
-      const res = await fetch(`/api/zones/breach?fid=300187`, {
+      const res = await fetch(`/api/zones/breach?fid=${userFid}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ poiId: selectedPoi.id, zoneId })
@@ -358,7 +360,7 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
 
     try {
       console.log('Fetching breach results:', { historyId: activeBreach.id, poiId: poiItem.id });
-      const res = await fetch(`/api/zones/breach-results?fid=300187`, {
+      const res = await fetch(`/api/zones/breach-results?fid=${userFid}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ historyId: activeBreach.id, poiId: poiItem.id })
@@ -469,7 +471,7 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
       const res = await fetch('/api/travel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fid: 300187, zoneId })
+        body: JSON.stringify({ fid: userFid, zoneId })
       });
 
       if (res.ok) {

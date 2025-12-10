@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FrameHeader, CxCard } from '../../../components/CxShared';
+import { useAuthenticatedUser } from '../../../hooks/useAuthenticatedUser';
 
 interface EncounterAction {
   id: number;
@@ -45,6 +46,7 @@ interface EncounterDetails {
 
 export default function EncounterPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const { userFid, isLoading: isAuthLoading } = useAuthenticatedUser();
   const [encounterId, setEncounterId] = useState<number | null>(null);
   const [encounter, setEncounter] = useState<EncounterDetails | null>(null);
   const [actions, setActions] = useState<EncounterAction[]>([]);
@@ -62,12 +64,12 @@ export default function EncounterPage({ params }: { params: Promise<{ id: string
   useEffect(() => {
     if (!encounterId) return;
     fetchEncounter();
-  }, [encounterId]);
+  }, [encounterId, userFid, isAuthLoading]);
 
   const fetchEncounter = async () => {
-    if (!encounterId) return;
+    if (!encounterId || !userFid || isAuthLoading) return;
     try {
-      const res = await fetch(`/api/encounters/${encounterId}?fid=300187`);
+      const res = await fetch(`/api/encounters/${encounterId}?fid=${userFid}`);
       if (res.ok) {
         const data = await res.json();
         setEncounter(data.encounter);
@@ -91,7 +93,7 @@ export default function EncounterPage({ params }: { params: Promise<{ id: string
       const res = await fetch(`/api/encounters/${encounterId}/action`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fid: 300187, actionId })
+        body: JSON.stringify({ fid: userFid, actionId })
       });
 
       if (res.ok) {
@@ -116,7 +118,7 @@ export default function EncounterPage({ params }: { params: Promise<{ id: string
       const res = await fetch(`/api/encounters/${encounterId}/flee`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fid: 300187 })
+        body: JSON.stringify({ fid: userFid })
       });
 
       if (res.ok) {

@@ -359,6 +359,7 @@ export default function Dashboard() {
     const [equippedSlimsoft, setEquippedSlimsoft] = useState<any[]>([]);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isLoadingAuth, setIsLoadingAuth] = useState(true);
+    const [isLoadingStats, setIsLoadingStats] = useState(true);
     const [statsError, setStatsError] = useState<string | null>(null);
 
   // Get authenticated user's FID from SDK or Neynar
@@ -404,6 +405,8 @@ export default function Dashboard() {
     if (!userFid || isLoadingAuth) return;
 
     let mounted = true;
+    setIsLoadingStats(true);
+    
     async function load() {
       try {
         // Parallelize all independent API calls for faster loading
@@ -485,6 +488,10 @@ export default function Dashboard() {
 
       } catch (err) {
         console.error('Error fetching stats/alerts:', err);
+      } finally {
+        if (mounted) {
+          setIsLoadingStats(false);
+        }
       }
     }
 
@@ -645,6 +652,18 @@ export default function Dashboard() {
                  <div className="flex flex-col items-center">
                     <div className="animate-spin inline-block w-12 h-12 border-4 border-t-cyan-400 border-purple-600 rounded-full mb-4"></div>
                     <p className="text-cyan-400 text-lg font-mono">AUTHENTICATING...</p>
+                 </div>
+             </div>
+        );
+    }
+
+    // Show loading state while fetching stats
+    if (isLoadingStats) {
+        return (
+             <div className="frame-container frame-main flex items-center justify-center min-h-screen">
+                 <div className="flex flex-col items-center">
+                    <div className="animate-spin inline-block w-12 h-12 border-4 border-t-cyan-400 border-purple-600 rounded-full mb-4"></div>
+                    <p className="text-cyan-400 text-lg font-mono">LOADING DASHBOARD...</p>
                  </div>
              </div>
         );

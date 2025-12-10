@@ -5,6 +5,7 @@ import LevelUpModal from '../../components/LevelUpModal';
 import ConfirmModal from '../../components/ConfirmModal';
 import CompactMeterStrip from '../../components/CompactMeterStrip';
 import { useNavData } from '../../hooks/useNavData';
+import { useAuthenticatedUser } from '../../hooks/useAuthenticatedUser';
 import { useCountdownTimer } from '../../hooks/useCountdownTimer';
 import { getMeterData } from '../../lib/meterUtils';
 
@@ -39,7 +40,8 @@ interface ExploreAction {
 }
 
 export default function CityPage() {
-  const navData = useNavData(300187);
+  const { userFid, isLoading: isAuthLoading } = useAuthenticatedUser();
+  const navData = useNavData(userFid || 0);
   const [zones, setZones] = useState<Zone[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
@@ -59,14 +61,16 @@ export default function CityPage() {
 
   useEffect(() => {
     async function loadData() {
+      if (!userFid || isAuthLoading) return;
+      
       try {
         // Parallelize all independent API calls for faster loading
         const [statsRes, zonesRes, exploreRes, historyRes, districtsRes] = await Promise.all([
-          fetch('/api/stats?fid=300187'),
-          fetch('/api/zones?fid=300187'),
-          fetch('/api/city/explore-status?fid=300187'),
+          fetch(`/api/stats?fid=${userFid}`),
+          fetch(`/api/zones?fid=${userFid}`),
+          fetch(`/api/city/explore-status?fid=${userFid}`),
           fetch('/api/city/all-history'),
-          fetch('/api/districts?fid=300187')
+          fetch(`/api/districts?fid=${userFid}`)
         ]);
 
         // Process user stats
@@ -114,7 +118,7 @@ export default function CityPage() {
       }
     }
     loadData();
-  }, []);
+  }, [userFid, isAuthLoading]);
 
   const staminaCost = 15;
   const canExplore = userStats && 
@@ -144,7 +148,7 @@ export default function CityPage() {
     
     setIsConfirming(true);
     try {
-      const res = await fetch(`/api/city/explore?fid=300187`, {
+      const res = await fetch(`/api/city/explore?fid=${userFid}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ staminaCost })
@@ -165,7 +169,7 @@ export default function CityPage() {
 
   const handleViewResults = async () => {
     try {
-      const res = await fetch(`/api/city/explore-results?fid=300187`, {
+      const res = await fetch(`/api/city/explore-results?fid=${userFid}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ historyId: activeExplore?.id })
@@ -193,7 +197,7 @@ export default function CityPage() {
     setActiveExplore(null);
     
     // Reload zones to show newly discovered zone
-    fetch('/api/zones?fid=300187')
+    fetch(`/api/zones?fid=${userFid}`)
       .then(res => res.json())
       .then(zonesData => {
         setZones(zonesData);

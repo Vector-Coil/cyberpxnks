@@ -4,6 +4,7 @@ import { NavStrip, CxCard } from '../../components/CxShared';
 import Link from 'next/link';
 import CompactMeterStrip from '../../components/CompactMeterStrip';
 import { useNavData } from '../../hooks/useNavData';
+import { useAuthenticatedUser } from '../../hooks/useAuthenticatedUser';
 import { getItemTypeColor, getItemBorderClass } from '../../lib/itemUtils';
 import { getMeterData } from '../../lib/meterUtils';
 
@@ -27,22 +28,27 @@ interface Item {
 }
 
 export default function GearPage() {
-  const navData = useNavData(300187);
+  const { userFid, isLoading: isAuthLoading } = useAuthenticatedUser();
+  const navData = useNavData(userFid || 0);
   const [items, setItems] = useState<Item[]>([]);
   const [userStats, setUserStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'acquisition' | 'alphabetical' | 'type'>('acquisition');
 
   useEffect(() => {
-    loadData();
-  }, [sortBy]);
+    if (userFid && !isAuthLoading) {
+      loadData();
+    }
+  }, [sortBy, userFid, isAuthLoading]);
 
   async function loadData() {
+    if (!userFid) return;
+    
     try {
       setLoading(true);
       const [inventoryRes, statsRes] = await Promise.all([
-        fetch(`/api/inventory?fid=300187&sortBy=${sortBy}`),
-        fetch('/api/stats?fid=300187')
+        fetch(`/api/inventory?fid=${userFid}&sortBy=${sortBy}`),
+        fetch(`/api/stats?fid=${userFid}`)
       ]);
 
       if (inventoryRes.ok) {

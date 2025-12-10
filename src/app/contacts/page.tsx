@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { FrameHeader, CxCard, NavStrip } from '../../components/CxShared';
 import CompactMeterStrip from '../../components/CompactMeterStrip';
 import { useNavData } from '../../hooks/useNavData';
+import { useAuthenticatedUser } from '../../hooks/useAuthenticatedUser';
 import type { NavData } from '../../types/common';
 import { getMeterData } from '../../lib/meterUtils';
 
@@ -18,19 +19,22 @@ interface ContactItem {
 }
 
 export default function ContactsPage() {
-  const navData = useNavData(300187);
+  const { userFid, isLoading: isAuthLoading } = useAuthenticatedUser();
+  const navData = useNavData(userFid || 0);
   const [contacts, setContacts] = useState<ContactItem[]>([]);
   const [userStats, setUserStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!userFid || isAuthLoading) return;
+    
     let mounted = true;
     async function load() {
       try {
         const [contactsRes, statsRes] = await Promise.all([
-          fetch('/api/contacts?fid=300187'),
-          fetch('/api/stats?fid=300187')
+          fetch(`/api/contacts?fid=${userFid}`),
+          fetch(`/api/stats?fid=${userFid}`)
         ]);
         
         if (!contactsRes.ok) {
@@ -53,7 +57,7 @@ export default function ContactsPage() {
     }
     load();
     return () => { mounted = false; };
-  }, []);
+  }, [userFid, isAuthLoading]);
 
   return (
     <div className="frame-container frame-main">

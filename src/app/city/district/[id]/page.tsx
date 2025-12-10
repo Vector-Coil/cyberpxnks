@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { NavStrip, CxCard } from '../../../../components/CxShared';
 import { useNavData } from '../../../../hooks/useNavData';
+import { useAuthenticatedUser } from '../../../../hooks/useAuthenticatedUser';
 
 interface District {
   id: number;
@@ -32,7 +33,8 @@ interface HistoryEntry {
 export default function DistrictDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [districtId, setDistrictId] = useState<number | null>(null);
-  const navData = useNavData(300187);
+  const { userFid, isLoading: isAuthLoading } = useAuthenticatedUser();
+  const navData = useNavData(userFid || 0);
 
   const [district, setDistrict] = useState<District | null>(null);
   const [zones, setZones] = useState<Zone[]>([]);
@@ -46,12 +48,12 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
   }, [params]);
 
   useEffect(() => {
-    if (!districtId || Number.isNaN(districtId)) return;
+    if (!districtId || Number.isNaN(districtId) || !userFid || isAuthLoading) return;
 
     async function loadData() {
       try {
         // Fetch district details
-        const districtRes = await fetch(`/api/districts/${districtId}?fid=300187`);
+        const districtRes = await fetch(`/api/districts/${districtId}?fid=${userFid}`);
 
         // Process district details
         if (districtRes.ok) {
@@ -67,7 +69,7 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
       }
     }
     loadData();
-  }, [districtId]);
+  }, [districtId, userFid, isAuthLoading]);
 
   const handleBackToCity = () => {
     router.push('/city');

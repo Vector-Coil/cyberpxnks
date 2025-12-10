@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { CxCard, NavStrip } from '../../components/CxShared';
 import { useNavData } from '../../hooks/useNavData';
+import { useAuthenticatedUser } from '../../hooks/useAuthenticatedUser';
 import type { NavData } from '../../types/common';
 
 interface Activity {
@@ -19,7 +20,8 @@ interface Activity {
 }
 
 export default function ActivityLogPage() {
-  const navData = useNavData(300187);
+  const { userFid, isLoading: isAuthLoading } = useAuthenticatedUser();
+  const navData = useNavData(userFid || 0);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -31,7 +33,7 @@ export default function ActivityLogPage() {
 
   useEffect(() => {
     checkAdminStatus();
-  }, []);
+  }, [userFid, isAuthLoading]);
 
   useEffect(() => {
     if (isAdmin) {
@@ -43,9 +45,11 @@ export default function ActivityLogPage() {
   }, [selectedCategory, isAdmin]);
 
   const checkAdminStatus = async () => {
+    if (!userFid || isAuthLoading) return;
+    
     try {
       // Check if user is admin
-      const userRes = await fetch('/api/user?fid=300187');
+      const userRes = await fetch(`/api/user?fid=${userFid}`);
       if (userRes.ok) {
         const userData = await userRes.json();
         if (userData.admin) {
@@ -72,8 +76,8 @@ export default function ActivityLogPage() {
       
       const currentOffset = reset ? 0 : offset;
       const url = selectedCategory
-        ? `/api/activity?fid=300187&admin=true&category=${selectedCategory}&limit=25&offset=${currentOffset}`
-        : `/api/activity?fid=300187&admin=true&limit=25&offset=${currentOffset}`;
+        ? `/api/activity?fid=${userFid}&admin=true&category=${selectedCategory}&limit=25&offset=${currentOffset}`
+        : `/api/activity?fid=${userFid}&admin=true&limit=25&offset=${currentOffset}`;
       
       const res = await fetch(url);
       if (res.ok) {

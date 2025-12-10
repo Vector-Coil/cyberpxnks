@@ -18,6 +18,14 @@ export async function GET(req: Request) {
     // Use StatsService for centralized stat management
     const stats = await StatsService.getStatsByFid(pool, fid);
 
+    // Get base stats from user_stats table for hardware preview calculations
+    const [userStatsRows] = await pool.execute(
+      `SELECT total_clock, total_cooling, total_signal, total_latency, total_crypt, total_cache
+       FROM user_stats WHERE user_id = (SELECT id FROM users WHERE fid = ? LIMIT 1)`,
+      [fid]
+    );
+    const baseStats = (userStatsRows as any[])[0] || {};
+
     // Transform to match old API format for backward compatibility
     return NextResponse.json({
       // Current stats
@@ -34,13 +42,20 @@ export async function GET(req: Request) {
       max_bandwidth: stats.max.bandwidth,
       max_thermal: stats.max.thermal,
       max_neural: stats.max.neural,
-      // Tech stats (calculated)
+      // Tech stats (calculated with hardware)
       clock_speed: stats.tech.clock_speed,
       cooling: stats.tech.cooling,
       signal_noise: stats.tech.signal_noise,
       latency: stats.tech.latency,
       decryption: stats.tech.decryption,
       cache: stats.tech.cache,
+      // Base stats (from user_stats, before hardware) - for hardware preview
+      total_clock: baseStats.total_clock || 0,
+      total_cooling: baseStats.total_cooling || 0,
+      total_signal: baseStats.total_signal || 0,
+      total_latency: baseStats.total_latency || 0,
+      total_crypt: baseStats.total_crypt || 0,
+      total_cache: baseStats.total_cache || 0,
       // Hardware modifiers
       total_cell_capacity: stats.hardware.cell_capacity,
       total_processor: stats.hardware.processor,

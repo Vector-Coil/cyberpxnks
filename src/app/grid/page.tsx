@@ -5,6 +5,7 @@ import ConfirmModal from '../../components/ConfirmModal';
 import LevelUpModal from '../../components/LevelUpModal';
 import CompactMeterStrip from '../../components/CompactMeterStrip';
 import { useNavData } from '../../hooks/useNavData';
+import { useAuthenticatedUser } from '../../hooks/useAuthenticatedUser';
 import { useCountdownTimer } from '../../hooks/useCountdownTimer';
 import { getMeterData } from '../../lib/meterUtils';
 
@@ -64,7 +65,8 @@ interface UserStats {
 }
 
 export default function GridPage() {
-  const navData = useNavData(300187);
+  const { userFid, isLoading: isAuthLoading } = useAuthenticatedUser();
+  const navData = useNavData(userFid || 0);
   const [subnets, setSubnets] = useState<Subnet[]>([]);
   const [protocols, setProtocols] = useState<Protocol[]>([]);
   const [slimsoftEffects, setSlimsoftEffects] = useState<SlimsoftEffect[]>([]);
@@ -87,15 +89,17 @@ export default function GridPage() {
 
   useEffect(() => {
     async function loadData() {
+      if (!userFid) return;
+      
       try {
         // Parallelize all independent API calls
         const [subnetsRes, protocolsRes, hardwareRes, effectsRes, statsRes, scanStatusRes] = await Promise.all([
-          fetch('/api/subnets?fid=300187'),
-          fetch('/api/protocols?fid=300187'),
-          fetch('/api/hardware?fid=300187'),
-          fetch('/api/slimsoft/effects?fid=300187'),
-          fetch('/api/stats?fid=300187'),
-          fetch('/api/grid/scan-status?fid=300187')
+          fetch(`/api/subnets?fid=${userFid}`),
+          fetch(`/api/protocols?fid=${userFid}`),
+          fetch(`/api/hardware?fid=${userFid}`),
+          fetch(`/api/slimsoft/effects?fid=${userFid}`),
+          fetch(`/api/stats?fid=${userFid}`),
+          fetch(`/api/grid/scan-status?fid=${userFid}`)
         ]);
 
         // Process user stats
@@ -161,8 +165,11 @@ export default function GridPage() {
         setLoading(false);
       }
     }
-    loadData();
-  }, []);
+    
+    if (userFid && !isAuthLoading) {
+      loadData();
+    }
+  }, [userFid, isAuthLoading]);
 
   const chargeCost = 15;
   const canScan = userStats && 
@@ -181,7 +188,7 @@ export default function GridPage() {
     
     setIsConfirming(true);
     try {
-      const res = await fetch(`/api/grid/scan?fid=300187`, {
+      const res = await fetch(`/api/grid/scan?fid=${userFid}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chargeCost })
@@ -204,7 +211,7 @@ export default function GridPage() {
     if (isLoadingScanResults) return;
     setIsLoadingScanResults(true);
     try {
-      const res = await fetch(`/api/grid/scan-results?fid=300187`, {
+      const res = await fetch(`/api/grid/scan-results?fid=${userFid}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ historyId: activeScan?.id })

@@ -85,9 +85,9 @@ export async function POST(request: NextRequest) {
       [xpGained, user.id]
     );
 
-    // Restore bandwidth
+    // Restore bandwidth (increment by 1, will be capped by validation elsewhere)
     await pool.execute(
-      'UPDATE user_stats SET current_bandwidth = LEAST(current_bandwidth + 1, max_bandwidth) WHERE user_id = ?',
+      'UPDATE user_stats SET current_bandwidth = current_bandwidth + 1 WHERE user_id = ?',
       [user.id]
     );
 
