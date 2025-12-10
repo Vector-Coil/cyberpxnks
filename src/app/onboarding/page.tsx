@@ -279,9 +279,9 @@ function SelectClassStep({ onSelect }: { onSelect: (classData: any) => void }) {
         {classes.map((cls) => (
           <CxCard key={cls.id}>
             <div className="flex gap-4">
-              <div className="w-20 h-20 bg-gray-700 rounded overflow-hidden flex-shrink-0">
+              <div className="w-30 h-30 bg-gray-700 rounded overflow-hidden flex-shrink-0">
                 {cls.image_url ? (
-                  <img src={cls.image_url} alt={cls.name} className="w-full h-full object-cover" />
+                  <img src={cls.image_url} alt={cls.name} className="w-full h-full object-contain" />
                 ) : (
                   <div className="w-full h-full bg-gray-600" />
                 )}

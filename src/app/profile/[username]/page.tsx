@@ -24,6 +24,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         u.cognition, u.insight, u.interface, u.power, u.resilience, u.agility,
         u.initialized_at, u.last_action_at, u.class_id, u.alignment_id, u.pfp_url,
         c.name as class_name,
+        c.image_url as class_image_url,
         a.name as alignment_name
       FROM users u
       LEFT JOIN classes c ON u.class_id = c.id
@@ -131,10 +132,15 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
 
           {/* Class and Vocation - Side by Side */}
           <div className="grid grid-cols-2 gap-4 mb-4">
-            <CxCard className="aspect-square flex items-center justify-center">
-              <div className="text-center">
-                <div className="font-bold uppercase mb-2" style={{ color: 'var(--fuschia)' }}>Class</div>
-                <div className="text-gray-300 uppercase">{user.class_name?.toUpperCase() || 'UNDEFINED'}</div>
+            <CxCard className="aspect-square flex flex-col items-center justify-center p-4">
+              <div className="text-center w-full">
+                <div className="font-bold uppercase mb-3" style={{ color: 'var(--fuschia)' }}>Class</div>
+                {user.class_image_url ? (
+                  <div className="w-16 h-16 mx-auto mb-2">
+                    <img src={user.class_image_url} alt={user.class_name} className="w-full h-full object-contain" />
+                  </div>
+                ) : null}
+                <div className="text-gray-300 uppercase text-sm">{user.class_name?.toUpperCase() || 'UNDEFINED'}</div>
               </div>
             </CxCard>
             <CxCard className="aspect-square flex items-center justify-center">

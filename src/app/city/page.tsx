@@ -207,7 +207,7 @@ export default function CityPage() {
     fetch('/api/city/all-history')
       .then(res => res.json())
       .then(data => {
-        setHistory(data.history || []);
+        setCityHistory(data.history || []);
       })
       .catch(err => console.error('Failed to reload history:', err));
   };

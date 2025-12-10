@@ -178,8 +178,19 @@ export default function GridPage() {
     !activeScan;
 
   const handleScanClick = () => {
+    console.log('Scan button clicked');
+    console.log('canScan:', canScan);
+    console.log('userStats:', userStats);
+    console.log('activeScan:', activeScan);
     if (canScan) {
       setShowScanModal(true);
+    } else {
+      console.log('Cannot scan - conditions not met:');
+      console.log('  - userStats exists:', !!userStats);
+      console.log('  - current_charge:', userStats?.current_charge);
+      console.log('  - chargeCost:', chargeCost);
+      console.log('  - current_bandwidth:', userStats?.current_bandwidth);
+      console.log('  - activeScan:', activeScan);
     }
   };
 
