@@ -25,7 +25,10 @@ export async function GET(request: NextRequest) {
 
     const userId = userRows[0].id;
 
-    // Check for active scan (only return if end_time is in the future)
+    // Check for active OR completed (but not dismissed) scan
+    // Active: end_time in future and no result_status
+    // Completed: has result_status = 'completed' (not yet dismissed)
+    // Exclude dismissed scans
     const [scanRows] = await dbPool.query<RowDataPacket[]>(
       `SELECT id, timestamp, end_time, result_status 
        FROM user_zone_history 
@@ -33,8 +36,11 @@ export async function GET(request: NextRequest) {
          AND zone_id IS NULL 
          AND action_type = 'OvernetScan'
          AND end_time IS NOT NULL 
-         AND end_time > UTC_TIMESTAMP()
-         AND (result_status IS NULL OR result_status = '')
+         AND result_status != 'dismissed'
+         AND (
+           (end_time > UTC_TIMESTAMP() AND (result_status IS NULL OR result_status = ''))
+           OR result_status = 'completed'
+         )
        ORDER BY timestamp DESC
        LIMIT 1`,
       [userId]

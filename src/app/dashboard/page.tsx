@@ -234,9 +234,10 @@ interface MeterGaugeProps {
     color: string;
     regenAmount?: number;
     timeToRegen?: string;
+    isLoadStat?: boolean; // For thermal/neural which decrease instead of increase
 }
 // const MeterGauge = ({ label, fillPercentage, color = 'bg-teal-500' }) => {
-const MeterGauge: React.FC<MeterGaugeProps> = ({ label, current, max, color, regenAmount, timeToRegen }) => {
+const MeterGauge: React.FC<MeterGaugeProps> = ({ label, current, max, color, regenAmount, timeToRegen, isLoadStat }) => {
     // Dynamically setting the width based on the fillPercentage prop
     const fillPercentage = max > 0 ? Math.min(100, (current / max) * 100) : 0;
     const fillStyle = { width: `${fillPercentage}%` };
@@ -248,6 +249,13 @@ const MeterGauge: React.FC<MeterGaugeProps> = ({ label, current, max, color, reg
         // Use soft-green/bright-green for low load (Thermal/Neural)
         else meterColor = 'bg-lime-400';
     }
+
+    // Determine if regen timer should be shown
+    const shouldShowRegen = regenAmount !== undefined && timeToRegen && (
+        isLoadStat 
+            ? current > 0 // Show for load stats (thermal/neural) when they're actively decreasing
+            : current < max // Show for regen stats when not at max
+    );
 
     return (
         // .meter-row
@@ -270,11 +278,11 @@ const MeterGauge: React.FC<MeterGaugeProps> = ({ label, current, max, color, reg
                 </div>
             </div>
             {/* Regen timer for regenerating stats */}
-            {regenAmount !== undefined && timeToRegen && (
+            {shouldShowRegen && (
                 <div className="flex items-center space-x-4 mt-1">
                     <div className="w-1/3"></div>
                     <div className="w-2/3 text-xs font-mono text-gray-400 pl-1">
-                        +{regenAmount} in {timeToRegen}
+                        {isLoadStat ? '-' : '+'}{regenAmount} in {timeToRegen}
                     </div>
                 </div>
             )}
@@ -371,6 +379,7 @@ export default function Dashboard() {
     const [activeJobs, setActiveJobs] = useState<any[]>([]);
     const [jobTimers, setJobTimers] = useState<Map<string, string>>(new Map());
     const [equippedSlimsoft, setEquippedSlimsoft] = useState<any[]>([]);
+    const [equippedCyberdeck, setEquippedCyberdeck] = useState<any>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isLoadingAuth, setIsLoadingAuth] = useState(true);
     const [isLoadingStats, setIsLoadingStats] = useState(true);
@@ -501,6 +510,11 @@ export default function Dashboard() {
             const equipped = hardwareData.slimsoft.filter((s: any) => s.is_equipped === 1);
             setEquippedSlimsoft(equipped);
           }
+          if (mounted && hardwareData.cyberdecks) {
+            const equippedDeck = hardwareData.cyberdecks.find((d: any) => d.is_equipped === 1);
+            setEquippedCyberdeck(equippedDeck || null);
+          }
+          }
         }
 
       } catch (err) {
@@ -600,9 +614,9 @@ export default function Dashboard() {
         { label: "CONSCIOUSNESS", current: data.current_consciousness || 0, max: data.max_consciousness || 0, color: 'bg-red-500', regenAmount: 5 },
         { label: "STAMINA", current: data.current_stamina || 0, max: data.max_stamina || 0, color: 'bg-red-500', regenAmount: 5 },
         { label: "CHARGE", current: data.current_charge || 0, max: data.max_charge || 0, color: 'bg-lime-400', regenAmount: 5 },
-        { label: "BANDWIDTH", current: data.current_bandwidth || 0, max: data.max_bandwidth || 0, color: 'bg-blue-500', regenAmount: 5 },
-        { label: "THERMAL LOAD", current: data.current_thermal || 0, max: data.max_thermal || 0, color: 'bg-lime-400' },
-        { label: "NEURAL LOAD", current: data.current_neural || 0, max: data.max_neural || 0, color: 'bg-red-500' },
+        { label: "BANDWIDTH", current: data.current_bandwidth || 0, max: data.max_bandwidth || 0, color: 'bg-blue-500' },
+        { label: "THERMAL LOAD", current: data.current_thermal || 0, max: data.max_thermal || 0, color: 'bg-lime-400', regenAmount: 5, isLoadStat: true },
+        { label: "NEURAL LOAD", current: data.current_neural || 0, max: data.max_neural || 0, color: 'bg-red-500', regenAmount: 5, isLoadStat: true },
     ];
 
     // Helper function to map dynamic stats to stat rows
@@ -635,7 +649,7 @@ export default function Dashboard() {
   */
   
   const techStackTabs = [
-    { href: "/hardware", label: "Hardware", iconSrc },
+    { href: "/hardware", label: "Hardware", iconSrc: equippedCyberdeck?.image_url || iconSrc },
     { href: "/hardware#slimsoft", label: "Slimsoft", iconSrc },
     { href: "/gear", label: "Gear", iconSrc },
   ];
@@ -769,6 +783,7 @@ export default function Dashboard() {
                         color={meter.color}
                         regenAmount={meter.regenAmount}
                         timeToRegen={meter.regenAmount ? timeToRegen : undefined}
+                        isLoadStat={meter.isLoadStat}
                     />
                     ))}
                 </div>

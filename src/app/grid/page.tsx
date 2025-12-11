@@ -231,7 +231,7 @@ export default function GridPage() {
       if (res.ok) {
         const data = await res.json();
         setScanResults(data);
-        setActiveScan(null);
+        // Don't clear activeScan here - keep it so dismiss knows which scan to mark as dismissed
         
         // Update user stats
         if (data.updatedStats) {
@@ -251,8 +251,21 @@ export default function GridPage() {
     }
   };
 
-  const handleBackFromScanResults = () => {
+  const handleBackFromScanResults = async () => {
+    // Mark scan as dismissed in database
+    if (scanResults && activeScan?.id) {
+      try {
+        await fetch(`/api/grid/dismiss-scan?fid=${userFid}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ historyId: activeScan.id })
+        });
+      } catch (err) {
+        console.error('Failed to dismiss scan:', err);
+      }
+    }
     setScanResults(null);
+    setActiveScan(null);
   };
 
   if (loading) {
