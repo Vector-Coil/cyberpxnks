@@ -7,6 +7,7 @@ import { useNeynarContext } from '@neynar/react';
 import { useDailyFarcasterSync } from '../../hooks/useDailyFarcasterSync';
 import NavDrawer from '../../components/NavDrawer';
 import { useNavData } from '../../hooks/useNavData';
+import { useRegenTimer } from '../../hooks/useRegenTimer';
 
 // 1. Define the Expected Data Structure from the Database Query
 interface UserStatsData {
@@ -231,9 +232,11 @@ interface MeterGaugeProps {
     current: number;
     max: number;
     color: string;
+    regenAmount?: number;
+    timeToRegen?: string;
 }
 // const MeterGauge = ({ label, fillPercentage, color = 'bg-teal-500' }) => {
-const MeterGauge: React.FC<MeterGaugeProps> = ({ label, current, max, color }) => {
+const MeterGauge: React.FC<MeterGaugeProps> = ({ label, current, max, color, regenAmount, timeToRegen }) => {
     // Dynamically setting the width based on the fillPercentage prop
     const fillPercentage = max > 0 ? Math.min(100, (current / max) * 100) : 0;
     const fillStyle = { width: `${fillPercentage}%` };
@@ -248,22 +251,33 @@ const MeterGauge: React.FC<MeterGaugeProps> = ({ label, current, max, color }) =
 
     return (
         // .meter-row
-        <div className="flex items-center space-x-4 mb-2">
-            <div className="w-1/3 text-sm font-mono font-light text-gray-300 uppercase">
-                <span className="font-semibold text-fuchsia-300">{label}</span>
-            </div>
-            
-            {/* .meter-gauge */}
-            <div className="w-2/3 relative">
-                <div className="h-4 bg-gray-500/25 rounded-xl overflow-hidden p-0.5">
-                    {/* .meter-gauge-fill */}
-                    <div className={`h-full ${meterColor} rounded-full transition-all duration-700`} style={fillStyle}></div>
+        <div className="mb-2">
+            <div className="flex items-center space-x-4">
+                <div className="w-1/3 text-sm font-mono font-light text-gray-300 uppercase">
+                    <span className="font-semibold text-fuchsia-300">{label}</span>
                 </div>
-                {/* Numeric display overlay */}
-                <div className="absolute inset-0 flex items-center justify-end pr-2 text-xs font-mono text-white/90 pointer-events-none">
-                    <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{current} / {max}</span>
+                
+                {/* .meter-gauge */}
+                <div className="w-2/3 relative">
+                    <div className="h-4 bg-gray-500/25 rounded-xl overflow-hidden p-0.5">
+                        {/* .meter-gauge-fill */}
+                        <div className={`h-full ${meterColor} rounded-full transition-all duration-700`} style={fillStyle}></div>
+                    </div>
+                    {/* Numeric display overlay */}
+                    <div className="absolute inset-0 flex items-center justify-end pr-2 text-xs font-mono text-white/90 pointer-events-none">
+                        <span className="drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{current} / {max}</span>
+                    </div>
                 </div>
             </div>
+            {/* Regen timer for regenerating stats */}
+            {regenAmount !== undefined && timeToRegen && (
+                <div className="flex items-center space-x-4 mt-1">
+                    <div className="w-1/3"></div>
+                    <div className="w-2/3 text-xs font-mono text-gray-400 pl-1">
+                        +{regenAmount} in {timeToRegen}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -361,6 +375,9 @@ export default function Dashboard() {
     const [isLoadingAuth, setIsLoadingAuth] = useState(true);
     const [isLoadingStats, setIsLoadingStats] = useState(true);
     const [statsError, setStatsError] = useState<string | null>(null);
+    
+    // Regen timer for displaying next regen interval
+    const { timeToRegen } = useRegenTimer();
 
   // Get authenticated user's FID from SDK or Neynar
   useEffect(() => {
@@ -580,10 +597,10 @@ export default function Dashboard() {
 
     // Helper function to map dynamic stats to meter component props
     const getMeterData = (data: UserStatsData) => [
-        { label: "CONSCIOUSNESS", current: data.current_consciousness || 0, max: data.max_consciousness || 0, color: 'bg-red-500' },
-        { label: "STAMINA", current: data.current_stamina || 0, max: data.max_stamina || 0, color: 'bg-red-500' },
-        { label: "CHARGE", current: data.current_charge || 0, max: data.max_charge || 0, color: 'bg-lime-400' },
-        { label: "BANDWIDTH", current: data.current_bandwidth || 0, max: data.max_bandwidth || 0, color: 'bg-blue-500' },
+        { label: "CONSCIOUSNESS", current: data.current_consciousness || 0, max: data.max_consciousness || 0, color: 'bg-red-500', regenAmount: 5 },
+        { label: "STAMINA", current: data.current_stamina || 0, max: data.max_stamina || 0, color: 'bg-red-500', regenAmount: 5 },
+        { label: "CHARGE", current: data.current_charge || 0, max: data.max_charge || 0, color: 'bg-lime-400', regenAmount: 5 },
+        { label: "BANDWIDTH", current: data.current_bandwidth || 0, max: data.max_bandwidth || 0, color: 'bg-blue-500', regenAmount: 5 },
         { label: "THERMAL LOAD", current: data.current_thermal || 0, max: data.max_thermal || 0, color: 'bg-lime-400' },
         { label: "NEURAL LOAD", current: data.current_neural || 0, max: data.max_neural || 0, color: 'bg-red-500' },
     ];
@@ -750,6 +767,8 @@ export default function Dashboard() {
                         current={meter.current}
                         max={meter.max}
                         color={meter.color}
+                        regenAmount={meter.regenAmount}
+                        timeToRegen={meter.regenAmount ? timeToRegen : undefined}
                     />
                     ))}
                 </div>
