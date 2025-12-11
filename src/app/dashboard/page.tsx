@@ -514,7 +514,6 @@ export default function Dashboard() {
             const equippedDeck = hardwareData.cyberdecks.find((d: any) => d.is_equipped === 1);
             setEquippedCyberdeck(equippedDeck || null);
           }
-          }
         }
 
       } catch (err) {
