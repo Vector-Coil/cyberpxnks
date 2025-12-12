@@ -95,20 +95,10 @@ export default function ShopCard({
     return true;
   };
 
-        {/* Expanded Inventory */}
-        {isExpanded && (
-          <div className="border-t border-gray-700 pt-3">
-            {error && (
-              <div className="mb-3 p-2 bg-red-900/30 border border-red-500 rounded text-red-400 text-xs">
-                {error}
-              </div>
-            )}
-            {success && (
-              <div className="mb-3 p-2 bg-green-900/30 border border-green-500 rounded text-green-400 text-xs">
-                {success}
-              </div>
-            )}
-            {loading ? (turn '💾';
+  const getShopTypeIcon = () => {
+    switch (shop.shop_type) {
+      case 'physical': return '🏪';
+      case 'virtual': return '💾';
       case 'protocol': return '🔗';
       default: return '🛒';
     }
@@ -151,6 +141,16 @@ export default function ShopCard({
         {/* Expanded Inventory */}
         {isExpanded && (
           <div className="border-t border-gray-700 pt-3">
+            {error && (
+              <div className="mb-3 p-2 bg-red-900/30 border border-red-500 rounded text-red-400 text-xs">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="mb-3 p-2 bg-green-900/30 border border-green-500 rounded text-green-400 text-xs">
+                {success}
+              </div>
+            )}
             {loading ? (
               <div className="text-center py-4">
                 <div className="animate-spin w-8 h-8 border-4 border-gray-600 border-t-fuschia rounded-full mx-auto"></div>
@@ -172,6 +172,16 @@ export default function ShopCard({
                         <span className="pill-cloud-gray text-xs">{item.item_type}</span>
                         {item.stock >= 0 && (
                           <span className="text-gray-500 text-xs">Stock: {item.stock}</span>
+                        )}
+                      </div>
+                      {(item.required_level || item.required_street_cred) && (
+                        <div className="text-yellow-500 text-xs mt-1">
+                          {item.required_level && `Lv ${item.required_level}+ `}
+                          {item.required_street_cred && `${item.required_street_cred} Street Cred`}
+                        </div>
+                      )}
+                    </div>
+                    
                     <div className="flex flex-col items-end gap-2">
                       <div className="text-white font-bold text-sm">
                         {item.price} {item.currency === 'credits' ? '¢' : 'SC'}
@@ -184,16 +194,6 @@ export default function ShopCard({
                         }`}
                       >
                         {purchasing === item.id ? 'BUYING...' : 'BUY'}
-                      </button>
-                    </div>v>
-                      <button
-                        onClick={() => onPurchase(shop.id, item.id)}
-                        disabled={!canPurchase(item)}
-                        className={`cx-btn-primary px-3 py-1 text-xs ${
-                          !canPurchase(item) ? 'opacity-50 cursor-not-allowed' : ''
-                        }`}
-                      >
-                        BUY
                       </button>
                     </div>
                   </div>
