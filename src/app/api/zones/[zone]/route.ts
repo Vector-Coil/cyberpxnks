@@ -35,6 +35,7 @@ export async function GET(
     }
 
     // Fetch zone details
+    console.log(`Looking up zone ID: ${zoneId} (type: ${typeof zoneId})`);
     const [zoneRows] = await pool.execute<any[]>(
       `SELECT z.id, z.name, z.zone_type, z.description, z.image_url, zt.name as zone_type_name, zd.name as district_name
        FROM zones z
@@ -43,9 +44,11 @@ export async function GET(
        WHERE z.id = ? LIMIT 1`,
       [zoneId]
     );
+    console.log(`Zone query returned ${zoneRows.length} rows:`, zoneRows);
     const zone = (zoneRows as any[])[0];
 
     if (!zone) {
+      console.error(`Zone ${zoneId} not found in database`);
       return NextResponse.json({ error: 'Zone not found' }, { status: 404 });
     }
 
@@ -59,14 +62,14 @@ export async function GET(
       [user.id, zoneId]
     );
 
-    // Fetch unlocked POI for this zone
+    // Fetch unlocked POI for this zone (via user_zone_history)
     const [poiRows] = await pool.execute<any[]>(
-      `SELECT poi.id, poi.zone_id, poi.name, poi.poi_type, poi.subnet_id, poi.description, 
-              poi.breach_difficulty, poi.image_url, uph.unlocked_at, uph.unlock_method
+      `SELECT DISTINCT poi.id, poi.zone_id, poi.name, poi.poi_type, poi.subnet_id, poi.description, 
+              poi.breach_difficulty, poi.image_url, uzh.timestamp as unlocked_at, 'scout' as unlock_method
        FROM points_of_interest poi
-       INNER JOIN user_poi_history uph ON poi.id = uph.poi_id
-       WHERE uph.user_id = ? AND poi.zone_id = ?
-       ORDER BY uph.unlocked_at DESC`,
+       INNER JOIN user_zone_history uzh ON poi.id = uzh.poi_id
+       WHERE uzh.user_id = ? AND poi.zone_id = ? AND uzh.action_type = 'UnlockedPOI'
+       ORDER BY uzh.timestamp DESC`,
       [user.id, zoneId]
     );
 

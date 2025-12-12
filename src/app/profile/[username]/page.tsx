@@ -85,7 +85,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
           <div className="flex flex-col items-center justify-center mb-6 gap-1">
               <div className="w-[100px] h-[100px] rounded-full overflow-hidden bg-gray-700 flex items-center justify-center">
                 {user.pfp_url ? (
-                  <img src={user.pfp_url} alt={user.username} className="w-full h-full object-cover" />
+                  <img src={`${user.pfp_url}?t=${Date.now()}`} alt={user.username} className="w-full h-full object-cover" />
                 ) : (
                   <div className="text-4xl font-bold text-gray-400">{user.username?.charAt(0).toUpperCase()}</div>
                 )}

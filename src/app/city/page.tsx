@@ -367,7 +367,14 @@ export default function CityPage() {
         ) : (
           <div className="space-y-3">
             {zones.map((zone) => (
-              <a key={zone.id} href={`/city/${zone.id}`} className="block">
+              <a 
+                key={zone.id} 
+                href={`/city/${zone.id}`} 
+                className="block"
+                onClick={(e) => {
+                  console.log('Navigating to zone:', { id: zone.id, name: zone.name, type: typeof zone.id });
+                }}
+              >
                 <div 
                   className="cx-banner"
                   style={zone.image_url ? { 

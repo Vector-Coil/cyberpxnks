@@ -60,8 +60,46 @@ export async function POST(request: NextRequest) {
     const rewardType = rollEncounterReward();
     
     let encounter = null;
+    let unlockedPOI = null;
 
-    if (rewardType === 'encounter') {
+    if (rewardType === 'discovery') {
+      // Try to unlock a POI in this zone
+      const [undiscoveredPOIRows] = await pool.execute<any[]>(
+        `SELECT poi.id, poi.name, poi.poi_type, poi.image_url
+         FROM points_of_interest poi
+         WHERE poi.zone_id = ?
+           AND poi.id NOT IN (
+             SELECT DISTINCT poi_id 
+             FROM user_zone_history 
+             WHERE user_id = ? AND poi_id IS NOT NULL AND action_type = 'UnlockedPOI'
+           )
+         ORDER BY RAND()
+         LIMIT 1`,
+        [zoneId, user.id]
+      );
+
+      if (undiscoveredPOIRows.length > 0) {
+        unlockedPOI = undiscoveredPOIRows[0];
+
+        // Create POI unlock entry in user_zone_history
+        await pool.execute(
+          `INSERT INTO user_zone_history 
+           (user_id, zone_id, poi_id, action_type, timestamp, result_status) 
+           VALUES (?, ?, ?, 'UnlockedPOI', UTC_TIMESTAMP(), 'completed')`,
+          [user.id, zoneId, unlockedPOI.id]
+        );
+
+        // Log POI unlock activity
+        await logActivity(
+          user.id,
+          'discovery',
+          'poi_unlocked',
+          null,
+          unlockedPOI.id,
+          `Unlocked ${unlockedPOI.name} in zone ${zoneId}`
+        );
+      }
+    } else if (rewardType === 'encounter') {
       // Get random encounter for city context with the specific zone
       encounter = await getRandomEncounter(pool, zoneId, 'city', userStreetCred);
       
@@ -80,7 +118,9 @@ export async function POST(request: NextRequest) {
 
     // Build gains text
     let gainsText = `+${xpGained} XP`;
-    if (encounter) {
+    if (unlockedPOI) {
+      gainsText += `, Unlocked ${unlockedPOI.name}`;
+    } else if (encounter) {
       gainsText += `, Encountered ${encounter.name}`;
     }
 
@@ -128,6 +168,12 @@ export async function POST(request: NextRequest) {
       rewardType,
       xpGained,
       gainsText,
+      unlockedPOI: unlockedPOI ? {
+        id: unlockedPOI.id,
+        name: unlockedPOI.name,
+        type: unlockedPOI.poi_type,
+        imageUrl: unlockedPOI.image_url
+      } : null,
       encounter: encounter ? {
         id: encounter.id,
         name: encounter.name,

@@ -37,9 +37,9 @@ export async function POST(request: NextRequest) {
     const chargeCost = isPhysicalBreach ? 15 : 10;
     const staminaCost = isPhysicalBreach ? 15 : 0;
 
-    // Verify user has unlocked this POI
+    // Verify user has unlocked this POI (via user_zone_history)
     const [poiAccessRows] = await pool.execute<any[]>(
-      'SELECT poi_id FROM user_poi_history WHERE user_id = ? AND poi_id = ? LIMIT 1',
+      'SELECT poi_id FROM user_zone_history WHERE user_id = ? AND poi_id = ? AND action_type = \'UnlockedPOI\' LIMIT 1',
       [user.id, poiId]
     );
 

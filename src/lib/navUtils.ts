@@ -28,7 +28,7 @@ export async function getNavStripData(fid: number = 300187): Promise<{
 
     return {
       username: user.username || 'user',
-      profileImage: user.pfp_url || undefined,
+      profileImage: user.pfp_url ? `${user.pfp_url}?t=${Date.now()}` : undefined,
       cxBalance: user.credits || 0
     };
   } catch (err) {

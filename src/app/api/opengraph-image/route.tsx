@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
       <div tw="flex h-full w-full flex-col justify-center items-center relative bg-primary">
         {user?.pfp_url && (
           <div tw="flex w-96 h-96 rounded-full overflow-hidden mb-8 border-8 border-white">
-            <img src={user.pfp_url} alt="Profile" tw="w-full h-full object-cover" />
+            <img src={`${user.pfp_url}?t=${Date.now()}`} alt="Profile" tw="w-full h-full object-cover" />
           </div>
         )}
         <h1 tw="text-8xl text-white">{user?.display_name ? `Hello from ${user.display_name ?? user.username}!` : 'Hello!'}</h1>
