@@ -35,7 +35,6 @@ export async function GET(
     }
 
     // Fetch zone details
-    console.log(`Looking up zone ID: ${zoneId} (type: ${typeof zoneId})`);
     const [zoneRows] = await pool.execute<any[]>(
       `SELECT z.id, z.name, z.zone_type, z.description, z.image_url, zt.name as zone_type_name, zd.name as district_name
        FROM zones z
@@ -44,11 +43,9 @@ export async function GET(
        WHERE z.id = ? LIMIT 1`,
       [zoneId]
     );
-    console.log(`Zone query returned ${zoneRows.length} rows:`, zoneRows);
     const zone = (zoneRows as any[])[0];
 
     if (!zone) {
-      console.error(`Zone ${zoneId} not found in database`);
       return NextResponse.json({ error: 'Zone not found' }, { status: 404 });
     }
 

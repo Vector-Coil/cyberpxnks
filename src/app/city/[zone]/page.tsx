@@ -6,11 +6,13 @@ import LevelUpModal from '../../../components/LevelUpModal';
 import ConfirmModal from '../../../components/ConfirmModal';
 import NavDrawer from '../../../components/NavDrawer';
 import PoiCard from '../../../components/PoiCard';
+import ShopCard from '../../../components/ShopCard';
 import CompactMeterStrip from '../../../components/CompactMeterStrip';
 import { useNavData } from '../../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../../hooks/useAuthenticatedUser';
 import { useCountdownTimer } from '../../../hooks/useCountdownTimer';
 import { getMeterData } from '../../../lib/meterUtils';
+import type { Shop } from '../../../types/shop';
 
 interface Zone {
   id: number;
@@ -645,26 +647,63 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
         {/* Points of Interest */}
         {poi.length > 0 && (
           <div className="mb-6">
-            <h2 className="text-white font-bold uppercase text-lg mb-3">POINTS OF INTEREST</h2>
-            <div className="space-y-4">
+            {/* Terminals Section */}
+            {poi.filter(p => p.poi_type !== 'shop').length > 0 && (
+              <div className="mb-6">
+                <h2 className="text-white font-bold uppercase text-lg mb-3">TERMINALS</h2>
+                <div className="space-y-4">
+                  {poi.filter(p => p.poi_type !== 'shop').map((poiItem) => (
+                    <PoiCard
+                      key={poiItem.id}
+                      poiItem={poiItem}
+                      isAtLocation={isAtLocation}
+                      userStats={userStats}
+                      activeBreach={activeBreaches.get(poiItem.id)}
+                      timeLeft={breachTimeRemaining.get(poiItem.id) || ''}
+                      breachResults={breachResults}
+                      selectedPoi={selectedPoi}
+                      onBreachClick={handleBreachClick}
+                      onViewBreachResults={handleViewBreachResults}
+                      onBackFromBreachResults={handleBackFromBreachResults}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
 
-              {poi.map((poiItem) => (
-                <PoiCard
-                  key={poiItem.id}
-                  poiItem={poiItem}
-                  isAtLocation={isAtLocation}
-                  userStats={userStats}
-                  activeBreach={activeBreaches.get(poiItem.id)}
-                  timeLeft={breachTimeRemaining.get(poiItem.id) || ''}
-                  breachResults={breachResults}
-                  selectedPoi={selectedPoi}
-                  onBreachClick={handleBreachClick}
-                  onViewBreachResults={handleViewBreachResults}
-                  onBackFromBreachResults={handleBackFromBreachResults}
-                />
-              ))}
+            {/* Shops Section */}
+            {poi.filter(p => p.poi_type === 'shop').length > 0 && (
+              <div className="mb-6">
+                <h2 className="text-white font-bold uppercase text-lg mb-3">SHOPS</h2>
+                <div className="space-y-4">
+                  {poi.filter(p => p.poi_type === 'shop').map((poiItem) => {
+                    const shop: Shop = {
+                      id: poiItem.id,
+                      zone_id: poiItem.zone_id,
+                      name: poiItem.name,
+                      shop_type: 'physical',
+                      poi_type: poiItem.poi_type,
+                      description: poiItem.description || 'A shop in the zone',
+                      image_url: poiItem.image_url,
+                      unlocked_at: poiItem.unlocked_at,
+                      unlock_method: poiItem.unlock_method
+                    };
 
-            </div>
+                    return (
+                      <ShopCard
+                        key={poiItem.id}
+                        shop={shop}
+                        userCredits={navData?.credits || 0}
+                        userStreetCred={0} // TODO: Add street_cred to navData
+                        userLevel={navData?.level || 1}
+                        userFid={userFid || 0}
+                        onPurchaseComplete={fetchZoneData}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

@@ -371,9 +371,6 @@ export default function CityPage() {
                 key={zone.id} 
                 href={`/city/${zone.id}`} 
                 className="block"
-                onClick={(e) => {
-                  console.log('Navigating to zone:', { id: zone.id, name: zone.name, type: typeof zone.id });
-                }}
               >
                 <div 
                   className="cx-banner"

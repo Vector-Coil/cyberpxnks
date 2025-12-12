@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     let unlockedPOI = null;
 
     if (rewardType === 'discovery') {
-      // Try to unlock a POI in this zone
+      // Try to unlock a POI (terminal or shop) in this zone
       const [undiscoveredPOIRows] = await pool.execute<any[]>(
         `SELECT poi.id, poi.name, poi.poi_type, poi.image_url
          FROM points_of_interest poi
@@ -89,6 +89,9 @@ export async function POST(request: NextRequest) {
           [user.id, zoneId, unlockedPOI.id]
         );
 
+        // Determine POI type for logging
+        const poiTypeLabel = unlockedPOI.poi_type === 'shop' ? 'shop' : 'terminal';
+        
         // Log POI unlock activity
         await logActivity(
           user.id,
@@ -96,7 +99,7 @@ export async function POST(request: NextRequest) {
           'poi_unlocked',
           null,
           unlockedPOI.id,
-          `Unlocked ${unlockedPOI.name} in zone ${zoneId}`
+          `Unlocked ${unlockedPOI.name} (${poiTypeLabel}) in zone ${zoneId}`
         );
       }
     } else if (rewardType === 'encounter') {

@@ -36,8 +36,6 @@ export async function GET(request: NextRequest) {
       [user.id]
     );
 
-    console.log(`Zones API: Found ${zoneRows.length} zones for user ${user.id}`);
-    console.log('Zone IDs and names:', zoneRows.map((z: any) => ({ id: z.id, name: z.name })));
     return NextResponse.json(zoneRows);
   } catch (err: any) {
     console.error('Zones API error:', err);
