@@ -76,13 +76,7 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
   const [history, setHistory] = useState<ZoneHistory[]>([]);
   const [poi, setPoi] = useState<POI[]>([]);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
-
-  // Debug POI types
-  useEffect(() => {
-    if (poi.length > 0) {
-      console.log('POI types in zone:', poi.map(p => ({ id: p.id, name: p.name, poi_type: p.poi_type })));
-    }
-  }, [poi]);
+  const [userLevel, setUserLevel] = useState<number>(1);
   const [loading, setLoading] = useState(true);
   const [showScoutModal, setShowScoutModal] = useState(false);
   const [showResults, setShowResults] = useState(false);
@@ -135,6 +129,10 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
         if (statsRes.ok) {
           const stats = await statsRes.json();
           setUserStats(stats);
+          // Extract level if it exists in stats response
+          if (stats.level) {
+            setUserLevel(stats.level);
+          }
         }
 
         // Process hardware data to get equipped slimsoft item IDs
@@ -700,9 +698,9 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
                       <ShopCard
                         key={poiItem.id}
                         shop={shop}
-                        userCredits={navData?.credits || 0}
-                        userStreetCred={0} // TODO: Add street_cred to navData
-                        userLevel={navData?.level || 1}
+                        userCredits={navData?.cxBalance || 0}
+                        userStreetCred={0}
+                        userLevel={userLevel}
                         userFid={userFid || 0}
                         onPurchaseComplete={fetchZoneData}
                       />
