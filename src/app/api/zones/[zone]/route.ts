@@ -70,7 +70,7 @@ export async function GET(
       [user.id, zoneId]
     );
 
-    console.log('POI data from DB:', poiRows.map((p: any) => ({ id: p.id, name: p.name, image_url: p.image_url })));
+    console.log('POI data from DB:', poiRows.map((p: any) => ({ id: p.id, name: p.name, poi_type: p.poi_type, image_url: p.image_url })));
 
     return NextResponse.json({
       zone,

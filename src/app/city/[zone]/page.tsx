@@ -76,6 +76,13 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
   const [history, setHistory] = useState<ZoneHistory[]>([]);
   const [poi, setPoi] = useState<POI[]>([]);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
+
+  // Debug POI types
+  useEffect(() => {
+    if (poi.length > 0) {
+      console.log('POI types in zone:', poi.map(p => ({ id: p.id, name: p.name, poi_type: p.poi_type })));
+    }
+  }, [poi]);
   const [loading, setLoading] = useState(true);
   const [showScoutModal, setShowScoutModal] = useState(false);
   const [showResults, setShowResults] = useState(false);
