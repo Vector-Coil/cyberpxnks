@@ -165,7 +165,12 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
         cxBalance={navData.cxBalance}
         onMenuClick={() => setIsDrawerOpen(true)}
       />
-      <NavDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
+      <NavDrawer 
+        isOpen={isDrawerOpen} 
+        onClose={() => setIsDrawerOpen(false)}
+        username={navData.username}
+        cxBalance={navData.cxBalance}
+      />
 
       <div className="container mx-auto px-4 py-6 max-w-4xl">
         {/* Back Button */}
