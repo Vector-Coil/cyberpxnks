@@ -702,7 +702,6 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
                         userStreetCred={0}
                         userLevel={userLevel}
                         userFid={userFid || 0}
-                        onPurchaseComplete={fetchZoneData}
                       />
                     );
                   })}
