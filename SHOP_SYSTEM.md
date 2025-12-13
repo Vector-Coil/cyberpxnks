@@ -40,10 +40,46 @@ Generic inventory for consumables and gear:
 1. User scouts a zone
 2. On reward roll = 'discovery', system queries `points_of_interest` where `poi_type = 'shop'`
 3. Shop unlocked via `user_zone_history` with `action_type = 'UnlockedPOI'`
-4. Shop appears in zone's POI list
+4. Shop appears in zone's POI list as a clickable card
+5. User clicks shop card to navigate to `/shops/{shopId}`
 
 ### Virtual Shops (Scanning)
 - Same mechanism but for subnet-based shops (future implementation)
+
+## User Interface
+
+### Zone View
+- Shops appear in a dedicated "SHOPS" section
+- Displayed as clickable banner cards with:
+  * Shop icon (🏪 physical, 💾 virtual, 🔗 protocol)
+  * Shop name
+  * Description
+  * Shop type pill
+  * Background image (if available)
+- Clicking navigates to dedicated shop page
+
+### Shop Detail Page (`/shops/[shopId]`)
+Full-page experience similar to contacts/encounters:
+- **Header Section**:
+  * Shopkeeper image (large, 128x128)
+  * Shop name with icon
+  * Shopkeeper name
+  * Shop type and location pills
+  * Shopkeeper quote (italic, with border)
+  * Shop description
+- **Inventory Grid**:
+  * 2-column responsive grid (1 column on mobile)
+  * Each item card shows:
+    - Item image
+    - Name and description
+    - Type and stock
+    - Requirements (level, street cred)
+    - Price and currency
+    - BUY button
+- **Purchase Flow**:
+  * Click BUY → API call → Success/error message
+  * Inventory auto-refreshes after purchase
+  * Button shows "BUYING..." during transaction
 
 ## Purchase Flow
 
@@ -80,21 +116,21 @@ Generic inventory for consumables and gear:
 
 ### Components
 
-#### ShopCard
-Props:
-- `shop`: Shop data from POI
-- `userCredits`: Current credits
-- `userStreetCred`: Current street cred
-- `userLevel`: User level
-- `userFid`: For API calls
-- `onPurchaseComplete`: Callback to refresh parent data
+#### Shop Banner Card (Zone Page)
+Clickable card in zone's shops section:
+- Shop name and icon
+- Description
+- Shop type pill
+- Background image
+- Navigates to `/shops/{shopId}` on click
 
-Features:
-- Expandable inventory view
+#### Shop Detail Page
+Full-page component at `/shops/[shopId]/page.tsx`:
+- Header with shopkeeper portrait
+- Shop metadata (name, type, location, quote)
+- Item grid with purchase buttons
 - Real-time purchase validation
-- Loading states
-- Error/success feedback
-- Stock tracking
+- Success/error messaging
 
 ## Future Enhancements
 
@@ -154,8 +190,17 @@ Features:
 
 ```sql
 -- Create a shop in zone 1
-INSERT INTO points_of_interest (zone_id, name, poi_type, description, breach_difficulty, image_url)
-VALUES (1, 'Chrome & Code', 'shop', 'Underground tech shop specializing in cyberware', 0, '/imgs/shops/chrome-code.png');
+INSERT INTO points_of_interest (zone_id, name, poi_type, description, breach_difficulty, image_url, shopkeeper_name, shopkeeper_quote)
+VALUES (
+  1, 
+  'Chrome & Code', 
+  'shop', 
+  'Underground tech shop specializing in cutting-edge cyberware and neural enhancements',
+  0, 
+  '/imgs/shops/chrome-code.png',
+  'Ratchet',
+  'Got the chrome you need to stay ahead of corpo scum. No questions asked.'
+);
 
 -- Add inventory (assuming shop_id = 1)
 INSERT INTO shop_inventory (shop_id, name, description, item_type, item_id, price, currency, stock) VALUES
@@ -165,6 +210,11 @@ INSERT INTO shop_inventory (shop_id, name, description, item_type, item_id, pric
 ```
 
 ## API Endpoints
+
+### GET `/api/shops/[shopId]/details?fid={fid}`
+Returns shop details including shopkeeper info
+- Validates user has unlocked shop
+- Returns shop metadata, location, shopkeeper name/quote
 
 ### GET `/api/shops/[shopId]/inventory`
 Returns all available items in a shop

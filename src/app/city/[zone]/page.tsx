@@ -6,13 +6,11 @@ import LevelUpModal from '../../../components/LevelUpModal';
 import ConfirmModal from '../../../components/ConfirmModal';
 import NavDrawer from '../../../components/NavDrawer';
 import PoiCard from '../../../components/PoiCard';
-import ShopCard from '../../../components/ShopCard';
 import CompactMeterStrip from '../../../components/CompactMeterStrip';
 import { useNavData } from '../../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../../hooks/useAuthenticatedUser';
 import { useCountdownTimer } from '../../../hooks/useCountdownTimer';
 import { getMeterData } from '../../../lib/meterUtils';
-import type { Shop } from '../../../types/shop';
 
 interface Zone {
   id: number;
@@ -680,31 +678,37 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
             {poi.filter(p => p.poi_type === 'shop').length > 0 && (
               <div className="mb-6">
                 <h2 className="text-white font-bold uppercase text-lg mb-3">SHOPS</h2>
-                <div className="space-y-4">
-                  {poi.filter(p => p.poi_type === 'shop').map((poiItem) => {
-                    const shop: Shop = {
-                      id: poiItem.id,
-                      zone_id: poiItem.zone_id,
-                      name: poiItem.name,
-                      shop_type: 'physical',
-                      poi_type: poiItem.poi_type,
-                      description: poiItem.description || 'A shop in the zone',
-                      image_url: poiItem.image_url,
-                      unlocked_at: poiItem.unlocked_at,
-                      unlock_method: poiItem.unlock_method
-                    };
-
-                    return (
-                      <ShopCard
-                        key={poiItem.id}
-                        shop={shop}
-                        userCredits={navData?.cxBalance || 0}
-                        userStreetCred={0}
-                        userLevel={userLevel}
-                        userFid={userFid || 0}
-                      />
-                    );
-                  })}
+                <div className="space-y-3">
+                  {poi.filter(p => p.poi_type === 'shop').map((shop) => (
+                    <a 
+                      key={shop.id} 
+                      href={`/shops/${shop.id}`}
+                      className="block"
+                    >
+                      <div className="cx-banner cursor-pointer hover:border-fuschia transition-colors">
+                        <div className="banner-left">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xl">🏪</span>
+                            <div className="banner-heading-2">{shop.name}</div>
+                          </div>
+                          <p className="text-gray-400 text-xs mb-2">{shop.description}</p>
+                          <span className="pill-cloud-gray uppercase text-xs">
+                            {shop.zone_id ? 'physical' : shop.subnet_id ? 'virtual' : 'protocol'} shop
+                          </span>
+                        </div>
+                        {shop.image_url && (
+                          <div 
+                            className="banner-right"
+                            style={{
+                              backgroundImage: `url(${shop.image_url})`,
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center'
+                            }}
+                          />
+                        )}
+                      </div>
+                    </a>
+                  ))}
                 </div>
               </div>
             )}

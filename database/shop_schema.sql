@@ -1,6 +1,11 @@
 -- Shop Implementation SQL Schema
 -- Run this to add shop support to your database
 
+-- Add shopkeeper fields to points_of_interest table
+ALTER TABLE points_of_interest 
+  ADD COLUMN IF NOT EXISTS shopkeeper_name VARCHAR(255) NULL,
+  ADD COLUMN IF NOT EXISTS shopkeeper_quote TEXT NULL;
+
 -- Add shop inventory table
 CREATE TABLE IF NOT EXISTS shop_inventory (
   id INT AUTO_INCREMENT PRIMARY KEY,
