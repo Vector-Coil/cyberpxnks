@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     // Get current stats using StatsService
     const statsService = new StatsService(pool, user.id);
-    const completeStats = await statsService.getCompleteStats();
+    const completeStats = await statsService.getStats();
 
     // Validate resource requirements
     validateResources(

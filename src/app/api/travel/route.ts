@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     logger.info('User traveled', { userId, zoneId, zoneName });
 
     // Get updated stats using StatsService
-    const updatedStats = await statsService.getCompleteStats();
+    const updatedStats = await statsService.getStats();
 
     return NextResponse.json({
       success: true,
