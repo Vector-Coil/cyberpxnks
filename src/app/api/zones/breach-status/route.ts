@@ -18,13 +18,13 @@ export async function GET(request: NextRequest) {
     // Check for active breach (optionally filtered by POI)
     // Return if:
     // 1. In progress or ready for results: result_status is NULL/empty (regardless of end_time)
-    // 2. Results viewed: result_status = 'completed' (should still show until dismissed)
+    // 2. NOT if already viewed (result_status = 'completed') - those should be dismissed first
     let query = `SELECT id, zone_id, action_type, timestamp, end_time, result_status, poi_id
                  FROM user_zone_history
                  WHERE user_id = ? 
                  AND action_type = 'Breached' 
                  AND result_status != 'dismissed'
-                 AND (result_status IS NULL OR result_status = '' OR result_status = 'completed')`;
+                 AND (result_status IS NULL OR result_status = '')`;
     const params: any[] = [userId];
 
     if (poiId) {

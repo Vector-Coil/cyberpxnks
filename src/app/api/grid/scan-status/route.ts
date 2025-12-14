@@ -14,10 +14,10 @@ export async function GET(request: NextRequest) {
     const dbPool = await getDbPool();
     const userId = await getUserIdByFid(dbPool, fid);
 
-    // Check for active OR completed (but not dismissed) scan
+    // Check for active OR ready (but not already completed) scan
     // Return if:
     // 1. In progress or ready for results: result_status is NULL/empty (regardless of end_time)
-    // 2. Results viewed: result_status = 'completed' (should still show until dismissed)
+    // 2. NOT if already viewed (result_status = 'completed') - those should be dismissed first
     const [scanRows] = await dbPool.query<RowDataPacket[]>(
       `SELECT id, timestamp, end_time, result_status 
        FROM user_zone_history 
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
          AND action_type = 'OvernetScan'
          AND end_time IS NOT NULL 
          AND result_status != 'dismissed'
-         AND (result_status IS NULL OR result_status = '' OR result_status = 'completed')
+         AND (result_status IS NULL OR result_status = '')
        ORDER BY timestamp DESC
        LIMIT 1`,
       [userId]

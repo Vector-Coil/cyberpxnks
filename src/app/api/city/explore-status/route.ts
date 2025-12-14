@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     // Return if:
     // 1. In progress: end_time > now AND result_status is NULL/empty
     // 2. Ready for results: end_time <= now AND result_status is NULL/empty (TIME EXPIRED, NOT YET VIEWED)
-    // 3. Results viewed: result_status = 'completed' (should still show until dismissed)
+    // 3. NOT if already viewed (result_status = 'completed') - those should be dismissed first
     const [historyRows] = await dbPool.query<RowDataPacket[]>(
       `SELECT id, timestamp, end_time, result_status 
        FROM user_zone_history 
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
          AND action_type = 'Exploring'
          AND end_time IS NOT NULL
          AND result_status != 'dismissed'
-         AND (result_status IS NULL OR result_status = '' OR result_status = 'completed')
+         AND (result_status IS NULL OR result_status = '')
        ORDER BY timestamp DESC 
        LIMIT 1`,
       [userId]

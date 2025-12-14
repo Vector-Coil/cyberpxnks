@@ -101,13 +101,9 @@ export async function POST(request: NextRequest) {
       `Completed Overnet Scan, gained ${xpGained} XP`
     );
 
-    // Get updated stats
-    const [updatedStatsRows] = await dbPool.query<RowDataPacket[]>(
-      `SELECT current_charge, current_bandwidth, current_neural, current_thermal
-       FROM user_stats 
-       WHERE user_id = ?`,
-      [userId]
-    );
+    // Get updated stats using StatsService to get both current and max values
+    const updatedStatsService = new StatsService(dbPool, userId);
+    const updatedStats = await updatedStatsService.getStats();
 
     // Check for level up
     let levelUpData = null;
@@ -135,7 +131,16 @@ export async function POST(request: NextRequest) {
         sentiment: encounter.default_sentiment,
         imageUrl: encounter.image_url
       } : null,
-      updatedStats: updatedStatsRows[0],
+      updatedStats: {
+        current_charge: updatedStats.current.charge,
+        current_bandwidth: updatedStats.current.bandwidth,
+        current_neural: updatedStats.current.neural,
+        current_thermal: updatedStats.current.thermal,
+        max_charge: updatedStats.max.charge,
+        max_bandwidth: updatedStats.max.bandwidth,
+        max_neural: updatedStats.max.neural,
+        max_thermal: updatedStats.max.thermal
+      },
       levelUp: levelUpData?.leveledUp ? levelUpData : null
     });
   } catch (error: any) {

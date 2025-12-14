@@ -24,17 +24,17 @@ export async function POST(request: NextRequest) {
 
     // Get current stats using StatsService
     const statsService = new StatsService(pool, user.id);
-    const completeStats = await statsService.getStats();
+    const stats = await statsService.getStats();
 
     // Validate resource requirements
     validateResources(
-      completeStats.current,
+      stats.current,
       {
         stamina: staminaCost,
         bandwidth: 1,
         minConsciousnessPercent: 0.5
       },
-      completeStats.max
+      stats.max
     );
 
     // Count currently active jobs
