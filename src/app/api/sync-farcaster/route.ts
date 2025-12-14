@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     // Fetch latest data from Farcaster via Neynar
     const neynar = new NeynarAPIClient({ apiKey });
     const { users } = await neynar.fetchBulkUsers({
-      fids: [parseInt(fid)],
+      fids: [fid],
     });
 
     if (!users || users.length === 0) {

@@ -18,8 +18,7 @@ export async function GET(
     }
 
     const searchParams = request.nextUrl.searchParams;
-    const fid = searchParams.get('fid');
-    validateFid(fid);
+    const fid = validateFid(searchParams.get('fid'));
 
     const pool = await getDbPool();
 

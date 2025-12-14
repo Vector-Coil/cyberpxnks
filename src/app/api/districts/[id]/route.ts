@@ -9,8 +9,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const fid = req.nextUrl.searchParams.get('fid');
-    validateFid(fid);
+    const fid = validateFid(req.nextUrl.searchParams.get('fid'));
 
     const { id } = await params;
     const districtId = parseInt(id, 10);
@@ -21,7 +20,7 @@ export async function GET(
     const pool = await getDbPool();
     logger.debug('Fetching district detail', { districtId, fid });
 
-    const userId = await getUserIdByFid(pool, parseInt(fid!, 10));
+    const userId = await getUserIdByFid(pool, fid);
 
     // Fetch district info
     const [districtRows]: any = await pool.execute(

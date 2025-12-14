@@ -7,8 +7,7 @@ import { logger } from '../../../../lib/logger';
 
 export async function POST(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const fid = searchParams.get('fid');
-  validateFid(fid);
+  const fid = validateFid(searchParams.get('fid'));
 
   try {
     const dbPool = await getDbPool();
@@ -17,7 +16,7 @@ export async function POST(request: NextRequest) {
     requireParams(body, ['historyId']);
     const { historyId } = body;
 
-    const userId = await getUserIdByFid(dbPool, parseInt(fid!, 10));
+    const userId = await getUserIdByFid(dbPool, fid);
 
     // Mark scan as dismissed
     await dbPool.query(
