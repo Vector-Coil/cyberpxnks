@@ -1,28 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../lib/db';
+import { validateFid } from '~/lib/api/errors';
+import { getUserIdByFid } from '~/lib/api/userUtils';
+import { logger } from '~/lib/logger';
+import { handleApiError } from '~/lib/api/errors';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const fidParam = searchParams.get('fid');
-    const fid = fidParam ? parseInt(fidParam, 10) : 300187;
-
-    if (Number.isNaN(fid)) {
-      return NextResponse.json({ error: 'Invalid fid parameter' }, { status: 400 });
-    }
-
+    const fid = validateFid(searchParams.get('fid') || '300187');
     const pool = await getDbPool();
-
-    // Get user ID
-    const [userRows] = await pool.execute<any[]>(
-      'SELECT id FROM users WHERE fid = ? LIMIT 1',
-      [fid]
-    );
-    const user = (userRows as any[])[0];
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const userId = await getUserIdByFid(pool, fid);
 
     // Fetch all active jobs (in progress or ready to complete)
     const [jobRows] = await pool.execute<any[]>(
@@ -47,17 +35,14 @@ export async function GET(request: NextRequest) {
       AND uzh.action_type IN ('Breached', 'Scouted', 'Exploring', 'OvernetScan', 'RemoteBreach')
       AND (uzh.result_status IS NULL OR uzh.result_status = '')
       ORDER BY uzh.end_time ASC`,
-      [user.id]
+      [userId]
     );
 
+    logger.info('Retrieved active jobs', { fid, jobCount: jobRows.length });
     return NextResponse.json({ 
       jobs: jobRows 
     });
   } catch (err: any) {
-    console.error('Active jobs API error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Failed to fetch active jobs' },
-      { status: 500 }
-    );
+    return handleApiError(err, '/api/active-jobs');
   }
 }

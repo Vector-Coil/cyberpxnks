@@ -2,30 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool, logActivity } from '../../../lib/db';
 import { StatsService } from '../../../lib/statsService';
 import { RowDataPacket } from 'mysql2/promise';
+import { validateFid } from '~/lib/api/errors';
+import { getUserByFid } from '~/lib/api/userUtils';
+import { logger } from '~/lib/logger';
+import { handleApiError } from '~/lib/api/errors';
 
 export async function POST(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const fid = searchParams.get('fid');
-
-  if (!fid) {
-    return NextResponse.json({ error: 'FID is required' }, { status: 400 });
-  }
+  const fid = validateFid(searchParams.get('fid'));
 
   try {
     const dbPool = await getDbPool();
     const POINTS_PER_LEVEL = 2; // Award 2 stat points per level
 
     // Get user's current level and XP
-    const [userRows] = await dbPool.query<RowDataPacket[]>(
-      'SELECT id, level, xp FROM users WHERE fid = ?',
-      [fid]
-    );
-
-    if (userRows.length === 0) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const user = userRows[0];
+    const user = await getUserByFid(dbPool, fid);
     const currentLevel = user.level || 1;
     const currentXp = user.xp || 0;
 
@@ -112,6 +103,7 @@ export async function POST(request: NextRequest) {
 
       const totalPointsAwarded = levelsGained * POINTS_PER_LEVEL;
       
+      logger.info('Level up completed', { fid, oldLevel: currentLevel, newLevel: finalLevel, levelsGained, totalPointsAwarded });
       return NextResponse.json({
         leveledUp: true,
         oldLevel: currentLevel,
@@ -130,11 +122,6 @@ export async function POST(request: NextRequest) {
       xpToNextLevel: xpRequired - currentXp
     });
   } catch (error) {
-    console.error('Error checking level up:', error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ 
-      error: 'Failed to check level up', 
-      details: errorMessage 
-    }, { status: 500 });
+    return handleApiError(error, '/api/check-level-up');
   }
 }

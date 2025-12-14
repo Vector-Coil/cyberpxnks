@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '~/lib/db';
-
-let connectionParams = {
-host: 'localhost',
-//port: 3306,
-user: 'nickpasq_nick',
-password: 'Retrowave.123',
-database: 'nickpasq_cx'
-}
+import { handleApiError } from '~/lib/api/errors';
+import { logger } from '~/lib/logger';
 
 export async function GET(req: NextRequest) {
   try {
@@ -16,16 +10,14 @@ export async function GET(req: NextRequest) {
     const pool = await getDbPool();
     const [users] = await pool.query<any[]>(sql, ['active']);
 
+    logger.debug('Test DB query executed', { count: Array.isArray(users) ? users.length : 0 });
+
     return NextResponse.json({
       success: true,
       users: users,
       count: Array.isArray(users) ? users.length : 0,
     });
   } catch (error) {
-    console.error('Database error:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch users' },
-      { status: 500 }
-    );
+    return handleApiError(error, 'Failed to fetch users');
   }
 }

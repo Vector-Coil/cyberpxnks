@@ -1,32 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../lib/db';
 import { StatsService } from '../../../lib/statsService';
+import { validateFid } from '~/lib/api/errors';
+import { getUserIdByFid } from '~/lib/api/userUtils';
+import { logger } from '~/lib/logger';
+import { handleApiError } from '~/lib/api/errors';
 
 export async function POST(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const fidParam = searchParams.get('fid');
-    const fid = fidParam ? parseInt(fidParam, 10) : 300187;
-
-    if (Number.isNaN(fid)) {
-      return NextResponse.json({ error: 'Invalid fid parameter' }, { status: 400 });
-    }
-
+    const fid = validateFid(searchParams.get('fid') || '300187');
     const pool = await getDbPool();
-
-    // Get user ID from FID
-    const [userRows] = await pool.execute<any[]>(
-      'SELECT id FROM users WHERE fid = ? LIMIT 1',
-      [fid]
-    );
-    const user = (userRows as any[])[0];
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const userId = await getUserIdByFid(pool, fid);
 
     // Initialize StatsService
-    const statsService = new StatsService(pool, user.id);
+    const statsService = new StatsService(pool, userId);
 
     // Check for active breaches (count them for thermal/neural calculation)
     const [activeBreachRows] = await pool.execute<any[]>(
@@ -34,7 +22,7 @@ export async function POST(request: NextRequest) {
        WHERE user_id = ? AND action_type = 'Breached' 
        AND (result_status IS NULL OR result_status = '') 
        AND end_time > UTC_TIMESTAMP()`,
-      [user.id]
+      [userId]
     );
     const activeBreachCount = activeBreachRows.length;
 
@@ -42,7 +30,7 @@ export async function POST(request: NextRequest) {
     // Also get current UTC time from database to ensure consistency
     const [statsRows] = await pool.execute<any[]>(
       'SELECT *, last_regeneration, UTC_TIMESTAMP() as db_now FROM user_stats WHERE user_id = ? LIMIT 1',
-      [user.id]
+      [userId]
     );
     const stats = (statsRows as any[])[0];
 
@@ -52,10 +40,10 @@ export async function POST(request: NextRequest) {
 
     // If last_regeneration is NULL, initialize it to now
     if (!stats.last_regeneration) {
-      console.log('Initializing last_regeneration to current UTC time');
+      logger.debug('Initializing last_regeneration to current UTC time', { fid });
       await pool.execute(
         'UPDATE user_stats SET last_regeneration = UTC_TIMESTAMP() WHERE user_id = ?',
-        [user.id]
+        [userId]
       );
       return NextResponse.json({ success: true, stats, intervalsElapsed: 0 });
     }
@@ -66,7 +54,8 @@ export async function POST(request: NextRequest) {
     const msElapsed = dbNow.getTime() - lastRegen.getTime();
     const intervalsElapsed = Math.floor(msElapsed / (15 * 60 * 1000)); // 15 minutes in ms
 
-    console.log('Regeneration debug:', {
+    logger.debug('Regeneration calculation', {
+      fid,
       dbNow: dbNow.toISOString(),
       lastRegen: lastRegen.toISOString(),
       msElapsed,
@@ -84,10 +73,10 @@ export async function POST(request: NextRequest) {
 
     // If last_regeneration is in the future (clock skew), reset it to now
     if (intervalsElapsed < 0) {
-      console.log('WARNING: last_regeneration is in the future, resetting to now');
+      logger.warn('last_regeneration is in the future, resetting to now', { fid });
       await pool.execute(
         'UPDATE user_stats SET last_regeneration = UTC_TIMESTAMP() WHERE user_id = ?',
-        [user.id]
+        [userId]
       );
       return NextResponse.json({ success: true, stats, intervalsElapsed: 0 });
     }
@@ -123,7 +112,8 @@ export async function POST(request: NextRequest) {
       regenChanges.neural = -regenAmount;
     }
 
-    console.log('Regeneration changes:', {
+    logger.debug('Regeneration changes', {
+      fid,
       cappedIntervals,
       activeBreachCount,
       regenChanges
@@ -135,12 +125,13 @@ export async function POST(request: NextRequest) {
     // Update last_regeneration timestamp
     await pool.execute(
       'UPDATE user_stats SET last_regeneration = UTC_TIMESTAMP() WHERE user_id = ?',
-      [user.id]
+      [userId]
     );
 
     // Get updated stats
     const updatedStats = await statsService.getStats();
 
+    logger.info('Stats regenerated', { fid, intervalsElapsed: cappedIntervals, activeBreachCount });
     return NextResponse.json({ 
       success: true, 
       stats: updatedStats.current,
@@ -149,10 +140,6 @@ export async function POST(request: NextRequest) {
       _source: 'StatsService'
     });
   } catch (err: any) {
-    console.error('Regeneration API error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Failed to regenerate stats' },
-      { status: 500 }
-    );
+    return handleApiError(err, '/api/regenerate');
   }
 }

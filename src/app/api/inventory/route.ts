@@ -1,23 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../lib/db';
+import { validateFid } from '~/lib/api/errors';
+import { getUserIdByFid } from '~/lib/api/userUtils';
+import { logger } from '~/lib/logger';
+import { handleApiError } from '~/lib/api/errors';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const fid = parseInt(searchParams.get('fid') || '300187', 10);
+    const fid = validateFid(searchParams.get('fid') || '300187');
     const sortBy = searchParams.get('sortBy') || 'acquisition'; // acquisition, alphabetical, type
 
     const pool = await getDbPool();
-
-    // Get user ID from fid
-    const [userRows] = await pool.execute<any[]>(
-      'SELECT id FROM users WHERE fid = ? LIMIT 1',
-      [fid]
-    );
-    const user = (userRows as any[])[0];
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const userId = await getUserIdByFid(pool, fid);
 
     // Build ORDER BY clause based on sortBy parameter
     let orderBy = 'ui.acquired_at DESC'; // default: acquisition order
@@ -56,18 +51,15 @@ export async function GET(request: NextRequest) {
                i.is_stackable, i.is_equippable, i.is_consumable, 
                i.required_level, i.model, i.tier, i.image_url
       ORDER BY ${orderBy}`,
-      [user.id]
+      [userId]
     );
 
+    logger.info('Retrieved inventory', { fid, itemCount: inventoryRows.length, sortBy });
     return NextResponse.json({ 
       items: inventoryRows,
       sortBy
     });
   } catch (err: any) {
-    console.error('Inventory API error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Failed to fetch inventory' },
-      { status: 500 }
-    );
+    return handleApiError(err, '/api/inventory');
   }
 }

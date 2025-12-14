@@ -3,6 +3,8 @@ import { getDbPool, logActivity } from '../../../../../lib/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 import { calculateActionStatValue, calculateSuccessRate, calculateCreditCost, calculateResourceCosts } from '../../../../../lib/encounterUtils';
 import { StatsService } from '../../../../../lib/statsService';
+import { requireParams, handleApiError } from '../../../../../lib/api/errors';
+import { logger } from '../../../../../lib/logger';
 
 export async function POST(
   request: NextRequest,
@@ -17,11 +19,8 @@ export async function POST(
     }
 
     const body = await request.json();
+    requireParams(body, ['fid', 'actionId']);
     const { fid, actionId } = body;
-
-    if (!fid || !actionId) {
-      return NextResponse.json({ error: 'FID and actionId are required' }, { status: 400 });
-    }
 
     const pool = await getDbPool();
     const connection = await pool.getConnection();
@@ -236,10 +235,6 @@ export async function POST(
     }
 
   } catch (err: any) {
-    console.error('Encounter action API error:', err);
-    return NextResponse.json(
-      { error: 'Failed to execute encounter action', details: err.message },
-      { status: 500 }
-    );
+    return handleApiError(err, 'Failed to execute encounter action');
   }
 }

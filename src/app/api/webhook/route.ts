@@ -10,6 +10,7 @@ import {
   setUserNotificationDetails,
 } from "~/lib/kv";
 import { sendMiniAppNotification } from "~/lib/notifs";
+import { logger } from "~/lib/logger";
 
 export async function POST(request: NextRequest) {
   // If Neynar is enabled, we don't need to handle webhooks here

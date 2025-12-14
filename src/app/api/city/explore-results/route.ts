@@ -3,32 +3,22 @@ import { getDbPool, logActivity } from '../../../../lib/db';
 import { RowDataPacket } from 'mysql2/promise';
 import { rollEncounterReward, getRandomEncounter } from '../../../../lib/encounterUtils';
 import { StatsService } from '../../../../lib/statsService';
+import { validateFid, requireParams } from '~/lib/api/errors';
+import { getUserIdByFid } from '~/lib/api/userUtils';
+import { logger } from '~/lib/logger';
+import { handleApiError } from '~/lib/api/errors';
 
 export async function POST(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const fid = searchParams.get('fid');
-
-  if (!fid) {
-    return NextResponse.json({ error: 'FID is required' }, { status: 400 });
-  }
+  const fid = validateFid(searchParams.get('fid'));
 
   try {
     const dbPool = await getDbPool();
-    
     const body = await request.json();
+    requireParams(body, ['historyId']);
     const { historyId } = body;
 
-    // Get user ID
-    const [userRows] = await dbPool.query<RowDataPacket[]>(
-      'SELECT id FROM users WHERE fid = ?',
-      [fid]
-    );
-
-    if (userRows.length === 0) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const userId = userRows[0].id;
+    const userId = await getUserIdByFid(dbPool, fid);
 
     // Get user's street cred for encounter filtering
     const [userDataRows] = await dbPool.query<RowDataPacket[]>(
@@ -45,7 +35,7 @@ export async function POST(request: NextRequest) {
 
     // Roll for reward type (35.7% nothing, 28.6% discovery, 35.7% encounter)
     const rewardType = rollEncounterReward();
-    console.log('[EXPLORE-RESULTS] Rolled reward type:', rewardType);
+    logger.debug('Explore reward rolled', { fid, rewardType });
     
     let discoveredZone = null;
     let encounter = null;
@@ -97,7 +87,10 @@ export async function POST(request: NextRequest) {
     } else if (rewardType === 'encounter') {
       // Get random encounter for city context (zone_id = 1 for generic city encounters)
       encounter = await getRandomEncounter(dbPool, 1, 'city', userStreetCred);
-      console.log('[EXPLORE-RESULTS] Encounter found:', encounter ? encounter.name : 'null (no encounters in database)');
+      logger.debug('Encounter found for explore', { 
+        encounterName: encounter?.name || 'none',
+        encounterType: encounter?.encounter_type 
+      });
       
       if (encounter) {
         // Log encounter trigger
@@ -156,7 +149,7 @@ export async function POST(request: NextRequest) {
         levelUpData = await levelUpRes.json();
       }
     } catch (err) {
-      console.error('Failed to check level up:', err);
+      logger.warn('Failed to check level up', { error: err });
     }
 
     return NextResponse.json({
@@ -174,15 +167,14 @@ export async function POST(request: NextRequest) {
       levelUp: levelUpData?.leveledUp ? levelUpData : null
     });
   } catch (error: any) {
-    console.error('Error processing explore results:', error);
-    console.error('Error details:', {
+    logger.error('Explore results error', {
       message: error.message,
       stack: error.stack,
       code: error.code
     });
-    return NextResponse.json({ 
-      error: 'Failed to process explore results',
-      details: error.message 
+    return handleApiError(error, 'Failed to process explore results');
+  }
+} 
     }, { status: 500 });
   }
 }

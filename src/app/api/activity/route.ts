@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../lib/db';
 import { RowDataPacket } from 'mysql2/promise';
+import { validateFid } from '~/lib/api/errors';
+import { getUserIdByFid, isAdmin } from '~/lib/api/userUtils';
+import { logger } from '~/lib/logger';
+import { handleApiError } from '~/lib/api/errors';
 
 interface ActivityRow extends RowDataPacket {
   id: number;
@@ -17,7 +21,7 @@ interface ActivityRow extends RowDataPacket {
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const fid = searchParams.get('fid');
+  const fid = validateFid(searchParams.get('fid') || '300187');
   const category = searchParams.get('category');
   const limit = parseInt(searchParams.get('limit') || '50');
   const offset = parseInt(searchParams.get('offset') || '0');
@@ -25,41 +29,19 @@ export async function GET(request: NextRequest) {
 
   try {
     const dbPool = await getDbPool();
-
     let userId: number | null = null;
 
     // If admin mode, verify user is actually an admin
     if (adminMode) {
-      if (!fid) {
-        return NextResponse.json({ error: 'FID is required for admin mode' }, { status: 400 });
-      }
-
-      const [adminRows] = await dbPool.query<RowDataPacket[]>(
-        'SELECT admin FROM users WHERE fid = ?',
-        [fid]
-      );
-
-      if (adminRows.length === 0 || !adminRows[0].admin) {
+      const userIsAdmin = await isAdmin(dbPool, fid);
+      if (!userIsAdmin) {
         return NextResponse.json({ error: 'Unauthorized: Admin access required' }, { status: 403 });
       }
     }
 
     // If not admin mode, get user ID from FID
     if (!adminMode) {
-      if (!fid) {
-        return NextResponse.json({ error: 'FID is required' }, { status: 400 });
-      }
-
-      const [userRows] = await dbPool.query<RowDataPacket[]>(
-        'SELECT id FROM users WHERE fid = ?',
-        [fid]
-      );
-
-      if (userRows.length === 0) {
-        return NextResponse.json({ error: 'User not found' }, { status: 404 });
-      }
-
-      userId = userRows[0].id;
+      userId = await getUserIdByFid(dbPool, fid);
     }
 
     // Build query
@@ -108,17 +90,13 @@ export async function GET(request: NextRequest) {
 
     const [rows] = await dbPool.query<ActivityRow[]>(query, params);
 
+    logger.info('Retrieved activity feed', { fid, adminMode, category, count: rows.length, limit, offset });
     return NextResponse.json({
       success: true,
       activities: rows,
       count: rows.length
     });
   } catch (error) {
-    console.error('Error fetching activities:', error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ 
-      error: 'Failed to fetch activities', 
-      details: errorMessage 
-    }, { status: 500 });
+    return handleApiError(error, '/api/activity');
   }
 }

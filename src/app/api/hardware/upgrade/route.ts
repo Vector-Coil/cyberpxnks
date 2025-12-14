@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../../lib/db';
 import { StatsService } from '../../../../lib/statsService';
+import { handleApiError } from '../../../../lib/api/errors';
+import { getUserIdByFid } from '../../../../lib/api/userUtils';
+import { logger } from '../../../../lib/logger';
 
 // Helper function to update user_stats with hardware modifiers after upgrade
 async function updateHardwareStatsAfterUpgrade(pool: any, userId: number) {
@@ -113,15 +116,7 @@ export async function POST(request: NextRequest) {
 
     const pool = await getDbPool();
 
-    // Get user ID from fid
-    const [userRows] = await pool.execute<any[]>(
-      'SELECT id FROM users WHERE fid = ? LIMIT 1',
-      [fid]
-    );
-    const user = (userRows as any[])[0];
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const userId = await getUserIdByFid(pool, fid.toString());
 
     // Get stats BEFORE upgrade to track bandwidth changes
     const statsServiceBefore = new StatsService(pool, user.id);
@@ -136,7 +131,7 @@ export async function POST(request: NextRequest) {
        INNER JOIN items i ON ui.item_id = i.id
        WHERE ui.user_id = ? AND i.id = ?
        LIMIT 1`,
-      [user.id, hardwareId]
+      [userId, hardwareId]
     );
 
     if ((hardwareRows as any[]).length === 0) {
@@ -228,10 +223,6 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (err: any) {
-    console.error('Hardware upgrade error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Failed to upgrade hardware' },
-      { status: 500 }
-    );
+    return handleApiError(err, 'Failed to upgrade hardware');
   }
 }

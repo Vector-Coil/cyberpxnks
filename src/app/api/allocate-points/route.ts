@@ -2,18 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool, logActivity } from '../../../lib/db';
 import { StatsService } from '../../../lib/statsService';
 import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
+import { validateFid, requireParams } from '~/lib/api/errors';
+import { logger } from '~/lib/logger';
+import { handleApiError } from '~/lib/api/errors';
 
 export async function POST(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const fid = searchParams.get('fid');
-
-  if (!fid) {
-    return NextResponse.json({ error: 'FID is required' }, { status: 400 });
-  }
+  const fid = validateFid(searchParams.get('fid'));
 
   try {
     const dbPool = await getDbPool();
     const body = await request.json();
+    requireParams(body, ['allocations']);
     const { allocations } = body; // { cognition: 1, power: 2, etc. }
 
     if (!allocations || typeof allocations !== 'object') {
@@ -115,6 +115,7 @@ export async function POST(request: NextRequest) {
         [user.id]
       );
 
+      logger.info('Stat points allocated', { fid, pointsSpent: totalPointsToSpend, allocations });
       return NextResponse.json({
         success: true,
         pointsSpent: totalPointsToSpend,
@@ -136,10 +137,6 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (err: any) {
-    console.error('Allocate points API error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Failed to allocate points' },
-      { status: 500 }
-    );
+    return handleApiError(err, '/api/allocate-points');
   }
 }

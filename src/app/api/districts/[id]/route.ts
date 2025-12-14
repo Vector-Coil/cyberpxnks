@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '~/lib/db';
+import { validateFid, handleApiError } from '~/lib/api/errors';
+import { getUserIdByFid } from '~/lib/api/userUtils';
+import { logger } from '~/lib/logger';
 
 export async function GET(
   req: NextRequest,
@@ -7,9 +10,7 @@ export async function GET(
 ) {
   try {
     const fid = req.nextUrl.searchParams.get('fid');
-    if (!fid) {
-      return NextResponse.json({ error: 'Missing fid' }, { status: 400 });
-    }
+    validateFid(fid);
 
     const { id } = await params;
     const districtId = parseInt(id, 10);
@@ -18,19 +19,9 @@ export async function GET(
     }
 
     const pool = await getDbPool();
-    console.log('Fetching district detail for id:', districtId, 'fid:', fid);
+    logger.debug('Fetching district detail', { districtId, fid });
 
-    // Get user ID from FID
-    const [userRows] = await pool.execute<any[]>(
-      'SELECT id FROM users WHERE fid = ? LIMIT 1',
-      [fid]
-    );
-    const user = (userRows as any[])[0];
-    console.log('User found:', user);
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const userId = await getUserIdByFid(pool, fid!);
 
     // Fetch district info
     const [districtRows]: any = await pool.execute(
@@ -39,7 +30,7 @@ export async function GET(
        WHERE id = ?`,
       [districtId]
     );
-    console.log('District query result:', districtRows);
+    logger.debug('District query result', { districtId, found: districtRows.length > 0 });
 
     if (districtRows.length === 0) {
       return NextResponse.json({ error: 'District not found' }, { status: 404 });
@@ -57,7 +48,7 @@ export async function GET(
        LEFT JOIN zone_districts zd ON z.district = zd.id
        WHERE uzh.user_id = ? AND uzh.action_type = 'Discovered' AND z.district = ?
        ORDER BY z.name ASC`,
-      [user.id, districtId]
+      [userId, districtId]
     );
 
     // Fetch activity history for all zones in this district
@@ -113,10 +104,6 @@ export async function GET(
         history: formattedHistory
       });
   } catch (error: any) {
-    console.error('Error fetching district details:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch district details', details: error.message },
-      { status: 500 }
-    );
+    return handleApiError(error, 'Failed to fetch district details');
   }
 }

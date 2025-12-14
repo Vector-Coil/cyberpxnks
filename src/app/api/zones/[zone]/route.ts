@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../../lib/db';
+import { handleApiError } from '../../../../lib/api/errors';
+import { logger } from '../../../../lib/logger';
 
 export async function GET(
   request: NextRequest,
@@ -70,7 +72,7 @@ export async function GET(
       [user.id, zoneId]
     );
 
-    console.log('POI data from DB:', poiRows.map((p: any) => ({ id: p.id, name: p.name, poi_type: p.poi_type, image_url: p.image_url })));
+    logger.debug('POI data from DB', { poiCount: poiRows.length, zoneId });
 
     return NextResponse.json({
       zone,
@@ -79,10 +81,6 @@ export async function GET(
       userLocation: user.location
     });
   } catch (err: any) {
-    console.error('Zone detail API error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Failed to fetch zone details' },
-      { status: 500 }
-    );
+    return handleApiError(err, 'Failed to fetch zone details');
   }
 }

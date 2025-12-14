@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool, logActivity } from '../../../../lib/db';
 import { StatsService } from '../../../../lib/statsService';
+import { handleApiError } from '../../../../lib/api/errors';
+import { getUserIdByFid } from '../../../../lib/api/userUtils';
+import { logger } from '../../../../lib/logger';
 
 // Helper function to update user_stats with hardware modifiers from equipped cyberdeck
 async function updateHardwareStats(pool: any, userId: number) {
@@ -171,15 +174,7 @@ export async function POST(request: NextRequest) {
 
     const pool = await getDbPool();
 
-    // Get user ID from fid
-    const [userRows] = await pool.execute<any[]>(
-      'SELECT id FROM users WHERE fid = ? LIMIT 1',
-      [fid || 300187]
-    );
-    const user = (userRows as any[])[0];
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const userId = await getUserIdByFid(pool, (fid || 300187).toString());
 
     // Verify user owns the item
     const [inventoryRows] = await pool.execute<any[]>(
@@ -188,7 +183,7 @@ export async function POST(request: NextRequest) {
        INNER JOIN items i ON ui.item_id = i.id
        WHERE ui.user_id = ? AND ui.item_id = ?
        LIMIT 1`,
-      [user.id, itemId]
+      [userId, itemId]
     );
     const inventoryItem = (inventoryRows as any[])[0];
     if (!inventoryItem) {
@@ -419,10 +414,6 @@ export async function POST(request: NextRequest) {
       error: 'Invalid operation'
     }, { status: 400 });
   } catch (err: any) {
-    console.error('Hardware equip API error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Failed to equip item' },
-      { status: 500 }
-    );
+    return handleApiError(err, 'Failed to equip item');
   }
 }

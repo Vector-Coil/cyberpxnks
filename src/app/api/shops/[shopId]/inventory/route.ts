@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../../../lib/db';
+import { handleApiError } from '../../../../../lib/api/errors';
+import { logger } from '../../../../../lib/logger';
 
 export async function GET(
   request: NextRequest,
@@ -40,10 +42,6 @@ export async function GET(
       items: inventoryRows
     });
   } catch (err: any) {
-    console.error('Shop inventory API error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Failed to fetch shop inventory' },
-      { status: 500 }
-    );
+    return handleApiError(err, 'Failed to fetch shop inventory');
   }
 }

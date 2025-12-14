@@ -2,51 +2,36 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool, logActivity } from '../../../../lib/db';
 import { rollEncounterReward, getRandomEncounter } from '../../../../lib/encounterUtils';
 import { RowDataPacket } from 'mysql2/promise';
+import { validateFid, requireParams } from '~/lib/api/errors';
+import { getUserIdByFid } from '~/lib/api/userUtils';
+import { logger } from '~/lib/logger';
+import { handleApiError } from '~/lib/api/errors';
 
 export async function POST(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const fidParam = searchParams.get('fid');
-    const fid = fidParam ? parseInt(fidParam, 10) : 300187;
-
-    if (Number.isNaN(fid)) {
-      return NextResponse.json({ error: 'Invalid fid parameter' }, { status: 400 });
-    }
-
+    const fid = validateFid(searchParams.get('fid') || '300187');
     const body = await request.json();
+    requireParams(body, ['historyId']);
     const { historyId, poiId } = body;
 
-    console.log('Breach results request:', { fid, historyId, poiId });
-
-    if (!historyId) {
-      return NextResponse.json({ error: 'Missing historyId' }, { status: 400 });
-    }
+    logger.debug('Breach results request', { fid, historyId, poiId });
 
     const pool = await getDbPool();
-
-    // Get user ID
-    const [userRows] = await pool.execute<any[]>(
-      'SELECT id FROM users WHERE fid = ? LIMIT 1',
-      [fid]
-    );
-    const user = (userRows as any[])[0];
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const userId = await getUserIdByFid(pool, fid);
 
     // Verify this is the user's breach and it's complete
     const [breachRows] = await pool.execute<any[]>(
       `SELECT id, zone_id, end_time, result_status FROM user_zone_history 
        WHERE id = ? AND user_id = ? AND action_type = 'Breached'
        LIMIT 1`,
-      [historyId, user.id]
+      [historyId, userId]
     );
 
-    console.log('Breach query result:', { 
-      breachRows, 
+    logger.debug('Breach query result', { 
+      fid,
       historyId, 
-      userId: user.id,
+      userId,
       foundRows: breachRows.length,
       breach: breachRows[0] 
     });
@@ -56,16 +41,16 @@ export async function POST(request: NextRequest) {
       const [debugRows] = await pool.execute<any[]>(
         `SELECT id, action_type, result_status, poi_id FROM user_zone_history 
          WHERE user_id = ? AND action_type = 'Breached' ORDER BY timestamp DESC LIMIT 3`,
-        [user.id]
+        [userId]
       );
-      console.log('Debug: Recent breaches for user:', debugRows);
+      logger.warn('Breach not found', { fid, historyId, recentBreaches: debugRows });
       return NextResponse.json({ error: 'Breach not found or already completed', debug: { searched: historyId, found: debugRows } }, { status: 404 });
     }
 
     const breach = breachRows[0];
     
     if (breach.result_status && breach.result_status !== '') {
-      console.log('Breach already completed:', breach.result_status);
+      logger.info('Breach already completed', { fid, historyId, resultStatus: breach.result_status });
       return NextResponse.json({ error: 'Breach already completed' }, { status: 400 });
     }
 
@@ -167,7 +152,7 @@ export async function POST(request: NextRequest) {
         levelUpData = await levelUpRes.json();
       }
     } catch (err) {
-      console.error('Failed to check level up:', err);
+      logger.warn('Failed to check level up', { error: err });
     }
 
     // Get updated stats
@@ -191,10 +176,6 @@ export async function POST(request: NextRequest) {
       levelUp: levelUpData?.leveledUp ? levelUpData : null
     });
   } catch (err: any) {
-    console.error('Breach results API error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Failed to complete breach' },
-      { status: 500 }
-    );
+    return handleApiError(err, 'Failed to complete breach');
   }
 }

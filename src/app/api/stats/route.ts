@@ -1,28 +1,31 @@
 import { NextResponse } from 'next/server';
 import { getDbPool } from '../../../lib/db';
 import { StatsService } from '../../../lib/statsService';
+import { validateFid, handleApiError } from '../../../lib/api/errors';
+import { getUserIdByFid } from '../../../lib/api/userUtils';
+import { logger } from '../../../lib/logger';
 
 // GET /api/stats?fid=300187
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
-    const fidParam = url.searchParams.get('fid') || '300187';
-    const fid = parseInt(fidParam, 10);
+    const fid = validateFid(url.searchParams.get('fid'), 300187);
 
-    if (Number.isNaN(fid)) {
-      return NextResponse.json({ error: 'Invalid fid' }, { status: 400 });
-    }
+    logger.apiRequest('GET', '/api/stats', { fid });
 
     const pool = await getDbPool();
     
     // Use StatsService for centralized stat management
     const stats = await StatsService.getStatsByFid(pool, fid);
 
+    // Get user ID for base stats query
+    const userId = await getUserIdByFid(pool, fid.toString());
+
     // Get base stats from user_stats table for hardware preview calculations
     const [userStatsRows] = await pool.execute(
       `SELECT total_clock, total_cooling, total_signal, total_latency, total_crypt, total_cache
-       FROM user_stats WHERE user_id = (SELECT id FROM users WHERE fid = ? LIMIT 1)`,
-      [fid]
+       FROM user_stats WHERE user_id = ?`,
+      [userId]
     );
     const baseStats = (userStatsRows as any[])[0] || {};
 
@@ -78,13 +81,7 @@ export async function GET(req: Request) {
       lastRegeneration: stats.lastRegeneration,
       updatedAt: stats.updatedAt
     });
-  } catch (err: any) {
-    console.error('API /api/stats error:', err);
-    console.error('Error stack:', err.stack);
-    return NextResponse.json({ 
-      error: 'Internal server error', 
-      message: err.message,
-      details: err.toString() 
-    }, { status: 500 });
+  } catch (error) {
+    return handleApiError(error, 'GET /api/stats');
   }
 }

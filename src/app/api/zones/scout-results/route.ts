@@ -3,36 +3,21 @@ import { getDbPool, logActivity } from '../../../../lib/db';
 import { rollEncounterReward, getRandomEncounter } from '../../../../lib/encounterUtils';
 import { RowDataPacket } from 'mysql2/promise';
 import { StatsService } from '../../../../lib/statsService';
+import { validateFid, requireParams } from '~/lib/api/errors';
+import { getUserIdByFid } from '~/lib/api/userUtils';
+import { logger } from '~/lib/logger';
+import { handleApiError } from '~/lib/api/errors';
 
 export async function POST(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const fidParam = searchParams.get('fid');
-    const fid = fidParam ? parseInt(fidParam, 10) : 300187;
-
-    if (Number.isNaN(fid)) {
-      return NextResponse.json({ error: 'Invalid fid parameter' }, { status: 400 });
-    }
-
+    const fid = validateFid(searchParams.get('fid') || '300187');
     const body = await request.json();
+    requireParams(body, ['historyId']);
     const { historyId } = body;
 
-    if (!historyId) {
-      return NextResponse.json({ error: 'Missing history ID' }, { status: 400 });
-    }
-
     const pool = await getDbPool();
-
-    // Get user ID from FID
-    const [userRows] = await pool.execute<any[]>(
-      'SELECT id FROM users WHERE fid = ? LIMIT 1',
-      [fid]
-    );
-    const user = (userRows as any[])[0];
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const userId = await getUserIdByFid(pool, fid);
 
     // Get zone_id from history
     const [historyRows] = await pool.execute<any[]>(
@@ -44,7 +29,7 @@ export async function POST(request: NextRequest) {
     // Get user's street cred for encounter filtering
     const [userDataRows] = await pool.execute<RowDataPacket[]>(
       'SELECT street_cred FROM users WHERE id = ? LIMIT 1',
-      [user.id]
+      [userId]
     );
     const userStreetCred = userDataRows[0]?.street_cred || 0;
 
@@ -53,7 +38,7 @@ export async function POST(request: NextRequest) {
     // Update user XP
     await pool.execute(
       'UPDATE users SET xp = xp + ? WHERE id = ?',
-      [xpGained, user.id]
+      [xpGained, userId]
     );
 
     // Roll for reward type
@@ -75,7 +60,7 @@ export async function POST(request: NextRequest) {
            )
          ORDER BY RAND()
          LIMIT 1`,
-        [zoneId, user.id]
+        [zoneId, userId]
       );
 
       if (undiscoveredPOIRows.length > 0) {
@@ -163,7 +148,7 @@ export async function POST(request: NextRequest) {
         levelUpData = await levelUpRes.json();
       }
     } catch (err) {
-      console.error('Failed to check level up:', err);
+      logger.warn('Failed to check level up', { error: err });
     }
 
     return NextResponse.json({
@@ -188,16 +173,14 @@ export async function POST(request: NextRequest) {
       levelUp: levelUpData?.leveledUp ? levelUpData : null
     });
   } catch (err: any) {
-    console.error('Scout results API error:', err);
-    console.error('Error details:', {
+    logger.error('Scout results error', {
       message: err.message,
       stack: err.stack,
       code: err.code
     });
-    return NextResponse.json(
-      { 
-        error: err.message || 'Failed to process scout results',
-        details: err.message 
+    return handleApiError(err, 'Failed to process scout results');
+  }
+} 
       },
       { status: 500 }
     );

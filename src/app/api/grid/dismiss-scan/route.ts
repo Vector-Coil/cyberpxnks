@@ -1,32 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../../lib/db';
 import { RowDataPacket } from 'mysql2/promise';
+import { validateFid, requireParams, handleApiError } from '../../../../lib/api/errors';
+import { getUserIdByFid } from '../../../../lib/api/userUtils';
+import { logger } from '../../../../lib/logger';
 
 export async function POST(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const fid = searchParams.get('fid');
-
-  if (!fid) {
-    return NextResponse.json({ error: 'FID is required' }, { status: 400 });
-  }
+  validateFid(fid);
 
   try {
     const dbPool = await getDbPool();
     
     const body = await request.json();
+    requireParams(body, ['historyId']);
     const { historyId } = body;
 
-    // Get user ID
-    const [userRows] = await dbPool.query<RowDataPacket[]>(
-      'SELECT id FROM users WHERE fid = ?',
-      [fid]
-    );
-
-    if (userRows.length === 0) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const userId = userRows[0].id;
+    const userId = await getUserIdByFid(dbPool, fid!);
 
     // Mark scan as dismissed
     await dbPool.query(
@@ -38,7 +29,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error dismissing scan:', error);
-    return NextResponse.json({ error: 'Failed to dismiss scan' }, { status: 500 });
+    return handleApiError(error, 'Failed to dismiss scan');
   }
 }

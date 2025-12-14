@@ -1,5 +1,7 @@
 import { NeynarAPIClient } from '@neynar/nodejs-sdk';
 import { NextResponse } from 'next/server';
+import { logger } from '~/lib/logger';
+import { handleApiError } from '~/lib/api/errors';
 
 export async function GET(request: Request) {
   const apiKey = process.env.NEYNAR_API_KEY;
@@ -28,12 +30,9 @@ export async function GET(request: Request) {
       fids: fidsArray,
     });
 
+    logger.info('Fetched bulk users from Neynar', { count: users.length, fids: fidsArray });
     return NextResponse.json({ users });
   } catch (error) {
-    console.error('Failed to fetch users:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch users. Please check your Neynar API key and try again.' },
-      { status: 500 }
-    );
+    return handleApiError(error, '/api/users');
   }
 }

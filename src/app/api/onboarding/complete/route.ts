@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../../lib/db';
+import { requireParams, handleApiError } from '../../../../lib/api/errors';
+import { logger } from '../../../../lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    requireParams(body, ['fid', 'classId', 'stats', 'alignmentId']);
     const { fid, classId, stats, unallocatedPoints, alignmentId } = body;
-
-    if (!fid || !classId || !stats || alignmentId === undefined) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
 
     const pool = await getDbPool();
 
@@ -39,10 +35,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
-    console.error('Onboarding completion API error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Failed to complete onboarding' },
-      { status: 500 }
-    );
+    return handleApiError(err, 'Failed to complete onboarding');
   }
 }

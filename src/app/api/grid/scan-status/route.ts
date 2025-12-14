@@ -1,34 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../../lib/db';
 import { RowDataPacket } from 'mysql2/promise';
+import { validateFid } from '~/lib/api/errors';
+import { getUserIdByFid } from '~/lib/api/userUtils';
+import { logger } from '~/lib/logger';
+import { handleApiError } from '~/lib/api/errors';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const fid = searchParams.get('fid');
-
-  if (!fid) {
-    return NextResponse.json({ error: 'FID is required' }, { status: 400 });
-  }
+  const fid = validateFid(searchParams.get('fid'));
 
   try {
     const dbPool = await getDbPool();
-
-    // Get user ID
-    const [userRows] = await dbPool.query<RowDataPacket[]>(
-      'SELECT id FROM users WHERE fid = ?',
-      [fid]
-    );
-
-    if (userRows.length === 0) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const userId = userRows[0].id;
+    const userId = await getUserIdByFid(dbPool, fid);
 
     // Check for active OR completed (but not dismissed) scan
-    // Active: end_time in future and no result_status
-    // Completed: has result_status = 'completed' (not yet dismissed)
-    // Exclude dismissed scans
+    // Return if:
+    // 1. In progress or ready for results: result_status is NULL/empty (regardless of end_time)
+    // 2. Results viewed: result_status = 'completed' (should still show until dismissed)
     const [scanRows] = await dbPool.query<RowDataPacket[]>(
       `SELECT id, timestamp, end_time, result_status 
        FROM user_zone_history 
@@ -37,10 +26,7 @@ export async function GET(request: NextRequest) {
          AND action_type = 'OvernetScan'
          AND end_time IS NOT NULL 
          AND result_status != 'dismissed'
-         AND (
-           (end_time > UTC_TIMESTAMP() AND (result_status IS NULL OR result_status = ''))
-           OR result_status = 'completed'
-         )
+         AND (result_status IS NULL OR result_status = '' OR result_status = 'completed')
        ORDER BY timestamp DESC
        LIMIT 1`,
       [userId]
@@ -50,11 +36,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ activeScan: null });
     }
 
+    logger.debug('Active scan found', { fid, scanId: scanRows[0].id });
     return NextResponse.json({ 
       activeScan: scanRows[0]
     });
   } catch (error) {
-    console.error('Error checking scan status:', error);
-    return NextResponse.json({ error: 'Failed to check scan status' }, { status: 500 });
+    return handleApiError(error, '/api/grid/scan-status');
   }
 }

@@ -1,22 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../lib/db';
+import { validateFid } from '~/lib/api/errors';
+import { getUserIdByFid } from '~/lib/api/userUtils';
+import { logger } from '~/lib/logger';
+import { handleApiError } from '~/lib/api/errors';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const fid = parseInt(searchParams.get('fid') || '300187', 10);
-
+    const fid = validateFid(searchParams.get('fid') || '300187');
     const pool = await getDbPool();
-
-    // Get user ID from fid
-    const [userRows] = await pool.execute<any[]>(
-      'SELECT id FROM users WHERE fid = ? LIMIT 1',
-      [fid]
-    );
-    const user = (userRows as any[])[0];
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const userId = await getUserIdByFid(pool, fid);
 
     // Fetch cyberdecks with equipped status (slot_type = 'hardware') and hardware modifiers
     // Also get upgrade material info and count
@@ -56,7 +50,7 @@ export async function GET(request: NextRequest) {
       LEFT JOIN items upgrade_items ON upgrade_items.id = i.upgrades_with
       WHERE ui.user_id = ? AND i.item_type = 'cyberdeck'
       ORDER BY is_equipped DESC, i.tier DESC, i.name ASC`,
-      [user.id]
+      [userId]
     );
 
     // Fetch peripherals
@@ -76,7 +70,7 @@ export async function GET(request: NextRequest) {
       WHERE ui.user_id = ? AND i.item_type = 'peripheral'
       GROUP BY i.id, i.name, i.item_type, i.description, i.tier, i.image_url, i.model
       ORDER BY i.name ASC`,
-      [user.id]
+      [userId]
     );
 
     // Fetch slimsoft with equipped status (up to 3 slots)
@@ -99,25 +93,32 @@ export async function GET(request: NextRequest) {
       WHERE ui.user_id = ? AND i.item_type = 'slimsoft'
       GROUP BY i.id, i.name, i.item_type, i.description, i.tier, i.image_url, i.model
       ORDER BY is_equipped DESC, i.name ASC`,
-      [user.id]
+      [userId]
     );
 
     // Get equipped counts
     const [hardwareCount] = await pool.execute<any[]>(
       `SELECT COUNT(*) as count FROM user_loadout 
        WHERE user_id = ? AND slot_type = 'hardware'`,
-      [user.id]
+      [userId]
     );
     
     const [slimsoftCount] = await pool.execute<any[]>(
       `SELECT COUNT(*) as count FROM user_loadout 
        WHERE user_id = ? AND slot_type = 'slimsoft'`,
-      [user.id]
+      [userId]
     );
 
     // Get equipped cyberdeck tier for compatibility checks
     const equippedDeck = (cyberdeckRows as any[]).find((d: any) => d.is_equipped === 1);
     const equippedDeckTier = equippedDeck?.tier || 0;
+
+    logger.info('Retrieved hardware inventory', { 
+      fid, 
+      cyberdecks: cyberdeckRows.length,
+      peripherals: peripheralRows.length,
+      slimsoft: slimsoftRows.length
+    });
 
     return NextResponse.json({
       cyberdecks: cyberdeckRows,
@@ -130,10 +131,6 @@ export async function GET(request: NextRequest) {
       equippedDeckTier
     });
   } catch (err: any) {
-    console.error('Hardware API error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Failed to fetch hardware' },
-      { status: 500 }
-    );
+    return handleApiError(err, '/api/hardware');
   }
 }

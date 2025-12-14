@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getDbPool } from '../../../../lib/db';
 import * as fs from 'fs';
 import * as path from 'path';
+import { handleApiError } from '../../../../lib/api/errors';
+import { logger } from '../../../../lib/logger';
 
 interface District {
   id: number;
@@ -18,14 +20,14 @@ interface Zone {
 
 export async function POST() {
   try {
-    console.log('🚀 Starting zone image update process...');
+    logger.info('Starting zone image update process');
 
     // 1. Get image files from /public/images/
     const imagesDir = path.join(process.cwd(), 'public', 'images');
     const allFiles = fs.readdirSync(imagesDir);
     const cityImages = allFiles.filter(file => file.startsWith('City_-_'));
     
-    console.log(`📁 Found ${cityImages.length} City images`);
+    logger.info('Found City images', { count: cityImages.length });
 
     // 2. Connect to database
     const pool = await getDbPool();
@@ -36,7 +38,7 @@ export async function POST() {
     );
     const districts = districtRows as District[];
     
-    console.log(`🏙️  Found ${districts.length} districts`);
+    logger.info('Found districts', { count: districts.length });
 
     // 4. Get all zones with their districts
     const [zoneRows] = await pool.execute<any[]>(`
@@ -52,7 +54,7 @@ export async function POST() {
     `);
     const zones = zoneRows as Zone[];
     
-    console.log(`📍 Found ${zones.length} zones`);
+    logger.info('Found zones', { count: zones.length });
 
     // 5. Create mapping of district names to image URLs
     const districtImageMap = new Map<string, string>();
@@ -138,13 +140,6 @@ export async function POST() {
     });
 
   } catch (error: any) {
-    console.error('❌ Error updating zone images:', error);
-    return NextResponse.json(
-      { 
-        success: false, 
-        error: error.message || 'Unknown error occurred' 
-      },
-      { status: 500 }
-    );
+    return handleApiError(error, 'Failed to update zone images');
   }
 }

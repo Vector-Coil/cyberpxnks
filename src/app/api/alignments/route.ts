@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDbPool } from '../../../lib/db';
+import { logger } from '~/lib/logger';
+import { handleApiError } from '~/lib/api/errors';
 
 export async function GET() {
   try {
@@ -8,12 +10,9 @@ export async function GET() {
       'SELECT id, name, description FROM alignments ORDER BY id'
     );
     
+    logger.info('Retrieved alignments', { count: rows.length });
     return NextResponse.json(rows);
   } catch (err: any) {
-    console.error('Alignments API error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Failed to fetch alignments' },
-      { status: 500 }
-    );
+    return handleApiError(err, '/api/alignments');
   }
 }

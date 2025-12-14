@@ -2,32 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool, logActivity } from '../../../../lib/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 import { StatsService } from '../../../../lib/statsService';
+import { getUserIdByFid } from '../../../../lib/api/userUtils';
+import { validateFid, handleApiError, requireParams } from '../../../../lib/api/errors';
+import { validateResources } from '../../../../lib/game/resourceValidator';
+import { ACTION_COSTS, COOLDOWNS } from '../../../../lib/game/constants';
+import { logger } from '../../../../lib/logger';
 
 export async function POST(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const fid = searchParams.get('fid');
-
-  if (!fid) {
-    return NextResponse.json({ error: 'FID is required' }, { status: 400 });
-  }
-
   try {
+    const searchParams = request.nextUrl.searchParams;
+    const fid = validateFid(searchParams.get('fid'));
+
+    logger.apiRequest('POST', '/api/city/explore', { fid });
+
     const dbPool = await getDbPool();
     
     const body = await request.json();
+    requireParams(body, ['staminaCost']);
     const { staminaCost } = body;
 
     // Get user ID
-    const [userRows] = await dbPool.query<RowDataPacket[]>(
-      'SELECT id FROM users WHERE fid = ?',
-      [fid]
-    );
-
-    if (userRows.length === 0) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const userId = userRows[0].id;
+    const userId = await getUserIdByFid(dbPool, parseInt(fid.toString()));
 
     // Check for existing active explore (only if end_time is in the future)
     const [existingExploreRows] = await dbPool.query<RowDataPacket[]>(
@@ -43,24 +38,15 @@ export async function POST(request: NextRequest) {
     );
 
     if (existingExploreRows.length > 0) {
-      console.log('[EXPLORE] Blocked by active explore:', existingExploreRows[0]);
+      logger.warn('Blocked by active explore', { userId, existing: existingExploreRows[0] });
       return NextResponse.json({ 
-        error: 'You already have an active explore action',
-        debug: existingExploreRows[0]
+        error: 'You already have an active explore action'
       }, { status: 400 });
     }
 
     // Get user stats using StatsService
     const statsService = new StatsService(dbPool, userId);
-    const fullStats = await statsService.getStats();
-    const stats = {
-      current_consciousness: fullStats.current.consciousness,
-      max_consciousness: fullStats.max.consciousness,
-      current_stamina: fullStats.current.stamina,
-      current_bandwidth: fullStats.current.bandwidth,
-      max_bandwidth: fullStats.max.bandwidth
-    };
-    const minConsciousness = stats.max_consciousness * 0.5;
+    const stats = await statsService.getStats();
 
     // Count currently active jobs
     const [activeJobsRows] = await dbPool.query<RowDataPacket[]>(
@@ -73,33 +59,26 @@ export async function POST(request: NextRequest) {
     );
     const activeCount = activeJobsRows[0]?.active_count || 0;
 
-    if (activeCount >= stats.max_bandwidth) {
-      return NextResponse.json({ error: `Maximum concurrent actions reached (${stats.max_bandwidth})` }, { status: 400 });
+    if (activeCount >= stats.max.max_bandwidth) {
+      return NextResponse.json({ error: `Maximum concurrent actions reached (${stats.max.max_bandwidth})` }, { status: 400 });
     }
 
-    // Validate requirements
-    if (stats.current_consciousness < minConsciousness) {
-      return NextResponse.json({ error: 'Not enough consciousness (need 50%)' }, { status: 400 });
-    }
-    if (stats.current_stamina < staminaCost) {
-      return NextResponse.json({ error: `Not enough stamina (need ${staminaCost})` }, { status: 400 });
-    }
-    if (stats.current_bandwidth < 1) {
-      return NextResponse.json({ error: 'Not enough bandwidth (need 1)' }, { status: 400 });
-    }
+    // Validate resources
+    validateResources(stats.current, {
+      stamina: staminaCost,
+      bandwidth: 1,
+      minConsciousnessPercent: 0.5
+    }, stats.max);
 
-    // Deduct costs
-    await dbPool.query(
-      `UPDATE user_stats 
-       SET current_stamina = current_stamina - ?, 
-           current_bandwidth = current_bandwidth - 1 
-       WHERE user_id = ?`,
-      [staminaCost, userId]
-    );
+    // Deduct costs using StatsService
+    await statsService.modifyStats({
+      stamina: -staminaCost,
+      bandwidth: -1
+    });
 
-    // Create explore action (3 minutes duration for testing)
+    // Create explore action
     const timestamp = new Date();
-    const endTime = new Date(timestamp.getTime() + 3 * 60 * 1000);
+    const endTime = new Date(timestamp.getTime() + COOLDOWNS.CITY_EXPLORE);
 
     const [insertResult] = await dbPool.query<ResultSetHeader>(
       `INSERT INTO user_zone_history 
@@ -113,10 +92,12 @@ export async function POST(request: NextRequest) {
       userId,
       'action',
       'explore_started',
-      180, // 3 minutes in seconds (testing)
+      Math.floor(COOLDOWNS.CITY_EXPLORE / 1000),
       null,
       'Started exploring the city'
     );
+
+    logger.info('City explore started', { userId, exploreId: insertResult.insertId });
 
     // Get updated stats using StatsService
     const updatedStats = await statsService.getStats();
@@ -139,7 +120,6 @@ export async function POST(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Error starting explore:', error);
-    return NextResponse.json({ error: 'Failed to start explore' }, { status: 500 });
+    return handleApiError(error, 'POST /api/city/explore');
   }
 }

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../../lib/db';
+import { handleApiError } from '../../../../lib/api/errors';
+import { logger } from '../../../../lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -98,10 +100,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ history: formattedHistory });
   } catch (err: any) {
-    console.error('City all history API error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Failed to fetch city history' },
-      { status: 500 }
-    );
+    return handleApiError(err, 'Failed to fetch city history');
   }
 }

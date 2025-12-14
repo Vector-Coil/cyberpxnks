@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../../lib/db';
 import { StatsService } from '../../../../lib/statsService';
+import { handleApiError } from '../../../../lib/api/errors';
+import { logger } from '../../../../lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -142,10 +144,6 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (err: any) {
-    console.error('Formula debug error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Failed to debug formulas' },
-      { status: 500 }
-    );
+    return handleApiError(err, 'Failed to debug formulas');
   }
 }

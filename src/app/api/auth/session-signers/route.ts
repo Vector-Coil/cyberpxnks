@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getNeynarClient } from '~/lib/neynar';
+import { handleApiError } from '~/lib/api/errors';
+import { logger } from '~/lib/logger';
 
 export async function GET(request: Request) {
   try {
@@ -34,10 +36,6 @@ export async function GET(request: Request) {
       user,
     });
   } catch (error) {
-    console.error('Error in session-signers API:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch signers' },
-      { status: 500 }
-    );
+    return handleApiError(error, 'Failed to fetch session signers');
   }
 }

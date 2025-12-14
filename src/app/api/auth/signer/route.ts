@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getNeynarClient } from '~/lib/neynar';
+import { handleApiError } from '~/lib/api/errors';
+import { logger } from '~/lib/logger';
 
 export async function POST() {
   try {
@@ -7,11 +9,7 @@ export async function POST() {
     const signer = await neynarClient.createSigner();
     return NextResponse.json(signer);
   } catch (error) {
-    console.error('Error fetching signer:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch signer' },
-      { status: 500 }
-    );
+    return handleApiError(error, 'Failed to fetch signer');
   }
 }
 
@@ -33,10 +31,6 @@ export async function GET(request: Request) {
     });
     return NextResponse.json(signer);
   } catch (error) {
-    console.error('Error fetching signed key:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch signed key' },
-      { status: 500 }
-    );
+    return handleApiError(error, 'Failed to fetch signed key');
   }
 }

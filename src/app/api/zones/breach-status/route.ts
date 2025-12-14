@@ -1,37 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../../lib/db';
+import { validateFid } from '~/lib/api/errors';
+import { getUserIdByFid } from '~/lib/api/userUtils';
+import { logger } from '~/lib/logger';
+import { handleApiError } from '~/lib/api/errors';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const fidParam = searchParams.get('fid');
-    const fid = fidParam ? parseInt(fidParam, 10) : 300187;
+    const fid = validateFid(searchParams.get('fid') || '300187');
     const poiIdParam = searchParams.get('poiId');
     const poiId = poiIdParam ? parseInt(poiIdParam, 10) : null;
 
-    if (Number.isNaN(fid)) {
-      return NextResponse.json({ error: 'Invalid fid parameter' }, { status: 400 });
-    }
-
     const pool = await getDbPool();
-
-    // Get user ID
-    const [userRows] = await pool.execute<any[]>(
-      'SELECT id FROM users WHERE fid = ? LIMIT 1',
-      [fid]
-    );
-    const user = (userRows as any[])[0];
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const userId = await getUserIdByFid(pool, fid);
 
     // Check for active breach (optionally filtered by POI)
-    // Include both in-progress (end_time > now) and completed but unprocessed (end_time <= now, result_status IS NULL or empty string)
+    // Return if:
+    // 1. In progress or ready for results: result_status is NULL/empty (regardless of end_time)
+    // 2. Results viewed: result_status = 'completed' (should still show until dismissed)
     let query = `SELECT id, zone_id, action_type, timestamp, end_time, result_status, poi_id
                  FROM user_zone_history
-                 WHERE user_id = ? AND action_type = 'Breached' AND (result_status IS NULL OR result_status = '')`;
-    const params: any[] = [user.id];
+                 WHERE user_id = ? 
+                 AND action_type = 'Breached' 
+                 AND result_status != 'dismissed'
+                 AND (result_status IS NULL OR result_status = '' OR result_status = 'completed')`;
+    const params: any[] = [userId];
 
     if (poiId) {
       query += ' AND (poi_id = ? OR poi_id IS NULL)';
@@ -40,11 +34,11 @@ export async function GET(request: NextRequest) {
 
     query += ' ORDER BY timestamp DESC LIMIT 1';
 
-    console.log('Breach status query:', { query, params, userId: user.id, requestedPoiId: poiId });
+    logger.debug('Breach status query', { fid, userId, poiId });
 
     const [breachRows] = await pool.execute<any[]>(query, params);
 
-    console.log('Breach status query result:', { rowCount: breachRows.length, rows: breachRows });
+    logger.debug('Breach status result', { fid, rowCount: breachRows.length });
     
     // Debug: Get ALL breaches to see what's there
     const [allBreaches] = await pool.execute<any[]>(
@@ -52,16 +46,11 @@ export async function GET(request: NextRequest) {
        FROM user_zone_history 
        WHERE user_id = ? AND action_type = 'Breached' 
        ORDER BY timestamp DESC LIMIT 5`,
-      [user.id]
+      [userId]
     );
-    console.log('All recent breaches:', allBreaches);
-
-    if (breachRows.length === 0) {
-      return NextResponse.json({ activeBreach: null });
-    }
-
+    logger.debug('All recent breaches', { fid, breaches: allBreaches });
     const breach = breachRows[0];
-    console.log('Found active breach:', breach);
+    logger.debug('Found active breach', { fid, breachId: breach.id });
     
     // Get POI name if we have an ID
     let poiName = null;
@@ -87,10 +76,6 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (err: any) {
-    console.error('Breach status API error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Failed to check breach status' },
-      { status: 500 }
-    );
+    return handleApiError(err, 'Failed to check breach status');
   }
 }

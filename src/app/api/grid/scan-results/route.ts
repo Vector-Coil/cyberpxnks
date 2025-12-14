@@ -3,6 +3,10 @@ import { getDbPool, logActivity } from '../../../../lib/db';
 import { RowDataPacket } from 'mysql2/promise';
 import { StatsService } from '../../../../lib/statsService';
 import { rollEncounterReward, getRandomEncounter } from '../../../../lib/encounterUtils';
+import { validateFid, requireParams } from '~/lib/api/errors';
+import { getUserIdByFid } from '~/lib/api/userUtils';
+import { logger } from '~/lib/logger';
+import { handleApiError } from '~/lib/api/errors';
 
 interface DiscoveredSubnet {
   name: string;
@@ -10,29 +14,15 @@ interface DiscoveredSubnet {
 
 export async function POST(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const fid = searchParams.get('fid');
-
-  if (!fid) {
-    return NextResponse.json({ error: 'FID is required' }, { status: 400 });
-  }
+  const fid = validateFid(searchParams.get('fid'));
 
   try {
     const dbPool = await getDbPool();
-    
     const body = await request.json();
+    requireParams(body, ['historyId']);
     const { historyId } = body;
 
-    // Get user ID
-    const [userRows] = await dbPool.query<RowDataPacket[]>(
-      'SELECT id FROM users WHERE fid = ?',
-      [fid]
-    );
-
-    if (userRows.length === 0) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const userId = userRows[0].id;
+    const userId = await getUserIdByFid(dbPool, fid);
 
     // Get user's street cred for encounter filtering
     const [userDataRows] = await dbPool.query<RowDataPacket[]>(
@@ -129,7 +119,7 @@ export async function POST(request: NextRequest) {
         levelUpData = await levelUpRes.json();
       }
     } catch (err) {
-      console.error('Failed to check level up:', err);
+      logger.warn('Failed to check level up', { error: err });
     }
 
     return NextResponse.json({
@@ -149,15 +139,14 @@ export async function POST(request: NextRequest) {
       levelUp: levelUpData?.leveledUp ? levelUpData : null
     });
   } catch (error: any) {
-    console.error('Error processing Overnet Scan results:', error);
-    console.error('Error details:', {
+    logger.error('Scan results error', {
       message: error.message,
       stack: error.stack,
       code: error.code
     });
-    return NextResponse.json({ 
-      error: 'Failed to process Overnet Scan results',
-      details: error.message 
+    return handleApiError(error, 'Failed to process Overnet Scan results');
+  }
+} 
     }, { status: 500 });
   }
 }

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../../lib/db';
 import { RowDataPacket } from 'mysql2/promise';
 import { calculateActionStatValue, calculateSuccessRate, calculateCreditCost, getSentimentColor } from '../../../../lib/encounterUtils';
+import { validateFid, handleApiError } from '../../../../lib/api/errors';
+import { logger } from '../../../../lib/logger';
 
 export async function GET(
   request: NextRequest,
@@ -17,10 +19,7 @@ export async function GET(
 
     const searchParams = request.nextUrl.searchParams;
     const fid = searchParams.get('fid');
-
-    if (!fid) {
-      return NextResponse.json({ error: 'FID is required' }, { status: 400 });
-    }
+    validateFid(fid);
 
     const pool = await getDbPool();
 
@@ -171,10 +170,6 @@ export async function GET(
       }
     });
   } catch (err: any) {
-    console.error('Encounter detail API error:', err);
-    return NextResponse.json(
-      { error: 'Failed to fetch encounter details', details: err.message },
-      { status: 500 }
-    );
+    return handleApiError(err, 'Failed to fetch encounter details');
   }
 }

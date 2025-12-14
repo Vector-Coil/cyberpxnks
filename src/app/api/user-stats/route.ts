@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../lib/db';
 import { RowDataPacket } from 'mysql2/promise';
+import { validateFid } from '~/lib/api/errors';
+import { logger } from '~/lib/logger';
+import { handleApiError } from '~/lib/api/errors';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const fid = searchParams.get('fid');
-
-  if (!fid) {
-    return NextResponse.json({ error: 'FID is required' }, { status: 400 });
-  }
+  const fid = validateFid(searchParams.get('fid'));
 
   try {
     const dbPool = await getDbPool();
@@ -22,9 +21,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    logger.info('Retrieved user stats', { fid });
     return NextResponse.json(userRows[0]);
   } catch (error) {
-    console.error('Error fetching user stats:', error);
-    return NextResponse.json({ error: 'Failed to fetch user stats' }, { status: 500 });
+    return handleApiError(error, '/api/user-stats');
   }
 }

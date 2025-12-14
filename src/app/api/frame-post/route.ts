@@ -1,5 +1,7 @@
 import { NeynarAPIClient } from '@neynar/nodejs-sdk';
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '~/lib/logger';
+import { handleApiError } from '~/lib/api/errors';
 
 const NEYNAR_API_KEY = process.env.NEYNAR_API_KEY;
 
@@ -40,15 +42,13 @@ export async function POST(req: NextRequest) {
     // The redirect path should be your onboarding page with the extracted FID
     const redirectUrl = `${NEXT_PUBLIC_URL}/onboard/1?fid=${fid}`;
 
+    logger.info('Frame action validated, redirecting to onboarding', { fid, redirectUrl });
+
     // 5. Respond with a 302 redirect. This tells the Farcaster client 
     // to open the specified URL in a new browser window.
     return NextResponse.redirect(redirectUrl, { status: 302 });
 
   } catch (error) {
-    console.error('Frame POST handler failed:', error);
-    return NextResponse.json(
-      { error: 'Failed to process frame action.' },
-      { status: 500 }
-    );
+    return handleApiError(error, '/api/frame-post');
   }
 }

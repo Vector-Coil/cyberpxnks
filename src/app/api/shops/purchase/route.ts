@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool, logActivity } from '../../../../lib/db';
+import { requireParams, handleApiError } from '../../../../lib/api/errors';
+import { logger } from '../../../../lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,11 +14,8 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    requireParams(body, ['shopId', 'itemId']);
     const { shopId, itemId } = body;
-
-    if (!shopId || !itemId) {
-      return NextResponse.json({ error: 'Missing shopId or itemId' }, { status: 400 });
-    }
 
     const pool = await getDbPool();
 
@@ -165,10 +164,6 @@ export async function POST(request: NextRequest) {
       throw err;
     }
   } catch (err: any) {
-    console.error('Shop purchase API error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Failed to complete purchase' },
-      { status: 500 }
-    );
+    return handleApiError(err, 'Failed to complete purchase');
   }
 }

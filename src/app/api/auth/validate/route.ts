@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server';
 import { createClient, Errors } from '@farcaster/quick-auth';
+import { requireParams, handleApiError } from '~/lib/api/errors';
+import { logger } from '~/lib/logger';
 
 const client = createClient();
 
 export async function POST(request: Request) {
   try {
-    const { token } = await request.json();
-
-    if (!token) {
-      return NextResponse.json({ error: 'Token is required' }, { status: 400 });
-    }
+    const body = await request.json();
+    requireParams(body, ['token']);
+    const { token } = body;
 
     // Get domain from environment or request
     // For Vercel deployments, use the host header
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
       ? new URL(process.env.NEXT_PUBLIC_URL).hostname
       : host.split(':')[0]; // Remove port if present
 
-    console.log('Validating token with domain:', domain);
+    logger.debug('Validating token with domain', { domain });
 
     try {
       // Use the official QuickAuth library to verify the JWT
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
         domain,
       });
 
-      console.log('Token validated successfully for FID:', payload.sub);
+      logger.info('Token validated successfully', { fid: payload.sub });
 
       return NextResponse.json({
         success: true,
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       });
     } catch (e) {
       if (e instanceof Errors.InvalidTokenError) {
-        console.error('Invalid token error:', e.message, 'Domain used:', domain);
+        logger.warn('Invalid token error', { message: e.message, domain });
         return NextResponse.json({ 
           error: 'Invalid token',
           details: e.message,
@@ -47,10 +47,6 @@ export async function POST(request: Request) {
       throw e;
     }
   } catch (error) {
-    console.error('Token validation error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 },
-    );
+    return handleApiError(error, 'Token validation failed');
   }
 }

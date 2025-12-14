@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../../../lib/db';
+import { getUserIdByFid } from '../../../../../lib/api/userUtils';
+import { handleApiError } from '../../../../../lib/api/errors';
+import { logger } from '../../../../../lib/logger';
 
 export async function GET(
   request: NextRequest,
@@ -23,23 +26,14 @@ export async function GET(
 
     const pool = await getDbPool();
 
-    // Get user ID from FID
-    const [userRows] = await pool.execute<any[]>(
-      'SELECT id FROM users WHERE fid = ? LIMIT 1',
-      [fid]
-    );
-    const user = (userRows as any[])[0];
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const userId = await getUserIdByFid(pool, fid.toString());
 
     // Verify user has unlocked this shop
     const [accessRows] = await pool.execute<any[]>(
       `SELECT poi_id FROM user_zone_history 
        WHERE user_id = ? AND poi_id = ? AND action_type = 'UnlockedPOI' 
        LIMIT 1`,
-      [user.id, shopId]
+      [userId, shopId]
     );
 
     if (accessRows.length === 0) {
@@ -93,10 +87,6 @@ export async function GET(
       subnet_id: shop.subnet_id
     });
   } catch (err: any) {
-    console.error('Shop details API error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Failed to fetch shop details' },
-      { status: 500 }
-    );
+    return handleApiError(err, 'Failed to fetch shop details');
   }
 }

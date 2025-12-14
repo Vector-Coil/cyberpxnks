@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool, logActivity } from '../../../../../lib/db';
 import { RowDataPacket } from 'mysql2/promise';
 import { StatsService } from '../../../../../lib/statsService';
+import { requireParams, handleApiError } from '../../../../../lib/api/errors';
+import { logger } from '../../../../../lib/logger';
 
 // Penalties for running away
 const FLEE_PENALTIES = {
@@ -24,11 +26,8 @@ export async function POST(
     }
 
     const body = await request.json();
+    requireParams(body, ['fid']);
     const { fid } = body;
-
-    if (!fid) {
-      return NextResponse.json({ error: 'FID is required' }, { status: 400 });
-    }
 
     const pool = await getDbPool();
     const connection = await pool.getConnection();
@@ -104,10 +103,6 @@ export async function POST(
     }
 
   } catch (err: any) {
-    console.error('Encounter flee API error:', err);
-    return NextResponse.json(
-      { error: 'Failed to flee encounter', details: err.message },
-      { status: 500 }
-    );
+    return handleApiError(err, 'Failed to flee encounter');
   }
 }

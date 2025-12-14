@@ -3,6 +3,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool, Player } from '~/lib/db'; // Adjust path if needed
 import { FieldPacket } from 'mysql2/promise';
+import { handleApiError } from '~/lib/api/errors';
+import { logger } from '~/lib/logger';
 
 /**
  * API route to fetch a player's state by Farcaster ID (fid).
@@ -33,8 +35,7 @@ export async function GET(
   try {
     pool = await getDbPool();
   } catch (error) {
-    console.error('Database connection failed:', error);
-    return NextResponse.json({ error: 'Database connection failed' }, { status: 500 });
+    return handleApiError(error, 'Database connection failed');
   }
 
   // 2. Query the database
@@ -54,7 +55,6 @@ export async function GET(
     return NextResponse.json(player, { status: 200 });
 
   } catch (error) {
-    console.error('Database query failed:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return handleApiError(error, 'Database query failed');
   }
 }

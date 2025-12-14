@@ -1,20 +1,23 @@
 import { NextResponse } from 'next/server';
 import { getDbPool } from '../../../lib/db';
+import { logger } from '~/lib/logger';
 
 export async function GET() {
   try {
-    console.log('Testing database connection...');
-    console.log('DB_HOST:', process.env.DB_HOST);
-    console.log('DB_USER:', process.env.DB_USER);
-    console.log('DB_NAME:', process.env.DB_NAME);
-    console.log('DB_PORT:', process.env.DB_PORT);
+    logger.info('Testing database connection');
+    logger.debug('DB config', {
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      database: process.env.DB_NAME,
+      port: process.env.DB_PORT
+    });
     
     const pool = await getDbPool();
     
     // Try a simple query
     const [rows] = await pool.execute('SELECT 1 as test');
     
-    console.log('Database connection successful!');
+    logger.info('Database connection successful');
     
     return NextResponse.json({ 
       success: true,
@@ -28,7 +31,7 @@ export async function GET() {
       }
     });
   } catch (err: any) {
-    console.error('Database connection error:', err);
+    logger.error('Database connection error', { error: err.message, code: err.code, sqlState: err.sqlState });
     return NextResponse.json({ 
       success: false,
       error: err.message,

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../../lib/db';
+import { handleApiError } from '../../../../lib/api/errors';
+import { getUserIdByFid } from '../../../../lib/api/userUtils';
+import { logger } from '../../../../lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,15 +12,7 @@ export async function GET(request: NextRequest) {
 
     const pool = await getDbPool();
 
-    // Get user ID from fid
-    const [userRows] = await pool.execute<any[]>(
-      'SELECT id FROM users WHERE fid = ? LIMIT 1',
-      [fid]
-    );
-    const user = (userRows as any[])[0];
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const userId = await getUserIdByFid(pool, fid.toString());
 
     let query = `
       SELECT 
@@ -54,10 +49,6 @@ export async function GET(request: NextRequest) {
       effects: effectRows
     });
   } catch (error) {
-    console.error('Failed to fetch slimsoft effects:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch slimsoft effects' },
-      { status: 500 }
-    );
+    return handleApiError(error, 'Failed to fetch slimsoft effects');
   }
 }

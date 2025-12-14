@@ -1,17 +1,16 @@
 import { NextResponse } from 'next/server';
 import { getDbPool } from '../../../lib/db';
+import { validateFid } from '~/lib/api/errors';
+import { getUserIdByFid } from '~/lib/api/userUtils';
+import { logger } from '~/lib/logger';
+import { handleApiError } from '~/lib/api/errors';
 
 export async function GET(req: Request) {
   try {
     const url = new URL(req.url);
-    const fidParam = url.searchParams.get('fid') || '300187';
-    const fid = parseInt(fidParam, 10);
-
-    if (Number.isNaN(fid)) {
-      return NextResponse.json({ error: 'Invalid fid' }, { status: 400 });
-    }
-
+    const fid = validateFid(url.searchParams.get('fid') || '300187');
     const pool = await getDbPool();
+    const userId = await getUserIdByFid(pool, fid);
 
     const query = `
       SELECT c.id AS contact_id, c.display_name AS contact_name, c.image_url AS image_url, ch.unlocked_at,
@@ -28,13 +27,13 @@ export async function GET(req: Request) {
             AND mh.status = 'UNREAD'
         ) AS messages_count
       FROM contact_history ch
-      JOIN users u ON ch.user_id = u.id
       JOIN contacts c ON ch.contact_id = c.id
-      WHERE u.fid = ?
+      WHERE ch.user_id = ?
       ORDER BY ch.unlocked_at DESC
     `;
 
-    const [rows] = await pool.execute<any[]>(query, [fid]);
+    const [rows] = await pool.execute<any[]>(query, [userId]);
+    logger.info('Retrieved contacts', { fid, count: rows.length });
 
     return NextResponse.json(rows.map(r => ({
       id: r.contact_id,
@@ -47,7 +46,6 @@ export async function GET(req: Request) {
     })));
 
   } catch (err) {
-    console.error('/api/contacts error', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(err, '/api/contacts');
   }
 }

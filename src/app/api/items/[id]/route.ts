@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../../lib/db';
+import { getUserIdByFid } from '../../../../lib/api/userUtils';
+import { handleApiError } from '../../../../lib/api/errors';
+import { logger } from '../../../../lib/logger';
 
 export async function GET(
   request: NextRequest,
@@ -17,15 +20,7 @@ export async function GET(
 
     const pool = await getDbPool();
 
-    // Get user ID from fid
-    const [userRows] = await pool.execute<any[]>(
-      'SELECT id FROM users WHERE fid = ? LIMIT 1',
-      [fid]
-    );
-    const user = (userRows as any[])[0];
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const userId = await getUserIdByFid(pool, fid.toString());
 
     // Fetch item details
     const [itemRows] = await pool.execute<any[]>(
@@ -60,7 +55,7 @@ export async function GET(
        FROM user_inventory
        WHERE user_id = ? AND item_id = ?
        LIMIT 1`,
-      [user.id, itemId]
+      [userId, itemId]
     );
     const inventoryItem = (inventoryRows as any[])[0];
 
@@ -70,7 +65,7 @@ export async function GET(
        FROM user_loadout
        WHERE user_id = ? AND item_id = ?
        LIMIT 1`,
-      [user.id, itemId]
+      [userId, itemId]
     );
     const loadoutItem = (loadoutRows as any[])[0];
 
@@ -85,10 +80,6 @@ export async function GET(
       upgrade: inventoryItem?.upgrade || 0
     });
   } catch (err: any) {
-    console.error('Item detail API error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Failed to fetch item details' },
-      { status: 500 }
-    );
+    return handleApiError(err, 'Failed to fetch item details');
   }
 }

@@ -2,32 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool, logActivity } from '../../../../lib/db';
 import { RowDataPacket, ResultSetHeader } from 'mysql2/promise';
 import { StatsService } from '../../../../lib/statsService';
+import { getUserIdByFid } from '../../../../lib/api/userUtils';
+import { validateFid, handleApiError, requireParams } from '../../../../lib/api/errors';
+import { validateResources } from '../../../../lib/game/resourceValidator';
+import { ACTION_COSTS, COOLDOWNS } from '../../../../lib/game/constants';
+import { logger } from '../../../../lib/logger';
 
 export async function POST(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const fid = searchParams.get('fid');
-
-  if (!fid) {
-    return NextResponse.json({ error: 'FID is required' }, { status: 400 });
-  }
-
   try {
+    const searchParams = request.nextUrl.searchParams;
+    const fid = validateFid(searchParams.get('fid'));
+
+    logger.apiRequest('POST', '/api/grid/scan', { fid });
+
     const dbPool = await getDbPool();
     
     const body = await request.json();
+    requireParams(body, ['chargeCost']);
     const { chargeCost } = body;
 
     // Get user ID
-    const [userRows] = await dbPool.query<RowDataPacket[]>(
-      'SELECT id FROM users WHERE fid = ?',
-      [fid]
-    );
-
-    if (userRows.length === 0) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const userId = userRows[0].id;
+    const userId = await getUserIdByFid(dbPool, parseInt(fid.toString()));
 
     // Check for existing active scan (only if end_time is in the future)
     const [existingScanRows] = await dbPool.query<RowDataPacket[]>(
@@ -47,16 +42,7 @@ export async function POST(request: NextRequest) {
 
     // Get user stats using StatsService
     const statsService = new StatsService(dbPool, userId);
-    const fullStats = await statsService.getStats();
-    const stats = {
-      current_charge: fullStats.current.charge,
-      current_bandwidth: fullStats.current.bandwidth,
-      max_bandwidth: fullStats.max.bandwidth,
-      current_neural: fullStats.current.neural,
-      max_neural: fullStats.max.neural,
-      current_thermal: fullStats.current.thermal,
-      max_thermal: fullStats.max.thermal
-    };
+    const stats = await statsService.getStats();
 
     // Count currently active jobs
     const [activeJobsRows] = await dbPool.query<RowDataPacket[]>(
@@ -69,30 +55,22 @@ export async function POST(request: NextRequest) {
     );
     const activeCount = activeJobsRows[0]?.active_count || 0;
 
-    if (activeCount >= stats.max_bandwidth) {
-      return NextResponse.json({ error: `Maximum concurrent actions reached (${stats.max_bandwidth})` }, { status: 400 });
+    if (activeCount >= stats.max.max_bandwidth) {
+      return NextResponse.json({ error: `Maximum concurrent actions reached (${stats.max.max_bandwidth})` }, { status: 400 });
     }
 
-    // Validate requirements
-    if (stats.current_charge < chargeCost) {
-      return NextResponse.json({ error: `Not enough charge (need ${chargeCost})` }, { status: 400 });
-    }
-    if (stats.current_bandwidth < 1) {
-      return NextResponse.json({ error: 'Not enough bandwidth (need 1)' }, { status: 400 });
-    }
+    // Validate resources
+    validateResources(stats.current, ACTION_COSTS.GRID_SCAN, stats.max);
 
-    // Deduct costs
-    await dbPool.query(
-      `UPDATE user_stats 
-       SET current_charge = current_charge - ?, 
-           current_bandwidth = current_bandwidth - 1 
-       WHERE user_id = ?`,
-      [chargeCost, userId]
-    );
+    // Deduct costs using StatsService
+    await statsService.modifyStats({
+      charge: -chargeCost,
+      bandwidth: -1
+    });
 
-    // Create scan action (1 minute duration for testing)
+    // Create scan action
     const timestamp = new Date();
-    const endTime = new Date(timestamp.getTime() + 1 * 60 * 1000);
+    const endTime = new Date(timestamp.getTime() + COOLDOWNS.GRID_SCAN);
 
     const [insertResult] = await dbPool.query<ResultSetHeader>(
       `INSERT INTO user_zone_history 
@@ -106,10 +84,12 @@ export async function POST(request: NextRequest) {
       userId,
       'action',
       'overnet_scan_started',
-      60, // 1 minute in seconds (testing)
+      Math.floor(COOLDOWNS.GRID_SCAN / 1000),
       null,
       'Started Overnet Scan'
     );
+
+    logger.info('Grid scan started', { userId, scanId: insertResult.insertId });
 
     // Get updated stats using StatsService (reuse existing instance)
     const updatedFullStats = await statsService.getStats();
@@ -134,7 +114,6 @@ export async function POST(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('Error starting Overnet Scan:', error);
-    return NextResponse.json({ error: 'Failed to start Overnet Scan' }, { status: 500 });
+    return handleApiError(error, 'POST /api/grid/scan');
   }
 }

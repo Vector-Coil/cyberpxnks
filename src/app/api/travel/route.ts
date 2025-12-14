@@ -1,46 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool, logActivity } from '~/lib/db';
+import { StatsService } from '~/lib/statsService';
+import { getUserIdByFid } from '~/lib/api/userUtils';
+import { validateFid, handleApiError, requireParams } from '~/lib/api/errors';
+import { validateResources } from '~/lib/game/resourceValidator';
+import { ACTION_COSTS } from '~/lib/game/constants';
+import { logger } from '~/lib/logger';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { fid, zoneId } = body;
+    requireParams(body, ['fid', 'zoneId']);
+    
+    const fid = validateFid(body.fid);
+    const { zoneId } = body;
 
-    if (!fid || !zoneId) {
-      return NextResponse.json({ error: 'Missing fid or zoneId' }, { status: 400 });
-    }
+    logger.apiRequest('POST', '/api/travel', { fid, zoneId });
 
     const pool = await getDbPool();
 
-    // Get user ID and current stats
-    const [userRows]: any = await pool.execute(
-      'SELECT id FROM users WHERE fid = ? LIMIT 1',
-      [fid]
-    );
+    // Get user ID
+    const userId = await getUserIdByFid(pool, parseInt(fid.toString()));
 
-    if (userRows.length === 0) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    // Get user stats using StatsService
+    const statsService = new StatsService(pool, userId);
+    const stats = await statsService.getStats();
 
-    const userId = userRows[0].id;
-
-    // Get current stamina
-    const [statsRows]: any = await pool.execute(
-      'SELECT current_stamina FROM user_stats WHERE user_id = ? LIMIT 1',
-      [userId]
-    );
-
-    if (statsRows.length === 0) {
-      return NextResponse.json({ error: 'User stats not found' }, { status: 404 });
-    }
-
-    const currentStamina = statsRows[0].current_stamina;
-    const travelCost = 25;
-
-    // Check if user has enough stamina
-    if (currentStamina < travelCost) {
-      return NextResponse.json({ error: 'Not enough stamina' }, { status: 400 });
-    }
+    // Validate resources
+    validateResources(stats.current, ACTION_COSTS.ZONE_TRAVEL, stats.max);
 
     // Get zone name for history
     const [zoneRows]: any = await pool.execute(
@@ -49,16 +36,17 @@ export async function POST(req: NextRequest) {
     );
     const zoneName = zoneRows[0]?.name || 'Unknown Zone';
 
-    // Update user location and deduct stamina
+    // Update user location
     await pool.execute(
       'UPDATE users SET location = ? WHERE id = ?',
       [zoneId, userId]
     );
 
-    await pool.execute(
-      'UPDATE user_stats SET current_stamina = current_stamina - ? WHERE user_id = ?',
-      [travelCost, userId]
-    );
+    // Deduct travel costs using StatsService
+    await statsService.modifyStats({
+      stamina: -(ACTION_COSTS.ZONE_TRAVEL.stamina || 0),
+      charge: -(ACTION_COSTS.ZONE_TRAVEL.charge || 0)
+    });
 
     // Record travel in zone history
     await pool.execute(
@@ -72,36 +60,35 @@ export async function POST(req: NextRequest) {
       userId,
       'action',
       'travel',
-      travelCost,
+      ACTION_COSTS.ZONE_TRAVEL.stamina || 0,
       zoneId,
       `Traveled to ${zoneName}`
     );
 
-    // Get updated stats
-    const [updatedStatsRows]: any = await pool.execute(
-      `SELECT 
-        current_consciousness, max_consciousness,
-        current_stamina, max_stamina,
-        current_charge, max_charge,
-        current_bandwidth, max_bandwidth,
-        current_thermal, max_thermal,
-        current_neural, max_neural
-       FROM user_stats 
-       WHERE user_id = ? 
-       LIMIT 1`,
-      [userId]
-    );
+    logger.info('User traveled', { userId, zoneId, zoneName });
+
+    // Get updated stats using StatsService
+    const updatedStats = await statsService.getCompleteStats();
 
     return NextResponse.json({
       success: true,
       location: zoneId,
-      updatedStats: updatedStatsRows[0]
+      updatedStats: {
+        current_consciousness: updatedStats.current.consciousness,
+        max_consciousness: updatedStats.max.consciousness,
+        current_stamina: updatedStats.current.stamina,
+        max_stamina: updatedStats.max.stamina,
+        current_charge: updatedStats.current.charge,
+        max_charge: updatedStats.max.charge,
+        current_bandwidth: updatedStats.current.bandwidth,
+        max_bandwidth: updatedStats.max.bandwidth,
+        current_thermal: updatedStats.current.thermal,
+        max_thermal: updatedStats.max.thermal,
+        current_neural: updatedStats.current.neural,
+        max_neural: updatedStats.max.neural
+      }
     });
-  } catch (error: any) {
-    console.error('Error during travel:', error);
-    return NextResponse.json(
-      { error: 'Failed to travel', details: error.message },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleApiError(error, 'POST /api/travel');
   }
 }

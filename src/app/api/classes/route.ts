@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDbPool } from '../../../lib/db';
+import { logger } from '~/lib/logger';
+import { handleApiError } from '~/lib/api/errors';
 
 export async function GET() {
   try {
@@ -8,12 +10,9 @@ export async function GET() {
       'SELECT id, name, description, image_url FROM classes ORDER BY id'
     );
     
+    logger.info('Retrieved classes', { count: rows.length });
     return NextResponse.json(rows);
   } catch (err: any) {
-    console.error('Classes API error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Failed to fetch classes' },
-      { status: 500 }
-    );
+    return handleApiError(err, '/api/classes');
   }
 }

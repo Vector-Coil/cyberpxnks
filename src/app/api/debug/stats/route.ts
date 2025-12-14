@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getDbPool } from '../../../../lib/db';
+import { getUserIdByFid } from '../../../../lib/api/userUtils';
+import { handleApiError } from '../../../../lib/api/errors';
+import { logger } from '../../../../lib/logger';
 
 // Debug endpoint to check raw user data
 export async function GET(req: Request) {
@@ -10,17 +13,7 @@ export async function GET(req: Request) {
 
     const pool = await getDbPool();
     
-    // Get user ID
-    const [userRows] = await pool.execute(
-      'SELECT id FROM users WHERE fid = ? LIMIT 1',
-      [fid]
-    );
-
-    if ((userRows as any[]).length === 0) {
-      return NextResponse.json({ error: 'User not found' });
-    }
-
-    const userId = (userRows as any[])[0].id;
+    const userId = await getUserIdByFid(pool, fid.toString());
 
     // Get user attributes
     const [attrRows] = await pool.execute(
@@ -54,10 +47,6 @@ export async function GET(req: Request) {
       equipment: (equipRows as any[])[0] || null
     });
   } catch (err: any) {
-    console.error('Debug stats error:', err);
-    return NextResponse.json({ 
-      error: err.message,
-      stack: err.stack
-    }, { status: 500 });
+    return handleApiError(err, 'Failed to fetch debug stats');
   }
 }

@@ -2,14 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../lib/db';
 import { NeynarAPIClient } from '@neynar/nodejs-sdk';
 import { RowDataPacket } from 'mysql2/promise';
+import { validateFid } from '~/lib/api/errors';
+import { logger } from '~/lib/logger';
+import { handleApiError } from '~/lib/api/errors';
 
 export async function POST(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const fid = searchParams.get('fid');
-
-  if (!fid) {
-    return NextResponse.json({ error: 'FID is required' }, { status: 400 });
-  }
+  const fid = validateFid(searchParams.get('fid'));
 
   const apiKey = process.env.NEYNAR_API_KEY;
   if (!apiKey) {
@@ -67,6 +66,7 @@ export async function POST(request: NextRequest) {
       [farcasterUser.username, farcasterUser.pfp_url, user.id]
     );
 
+    logger.info('Synced Farcaster data', { fid, username: farcasterUser.username });
     return NextResponse.json({
       synced: true,
       message: 'User data synced successfully',
@@ -75,11 +75,6 @@ export async function POST(request: NextRequest) {
       syncedAt: now
     });
   } catch (error) {
-    console.error('Error syncing user data:', error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return NextResponse.json({ 
-      error: 'Failed to sync user data', 
-      details: errorMessage 
-    }, { status: 500 });
+    return handleApiError(error, '/api/sync-farcaster');
   }
 }

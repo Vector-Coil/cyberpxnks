@@ -1,30 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../lib/db';
-import { RowDataPacket } from 'mysql2/promise';
+import { getUserByFid } from '../../../lib/api/userUtils';
+import { validateFid, handleApiError } from '../../../lib/api/errors';
+import { logger } from '../../../lib/logger';
 
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const fid = searchParams.get('fid');
-
-  if (!fid) {
-    return NextResponse.json({ error: 'FID is required' }, { status: 400 });
-  }
-
   try {
-    const dbPool = await getDbPool();
+    const searchParams = request.nextUrl.searchParams;
+    const fid = validateFid(searchParams.get('fid'));
 
-    const [userRows] = await dbPool.query<RowDataPacket[]>(
-      'SELECT id, fid, username, admin FROM users WHERE fid = ?',
-      [fid]
-    );
+    logger.apiRequest('GET', '/api/user', { fid });
 
-    if (userRows.length === 0) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    const pool = await getDbPool();
+    const user = await getUserByFid(pool, fid);
 
-    return NextResponse.json(userRows[0]);
+    return NextResponse.json({
+      id: user.id,
+      fid: user.fid,
+      username: user.username,
+      admin: user.admin
+    });
   } catch (error) {
-    console.error('Error fetching user:', error);
-    return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 });
+    return handleApiError(error, 'GET /api/user');
   }
 }

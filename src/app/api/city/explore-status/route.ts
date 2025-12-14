@@ -1,46 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../../lib/db';
 import { RowDataPacket } from 'mysql2/promise';
+import { validateFid } from '~/lib/api/errors';
+import { getUserIdByFid } from '~/lib/api/userUtils';
+import { logger } from '~/lib/logger';
+import { handleApiError } from '~/lib/api/errors';
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const fid = searchParams.get('fid');
-
-  if (!fid) {
-    return NextResponse.json({ error: 'FID is required' }, { status: 400 });
-  }
+  const fid = validateFid(searchParams.get('fid'));
 
   try {
     const dbPool = await getDbPool();
-    
-    const [userRows] = await dbPool.query<RowDataPacket[]>(
-      'SELECT id FROM users WHERE fid = ?',
-      [fid]
-    );
-
-    if (userRows.length === 0) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    const userId = userRows[0].id;
+    const userId = await getUserIdByFid(dbPool, fid);
 
     // Check for active explore action (zone_id = NULL, action_type = 'Exploring')
-    // Only return if end_time is in the future (still in progress)
+    // Return if:
+    // 1. In progress: end_time > now AND result_status is NULL/empty
+    // 2. Ready for results: end_time <= now AND result_status is NULL/empty (TIME EXPIRED, NOT YET VIEWED)
+    // 3. Results viewed: result_status = 'completed' (should still show until dismissed)
     const [historyRows] = await dbPool.query<RowDataPacket[]>(
       `SELECT id, timestamp, end_time, result_status 
        FROM user_zone_history 
        WHERE user_id = ? 
          AND zone_id IS NULL 
          AND action_type = 'Exploring'
-         AND end_time IS NOT NULL 
-         AND end_time > UTC_TIMESTAMP()
-         AND (result_status IS NULL OR result_status = '')
+         AND end_time IS NOT NULL
+         AND result_status != 'dismissed'
+         AND (result_status IS NULL OR result_status = '' OR result_status = 'completed')
        ORDER BY timestamp DESC 
        LIMIT 1`,
       [userId]
     );
 
     if (historyRows.length > 0) {
+      logger.debug('Active explore found', { fid, historyId: historyRows[0].id });
       return NextResponse.json({
         activeExplore: {
           id: historyRows[0].id,
@@ -53,7 +47,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ activeExplore: null });
   } catch (error) {
-    console.error('Error checking explore status:', error);
-    return NextResponse.json({ error: 'Failed to check explore status' }, { status: 500 });
+    return handleApiError(error, '/api/city/explore-status');
   }
 }

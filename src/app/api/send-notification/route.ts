@@ -4,6 +4,7 @@ import { z } from "zod";
 import { setUserNotificationDetails } from "~/lib/kv";
 import { sendMiniAppNotification } from "~/lib/notifs";
 import { sendNeynarMiniAppNotification } from "~/lib/neynar";
+import { logger } from "~/lib/logger";
 
 const requestSchema = z.object({
   fid: z.number(),
@@ -42,16 +43,19 @@ export async function POST(request: NextRequest) {
   });
 
   if (sendResult.state === "error") {
+    logger.error('Failed to send notification', { fid: requestBody.data.fid, error: sendResult.error });
     return Response.json(
       { success: false, error: sendResult.error },
       { status: 500 }
     );
   } else if (sendResult.state === "rate_limit") {
+    logger.warn('Notification rate limited', { fid: requestBody.data.fid });
     return Response.json(
       { success: false, error: "Rate limited" },
       { status: 429 }
     );
   }
 
+  logger.info('Notification sent successfully', { fid: requestBody.data.fid });
   return Response.json({ success: true });
 }
