@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
     const userId = await getUserIdByFid(pool, fid);
 
     // Get stats BEFORE upgrade to track bandwidth changes
-    const statsServiceBefore = new StatsService(pool, user.id);
+    const statsServiceBefore = new StatsService(pool, userId);
     const statsBefore = await statsServiceBefore.getStats();
     const oldMaxBandwidth = statsBefore.max.bandwidth;
     const oldCurrentBandwidth = statsBefore.current.bandwidth;
@@ -149,7 +149,7 @@ export async function POST(request: NextRequest) {
       `SELECT SUM(quantity) as total_quantity
        FROM user_inventory
        WHERE user_id = ? AND item_id = ?`,
-      [user.id, hardware.upgrades_with]
+      [userId, hardware.upgrades_with]
     );
 
     const totalQuantity = (materialRows as any[])[0]?.total_quantity || 0;
@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
       `UPDATE user_inventory
        SET upgrade = upgrade + 1
        WHERE user_id = ? AND item_id = ?`,
-      [user.id, hardwareId]
+      [userId, hardwareId]
     );
 
     // Consume upgrade materials
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
       `SELECT id, quantity FROM user_inventory
        WHERE user_id = ? AND item_id = ?
        ORDER BY acquired_at ASC`,
-      [user.id, hardware.upgrades_with]
+      [userId, hardware.upgrades_with]
     );
 
     for (const row of inventoryRows as any[]) {
@@ -198,10 +198,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Recalculate hardware stats after upgrade to update max bandwidth
-    await updateHardwareStatsAfterUpgrade(pool, user.id);
+    await updateHardwareStatsAfterUpgrade(pool, userId);
 
     // Get stats AFTER upgrade to check if max bandwidth increased
-    const statsServiceAfter = new StatsService(pool, user.id);
+    const statsServiceAfter = new StatsService(pool, userId);
     const statsAfter = await statsServiceAfter.getStats();
     const newMaxBandwidth = statsAfter.max.bandwidth;
 
@@ -212,7 +212,7 @@ export async function POST(request: NextRequest) {
       
       await pool.execute(
         'UPDATE user_stats SET current_bandwidth = ? WHERE user_id = ?',
-        [newCurrentBandwidth, user.id]
+        [newCurrentBandwidth, userId]
       );
     }
 

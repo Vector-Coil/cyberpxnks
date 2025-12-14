@@ -69,13 +69,13 @@ export async function POST(request: NextRequest) {
     // Update user XP
     await pool.execute(
       'UPDATE users SET xp = xp + ? WHERE id = ?',
-      [xpGained, user.id]
+      [xpGained, userId]
     );
 
     // Get user's street cred for encounter filtering
     const [userDataRows] = await pool.execute<RowDataPacket[]>(
       'SELECT street_cred FROM users WHERE id = ? LIMIT 1',
-      [user.id]
+      [userId]
     );
     const userStreetCred = userDataRows[0]?.street_cred || 0;
 
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
       if (encounter) {
         // Log encounter trigger
         await logActivity(
-          user.id,
+          userId,
           'encounter',
           'triggered',
           null,
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     // Restore bandwidth (increment by 1, will be capped by validation elsewhere)
     await pool.execute(
       'UPDATE user_stats SET current_bandwidth = current_bandwidth + 1 WHERE user_id = ?',
-      [user.id]
+      [userId]
     );
 
     // Build gains text
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
 
     // Log breach completion activity
     await logActivity(
-      user.id,
+      userId,
       'action',
       'breach_completed',
       xpGained,
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
     // Get updated stats
     const [updatedStatsRows] = await pool.execute<any[]>(
       'SELECT * FROM user_stats WHERE user_id = ? LIMIT 1',
-      [user.id]
+      [userId]
     );
 
     return NextResponse.json({

@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
           `INSERT INTO user_zone_history 
            (user_id, zone_id, poi_id, action_type, timestamp, result_status) 
            VALUES (?, ?, ?, 'UnlockedPOI', UTC_TIMESTAMP(), 'completed')`,
-          [user.id, zoneId, unlockedPOI.id]
+          [userId, zoneId, unlockedPOI.id]
         );
 
         // Determine POI type for logging
@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
         
         // Log POI unlock activity
         await logActivity(
-          user.id,
+          userId,
           'discovery',
           'poi_unlocked',
           null,
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       if (encounter) {
         // Log encounter trigger
         await logActivity(
-          user.id,
+          userId,
           'encounter',
           'triggered',
           null,
@@ -119,12 +119,12 @@ export async function POST(request: NextRequest) {
            xp_data = ?,
            gains_data = ?
        WHERE id = ? AND user_id = ?`,
-      [xpGained, gainsText, historyId, user.id]
+      [xpGained, gainsText, historyId, userId]
     );
 
     // Log scout completion activity
     await logActivity(
-      user.id,
+      userId,
       'action',
       'scout_completed',
       xpGained,
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
     );
 
     // Restore bandwidth using StatsService
-    const statsService = new StatsService(pool, user.id);
+    const statsService = new StatsService(pool, userId);
     await statsService.modifyStats({
       bandwidth: 1  // +1 to restore
     });
