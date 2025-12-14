@@ -174,7 +174,4 @@ export async function POST(request: NextRequest) {
     });
     return handleApiError(error, 'Failed to process explore results');
   }
-} 
-    }, { status: 500 });
-  }
 }

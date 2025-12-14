@@ -180,9 +180,4 @@ export async function POST(request: NextRequest) {
     });
     return handleApiError(err, 'Failed to process scout results');
   }
-} 
-      },
-      { status: 500 }
-    );
-  }
 }

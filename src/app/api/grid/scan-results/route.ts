@@ -146,7 +146,4 @@ export async function POST(request: NextRequest) {
     });
     return handleApiError(error, 'Failed to process Overnet Scan results');
   }
-} 
-    }, { status: 500 });
-  }
 }
