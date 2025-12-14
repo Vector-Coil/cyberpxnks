@@ -21,7 +21,7 @@ export async function GET(
     const pool = await getDbPool();
     logger.debug('Fetching district detail', { districtId, fid });
 
-    const userId = await getUserIdByFid(pool, fid!);
+    const userId = await getUserIdByFid(pool, parseInt(fid!, 10));
 
     // Fetch district info
     const [districtRows]: any = await pool.execute(
