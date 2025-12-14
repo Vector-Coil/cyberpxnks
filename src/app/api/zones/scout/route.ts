@@ -48,9 +48,9 @@ export async function POST(request: NextRequest) {
     );
     const activeCount = (activeJobsRows as any[])[0]?.active_count || 0;
 
-    if (activeCount >= completeStats.max.max_bandwidth) {
+    if (activeCount >= completeStats.max.bandwidth) {
       return NextResponse.json({ 
-        error: `Maximum concurrent actions reached (${completeStats.max.max_bandwidth})` 
+        error: `Maximum concurrent actions reached (${completeStats.max.bandwidth})` 
       }, { status: 400 });
     }
 
