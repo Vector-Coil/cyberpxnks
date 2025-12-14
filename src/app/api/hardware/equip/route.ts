@@ -195,16 +195,16 @@ export async function POST(request: NextRequest) {
         // For cyberdecks, delete the hardware slot row
         await pool.execute(
           'DELETE FROM user_loadout WHERE user_id = ? AND slot_type = ?',
-          [user.id, 'hardware']
+          [userId, 'hardware']
         );
         // Update user_stats to clear hardware modifiers
-        await updateHardwareStats(pool, user.id);
+        await updateHardwareStats(pool, userId);
         // Cap current stats at new max values (max values decreased after unequip)
-        const statsService = new StatsService(pool, user.id);
+        const statsService = new StatsService(pool, userId);
         await statsService.capAtMax();
         // Log to activity ledger
         await logActivity(
-          user.id,
+          userId,
           'hardware',
           'unequip_cyberdeck',
           null,
@@ -215,16 +215,16 @@ export async function POST(request: NextRequest) {
         // For slimsoft, delete the specific item row
         await pool.execute(
           'DELETE FROM user_loadout WHERE user_id = ? AND item_id = ? AND slot_type = ?',
-          [user.id, itemId, slotType]
+          [userId, itemId, slotType]
         );
         // Update user_stats to remove slimsoft modifiers
-        await updateSlimsoftStats(pool, user.id);
+        await updateSlimsoftStats(pool, userId);
         // Cap current stats at new max values (in case slimsoft affected max calculations)
-        const statsService = new StatsService(pool, user.id);
+        const statsService = new StatsService(pool, userId);
         await statsService.capAtMax();
         // Log to activity ledger
         await logActivity(
-          user.id,
+          userId,
           'hardware',
           'unequip_slimsoft',
           null,
@@ -253,7 +253,7 @@ export async function POST(request: NextRequest) {
         `SELECT id FROM user_loadout 
          WHERE user_id = ? AND slot_type = ?
          LIMIT 1`,
-        [user.id, 'hardware']
+        [userId, 'hardware']
       );
 
       if ((hardwareSlot as any[]).length > 0) {
@@ -262,14 +262,14 @@ export async function POST(request: NextRequest) {
           `UPDATE user_loadout 
            SET item_id = ?, slot_name = ?
            WHERE user_id = ? AND slot_type = ?`,
-          [itemId, 'cyberdeck_main', user.id, 'hardware']
+          [itemId, 'cyberdeck_main', userId, 'hardware']
         );
       } else {
         // Create new hardware slot
         await pool.execute(
           `INSERT INTO user_loadout (user_id, slot_name, item_id, slot_type)
            VALUES (?, ?, ?, ?)`,
-          [user.id, 'cyberdeck_main', itemId, 'hardware']
+          [userId, 'cyberdeck_main', itemId, 'hardware']
         );
       }
 
@@ -278,22 +278,22 @@ export async function POST(request: NextRequest) {
         `DELETE ul FROM user_loadout ul
          INNER JOIN items i ON ul.item_id = i.id
          WHERE ul.user_id = ? AND ul.slot_type = 'slimsoft' AND i.tier > ?`,
-        [user.id, newDeckTier]
+        [userId, newDeckTier]
       );
 
       // Update user_stats with hardware modifiers
-      await updateHardwareStats(pool, user.id);
+      await updateHardwareStats(pool, userId);
       
       // Update slimsoft stats (in case any were auto-unequipped)
-      await updateSlimsoftStats(pool, user.id);
+      await updateSlimsoftStats(pool, userId);
 
       // Cap current stats at new max values (max values may have changed)
-      const statsService = new StatsService(pool, user.id);
+      const statsService = new StatsService(pool, userId);
       await statsService.capAtMax();
 
       // Log to activity ledger
       await logActivity(
-        user.id,
+        userId,
         'hardware',
         'equip_cyberdeck',
         null,
@@ -316,7 +316,7 @@ export async function POST(request: NextRequest) {
          INNER JOIN items i ON ul.item_id = i.id
          WHERE ul.user_id = ? AND ul.slot_type = 'hardware'
          LIMIT 1`,
-        [user.id]
+        [userId]
       );
       const deckTier = (deckRows as any[])[0]?.tier || 0;
 
@@ -344,7 +344,7 @@ export async function POST(request: NextRequest) {
       const [equippedRows] = await pool.execute<any[]>(
         `SELECT slot_name FROM user_loadout 
          WHERE user_id = ? AND slot_type = ?`,
-        [user.id, slotType]
+        [userId, slotType]
       );
       const usedSlots = (equippedRows as any[]).map(row => row.slot_name);
 
@@ -360,7 +360,7 @@ export async function POST(request: NextRequest) {
         `SELECT id FROM user_loadout 
          WHERE user_id = ? AND item_id = ? AND slot_type = ?
          LIMIT 1`,
-        [user.id, itemId, slotType]
+        [userId, itemId, slotType]
       );
       
       if ((alreadyEquippedRows as any[]).length > 0) {
@@ -383,19 +383,19 @@ export async function POST(request: NextRequest) {
       await pool.execute(
         `INSERT INTO user_loadout (user_id, slot_name, item_id, slot_type)
          VALUES (?, ?, ?, ?)`,
-        [user.id, slotName, itemId, slotType]
+        [userId, slotName, itemId, slotType]
       );
 
       // Update user_stats with slimsoft modifiers
-      await updateSlimsoftStats(pool, user.id);
+      await updateSlimsoftStats(pool, userId);
 
       // Cap current stats at new max values (in case slimsoft affected max calculations)
-      const statsService = new StatsService(pool, user.id);
+      const statsService = new StatsService(pool, userId);
       await statsService.capAtMax();
 
       // Log to activity ledger
       await logActivity(
-        user.id,
+        userId,
         'hardware',
         'equip_slimsoft',
         null,
