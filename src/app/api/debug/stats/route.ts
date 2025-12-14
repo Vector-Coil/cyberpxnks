@@ -13,7 +13,7 @@ export async function GET(req: Request) {
 
     const pool = await getDbPool();
     
-    const userId = await getUserIdByFid(pool, fid.toString());
+    const userId = await getUserIdByFid(pool, fid);
 
     // Get user attributes
     const [attrRows] = await pool.execute(
