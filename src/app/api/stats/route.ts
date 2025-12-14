@@ -19,7 +19,7 @@ export async function GET(req: Request) {
     const stats = await StatsService.getStatsByFid(pool, fid);
 
     // Get user ID for base stats query
-    const userId = await getUserIdByFid(pool, fid.toString());
+    const userId = await getUserIdByFid(pool, fid);
 
     // Get base stats from user_stats table for hardware preview calculations
     const [userStatsRows] = await pool.execute(

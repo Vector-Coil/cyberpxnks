@@ -20,7 +20,7 @@ export async function GET(
 
     const pool = await getDbPool();
 
-    const userId = await getUserIdByFid(pool, fid.toString());
+    const userId = await getUserIdByFid(pool, fid);
 
     // Fetch item details
     const [itemRows] = await pool.execute<any[]>(

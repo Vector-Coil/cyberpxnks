@@ -26,7 +26,7 @@ export async function GET(
 
     const pool = await getDbPool();
 
-    const userId = await getUserIdByFid(pool, fid.toString());
+    const userId = await getUserIdByFid(pool, fid);
 
     // Verify user has unlocked this shop
     const [accessRows] = await pool.execute<any[]>(

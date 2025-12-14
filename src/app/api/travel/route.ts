@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     const pool = await getDbPool();
 
     // Get user ID
-    const userId = await getUserIdByFid(pool, parseInt(fid.toString()));
+    const userId = await getUserIdByFid(pool, fid);
 
     // Get user stats using StatsService
     const statsService = new StatsService(pool, userId);

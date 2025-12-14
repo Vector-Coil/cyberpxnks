@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     const pool = await getDbPool();
 
-    const userId = await getUserIdByFid(pool, fid.toString());
+    const userId = await getUserIdByFid(pool, fid);
 
     let query = `
       SELECT 

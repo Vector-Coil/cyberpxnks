@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     requireParams(body, ['historyId']);
     const { historyId } = body;
 
-    const userId = await getUserIdByFid(dbPool, fid!);
+    const userId = await getUserIdByFid(dbPool, parseInt(fid!, 10));
 
     // Mark scan as dismissed
     await dbPool.query(

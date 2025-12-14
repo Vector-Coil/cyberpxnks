@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
 
     const pool = await getDbPool();
 
-    const userId = await getUserIdByFid(pool, (fid || 300187).toString());
+    const userId = await getUserIdByFid(pool, fid || 300187);
 
     // Verify user owns the item
     const [inventoryRows] = await pool.execute<any[]>(

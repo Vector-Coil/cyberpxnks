@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const { staminaCost } = body;
 
     // Get user ID
-    const userId = await getUserIdByFid(dbPool, parseInt(fid.toString()));
+    const userId = await getUserIdByFid(dbPool, fid);
 
     // Check for existing active explore (only if end_time is in the future)
     const [existingExploreRows] = await dbPool.query<RowDataPacket[]>(

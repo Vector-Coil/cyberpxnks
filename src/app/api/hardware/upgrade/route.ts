@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
 
     const pool = await getDbPool();
 
-    const userId = await getUserIdByFid(pool, fid.toString());
+    const userId = await getUserIdByFid(pool, fid);
 
     // Get stats BEFORE upgrade to track bandwidth changes
     const statsServiceBefore = new StatsService(pool, user.id);
