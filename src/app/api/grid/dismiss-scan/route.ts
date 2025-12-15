@@ -18,13 +18,17 @@ export async function POST(request: NextRequest) {
 
     const userId = await getUserIdByFid(dbPool, fid);
 
-    // Mark scan as dismissed
-    await dbPool.query(
+    // Mark scan as dismissed (only if it's already been viewed/completed)
+    const [result] = await dbPool.execute<any>(
       `UPDATE user_zone_history 
        SET result_status = 'dismissed' 
-       WHERE id = ? AND user_id = ?`,
+       WHERE id = ? AND user_id = ? AND action_type = 'OvernetScan' AND result_status = 'completed'`,
       [historyId, userId]
     );
+
+    if (result.affectedRows === 0) {
+      return NextResponse.json({ error: 'Scan not found or already dismissed' }, { status: 404 });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

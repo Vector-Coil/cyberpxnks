@@ -191,7 +191,24 @@ export default function CityPage() {
     }
   };
 
-  const handleBackFromResults = () => {
+  const handleBackFromResults = async () => {
+    // Dismiss the explore action
+    if (exploreResults && exploreResults.historyId) {
+      try {
+        const dismissRes = await fetch('/api/city/dismiss-explore', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fid: userFid, historyId: exploreResults.historyId })
+        });
+        
+        if (!dismissRes.ok) {
+          console.error('Failed to dismiss explore');
+        }
+      } catch (err) {
+        console.error('Failed to dismiss explore:', err);
+      }
+    }
+    
     setShowResults(false);
     setExploreResults(null);
     setActiveExplore(null);

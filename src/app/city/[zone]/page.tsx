@@ -321,6 +321,23 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
   };
 
   const handleBackFromResults = async () => {
+    // Dismiss the scout action
+    if (scoutResults && scoutResults.historyId) {
+      try {
+        const dismissRes = await fetch('/api/zones/dismiss-scout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fid: userFid, historyId: scoutResults.historyId })
+        });
+        
+        if (!dismissRes.ok) {
+          console.error('Failed to dismiss scout');
+        }
+      } catch (err) {
+        console.error('Failed to dismiss scout:', err);
+      }
+    }
+    
     setScoutResults(null);
     
     // Reload zone data to refresh history
@@ -421,6 +438,23 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
   };
 
   const handleBackFromBreachResults = async () => {
+    // Dismiss the breach action
+    if (breachResults && breachResults.historyId) {
+      try {
+        const dismissRes = await fetch('/api/zones/dismiss-breach', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fid: userFid, historyId: breachResults.historyId })
+        });
+        
+        if (!dismissRes.ok) {
+          console.error('Failed to dismiss breach');
+        }
+      } catch (err) {
+        console.error('Failed to dismiss breach:', err);
+      }
+    }
+    
     setBreachResults(null);
     setSelectedPoi(null);
     
