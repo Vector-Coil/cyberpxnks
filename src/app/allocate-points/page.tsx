@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { FrameHeader, CxCard, NavStrip } from '../../components/CxShared';
 import NavDrawer from '../../components/NavDrawer';
 import { useNavData } from '../../hooks/useNavData';
+import { useAuthenticatedUser } from '../../hooks/useAuthenticatedUser';
 
 interface UserStats {
   cognition: number;
@@ -16,11 +17,67 @@ interface UserStats {
   unallocated_points: number;
 }
 
-export default function AllocatePointsPage() {
+interface CompleteStats {
+  // User base stats
+  cognition: number;
+  insight: number;
+  interface: number;
+  power: number;
+  resilience: number;
+  agility: number;
+  unallocated_points: number;
+  
+  // Current/Max stats
+  current_consciousness: number;
+  current_stamina: number;
+  current_charge: number;
+  current_bandwidth: number;
+  current_thermal: number;
+  current_neural: number;
+  max_consciousness: number;
+  max_stamina: number;
+  max_charge: number;
+  max_bandwidth: number;
+  max_thermal: number;
+  max_neural: number;
+  
+  // Tech stats (base values from user_stats)
+  total_clock: number;
+  total_cooling: number;
+  total_signal: number;
+  total_latency: number;
+  total_crypt: number;
+  total_cache: number;
+  
+  // Tech stats (calculated with hardware)
+  clock_speed: number;
+  cooling: number;
+  signal_noise: number;
+  latency: number;
+  decryption: number;
+  cache: number;
+  
+  // Hardware modifiers
+  total_cell_capacity: number;
+  total_processor: number;
+  total_heat_sink: number;
+  total_memory: number;
+  total_lifi: number;
+  total_encryption: number;
+  
+  // Slimsoft modifiers
+  slimsoft_decryption: number;
+  slimsoft_encryption: number;
+  antivirus: number;
+}
+
+export default function StatsPage() {
   const router = useRouter();
-  const navData = useNavData();
+  const { userFid, isLoading: isAuthLoading } = useAuthenticatedUser();
+  const navData = useNavData(userFid || 0);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [stats, setStats] = useState<UserStats | null>(null);
+  const [completeStats, setCompleteStats] = useState<CompleteStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [allocations, setAllocations] = useState<{[key: string]: number}>({
     cognition: 0,
@@ -33,16 +90,26 @@ export default function AllocatePointsPage() {
   const [saving, setSaving] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Section collapse states
+  const [showUserStats, setShowUserStats] = useState(true);
+  const [showTechStats, setShowTechStats] = useState(true);
+  const [showCalculatedStats, setShowCalculatedStats] = useState(true);
 
   useEffect(() => {
-    fetchStats();
-  }, []);
+    if (userFid && !isAuthLoading) {
+      fetchStats();
+    }
+  }, [userFid, isAuthLoading]);
 
   const fetchStats = async () => {
+    if (!userFid) return;
+    
     try {
-      const res = await fetch('/api/user-stats?fid=300187');
+      const res = await fetch(`/api/stats?fid=${userFid}`);
       if (res.ok) {
         const data = await res.json();
+        setCompleteStats(data);
         setStats({
           cognition: data.cognition || 5,
           insight: data.insight || 5,
@@ -84,21 +151,19 @@ export default function AllocatePointsPage() {
   };
 
   const handleConfirm = async () => {
-    if (!stats) return;
+    if (!stats || !userFid) return;
 
     setSaving(true);
     setError(null);
 
     try {
-      const res = await fetch('/api/allocate-points?fid=300187', {
+      const res = await fetch(`/api/allocate-points?fid=${userFid}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ allocations })
       });
 
       if (res.ok) {
-        const data = await res.json();
-        // Success - navigate back to dashboard
         router.push('/dashboard');
       } else {
         const errorData = await res.json();
@@ -115,12 +180,12 @@ export default function AllocatePointsPage() {
   };
 
   const statLabels = {
-    cognition: { name: 'Cognition', desc: 'Mental processing and analysis' },
-    insight: { name: 'Insight', desc: 'Perception and awareness' },
-    interface: { name: 'Interface', desc: 'Technical interaction ability' },
-    power: { name: 'Power', desc: 'Raw strength and force' },
-    resilience: { name: 'Resilience', desc: 'Durability and endurance' },
-    agility: { name: 'Agility', desc: 'Speed and reflexes' }
+    cognition: { name: 'Cognition', desc: 'Mental processing → Max Consciousness' },
+    insight: { name: 'Insight', desc: 'Perception → Max Consciousness' },
+    interface: { name: 'Interface', desc: 'Technical interaction' },
+    power: { name: 'Power', desc: 'Raw strength → Max Stamina' },
+    resilience: { name: 'Resilience', desc: 'Endurance → Max Stamina & Consciousness' },
+    agility: { name: 'Agility', desc: 'Speed and reflexes → Max Stamina' }
   };
 
   if (loading) {
@@ -151,7 +216,7 @@ export default function AllocatePointsPage() {
     );
   }
 
-  if (!stats) {
+  if (!stats || !completeStats) {
     return (
       <>
         <NavDrawer 
@@ -181,8 +246,44 @@ export default function AllocatePointsPage() {
 
   const totalAllocated = Object.values(allocations).reduce((sum, val) => sum + val, 0);
   const pointsRemaining = stats.unallocated_points - totalAllocated;
-  const hasChanges = totalAllocated > 0;
   const hasPoints = stats.unallocated_points > 0;
+  const hasChanges = totalAllocated > 0;
+
+  // Helper to render collapsible section header
+  const renderSectionHeader = (title: string, isOpen: boolean, toggle: () => void) => (
+    <div 
+      className="flex items-center justify-between cursor-pointer hover:opacity-80 transition-opacity mb-4"
+      onClick={toggle}
+    >
+      <h2 className="text-xl font-bold uppercase text-fuschia">{title}</h2>
+      <span className="material-symbols-outlined text-fuschia">
+        {isOpen ? 'expand_less' : 'expand_more'}
+      </span>
+    </div>
+  );
+
+  // Helper to render stat row in table format
+  const renderStatRow = (label: string, base: number, mod: number, total: number, description?: string) => (
+    <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 items-center py-2 border-b border-gray-700 last:border-0">
+      <div>
+        <div className="text-white font-semibold text-sm">{label}</div>
+        {description && <div className="text-gray-500 text-xs">{description}</div>}
+      </div>
+      <div className="text-center">
+        <span className="pill-charcoal text-xs">{base}</span>
+      </div>
+      <div className="text-center">
+        {mod > 0 ? (
+          <span className="pill-stat text-xs" style={{ color: 'var(--bright-green)' }}>+{mod}</span>
+        ) : (
+          <span className="pill-charcoal text-xs opacity-50">—</span>
+        )}
+      </div>
+      <div className="text-center">
+        <span className="pill-cloud-gray text-xs font-bold">{total}</span>
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -202,53 +303,46 @@ export default function AllocatePointsPage() {
             onMenuClick={() => setIsDrawerOpen(true)}
           />
         </div>
-        <FrameHeader />
+        
+        <div className="pt-5 pb-2 px-6 flex flex-row gap-3 items-center">
+          <a href="/dashboard" className="w-[25px] h-[25px] rounded-full overflow-hidden bg-bright-blue flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors">
+            <span className="material-symbols-outlined text-white text-xl">chevron_left</span>
+          </a>
+          <div className="masthead">CHARACTER STATS</div>
+        </div>
       
-      <div className="frame-body p-6">
-        <h1 className="text-2xl font-bold text-white uppercase mb-6">Allocate Stat Points</h1>
-
-        {error && (
-          <div className="bg-red-900/30 border border-red-500 text-red-400 p-4 rounded mb-4">
-            {error}
-          </div>
-        )}
-
-        {!hasPoints && (
-          <CxCard className="mb-6">
-            <div className="text-center text-gray-400">
-              <p className="mb-2">You have no stat points to allocate.</p>
-              <p className="text-sm">Gain more points by leveling up.</p>
+        <div className="frame-body p-6 space-y-6">
+          {error && (
+            <div className="bg-red-900/30 border border-red-500 text-red-400 p-4 rounded">
+              {error}
             </div>
-          </CxCard>
-        )}
+          )}
 
-        {hasPoints && (
-          <>
-            <CxCard className="mb-6">
-              <div className="text-center">
+          {/* Point Allocation Section - Only show when points available */}
+          {hasPoints && (
+            <CxCard>
+              <h2 className="text-xl font-bold uppercase text-fuschia mb-4">Allocate Stat Points</h2>
+              
+              <div className="text-center mb-6 p-4 bg-charcoal-75 rounded">
                 <span className="text-white font-bold text-2xl">{pointsRemaining}</span>
                 <span className="text-gray-400 ml-2">points remaining</span>
               </div>
-            </CxCard>
 
-            <div className="space-y-3 mb-6">
-              {Object.entries(statLabels).map(([key, { name, desc }]) => {
-                const currentValue = stats[key as keyof typeof stats] as number;
-                const newValue = currentValue + allocations[key];
-                const hasAllocation = allocations[key] > 0;
+              <div className="space-y-3 mb-6">
+                {Object.entries(statLabels).map(([key, { name, desc }]) => {
+                  const currentValue = stats[key as keyof typeof stats] as number;
+                  const newValue = currentValue + allocations[key];
+                  const hasAllocation = allocations[key] > 0;
 
-                return (
-                  <CxCard key={key}>
-                    <div className="flex items-center justify-between">
+                  return (
+                    <div key={key} className="flex items-center justify-between p-3 bg-charcoal-75 rounded">
                       <div className="flex-1">
                         <div className="text-white font-bold uppercase text-sm">{name}</div>
                         <div className="text-gray-500 text-xs">{desc}</div>
                         <div className="text-gray-400 text-sm mt-1">
                           Current: {currentValue}
                           {hasAllocation && (
-                            <span className="text-fuschia ml-2">
-                              → {newValue}
-                            </span>
+                            <span className="text-fuschia ml-2">→ {newValue}</span>
                           )}
                         </div>
                       </div>
@@ -256,7 +350,7 @@ export default function AllocatePointsPage() {
                         <button
                           className="w-8 h-8 bg-gray-700 text-white rounded flex items-center justify-center hover:bg-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
                           onClick={() => decrement(key)}
-                          disabled={allocations[key] === 0 || !hasPoints}
+                          disabled={allocations[key] === 0}
                         >
                           <span className="material-symbols-outlined text-lg">remove</span>
                         </button>
@@ -266,77 +360,218 @@ export default function AllocatePointsPage() {
                         <button
                           className="w-8 h-8 bg-fuschia text-white rounded flex items-center justify-center hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed"
                           onClick={() => increment(key)}
-                          disabled={pointsRemaining === 0 || !hasPoints}
+                          disabled={pointsRemaining === 0}
                         >
                           <span className="material-symbols-outlined text-lg">add</span>
                         </button>
                       </div>
                     </div>
-                  </CxCard>
-                );
-              })}
-            </div>
-          </>
-        )}
+                  );
+                })}
+              </div>
 
-        <div className="flex gap-3">
-          <button 
-            className="btn-cx btn-cx-secondary flex-1"
-            onClick={() => router.push('/dashboard')}
-          >
-            {hasChanges ? 'CANCEL' : 'BACK'}
-          </button>
-          {hasPoints && (
-            <button 
-              className="btn-cx btn-cx-primary flex-1"
-              onClick={handleSave}
-              disabled={!hasChanges}
-            >
-              {hasChanges ? 'SAVE' : 'NO CHANGES'}
-            </button>
+              <div className="flex gap-3">
+                <button 
+                  className="btn-cx btn-cx-secondary flex-1"
+                  onClick={() => router.push('/dashboard')}
+                >
+                  {hasChanges ? 'CANCEL' : 'BACK'}
+                </button>
+                <button 
+                  className="btn-cx btn-cx-primary flex-1"
+                  onClick={handleSave}
+                  disabled={!hasChanges}
+                >
+                  {hasChanges ? 'SAVE' : 'NO CHANGES'}
+                </button>
+              </div>
+            </CxCard>
           )}
-        </div>
-      </div>
 
-      {/* Confirmation Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-charcoal border border-fuschia rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-xl font-bold text-white uppercase mb-4">Confirm Allocation</h2>
-            <p className="text-gray-300 mb-4">
-              You are about to allocate {totalAllocated} stat point{totalAllocated !== 1 ? 's' : ''}:
-            </p>
-            <ul className="text-gray-400 text-sm mb-6 space-y-1">
-              {Object.entries(allocations)
-                .filter(([_, points]) => points > 0)
-                .map(([stat, points]) => (
-                  <li key={stat}>
-                    • {statLabels[stat as keyof typeof statLabels].name}: +{points}
-                  </li>
-                ))}
-            </ul>
-            <p className="text-gray-400 text-sm mb-6">
-              This action cannot be undone.
-            </p>
-            <div className="flex gap-3">
-              <button 
-                className="btn-cx btn-cx-secondary flex-1"
-                onClick={() => setShowConfirmModal(false)}
-                disabled={saving}
-              >
-                CANCEL
-              </button>
-              <button 
-                className="btn-cx btn-cx-primary flex-1"
-                onClick={handleConfirm}
-                disabled={saving}
-              >
-                {saving ? 'SAVING...' : 'CONFIRM'}
-              </button>
+          {/* Netrunner Base Stats Section */}
+          <CxCard>
+            {renderSectionHeader('Netrunner Base Stats', showUserStats, () => setShowUserStats(!showUserStats))}
+            
+            {showUserStats && (
+              <div className="space-y-3">
+                {Object.entries(statLabels).map(([key, { name, desc }]) => {
+                  const value = stats[key as keyof typeof stats] as number;
+                  return (
+                    <div key={key} className="flex items-center justify-between p-3 bg-charcoal-75 rounded">
+                      <div className="flex-1">
+                        <div className="text-white font-bold uppercase text-sm">{name}</div>
+                        <div className="text-gray-500 text-xs">{desc}</div>
+                      </div>
+                      <div>
+                        <span className="pill-cloud-gray text-lg font-bold">{value}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CxCard>
+
+          {/* Tech Stats Section (Hardware-based) */}
+          <CxCard>
+            {renderSectionHeader('Tech Stats (Hardware & Software)', showTechStats, () => setShowTechStats(!showTechStats))}
+            
+            {showTechStats && (
+              <>
+                {/* Table header */}
+                <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 items-center py-2 border-b-2 border-fuschia mb-3">
+                  <div className="text-fuschia font-bold text-xs uppercase">Stat</div>
+                  <div className="text-center text-fuschia font-bold text-xs uppercase">Base</div>
+                  <div className="text-center text-fuschia font-bold text-xs uppercase">Mods</div>
+                  <div className="text-center text-fuschia font-bold text-xs uppercase">Total</div>
+                </div>
+
+                {/* Tech Stats */}
+                <div className="mb-4">
+                  <div className="text-gray-400 text-xs uppercase font-bold mb-2">Calculated Stats</div>
+                  {renderStatRow('Clock Speed', completeStats.total_clock, completeStats.total_processor, completeStats.clock_speed)}
+                  {renderStatRow('Cooling', completeStats.total_cooling, completeStats.total_heat_sink, completeStats.cooling)}
+                  {renderStatRow('Signal/Noise', completeStats.total_signal, completeStats.total_memory + completeStats.total_lifi, completeStats.signal_noise)}
+                  {renderStatRow('Latency', completeStats.total_latency, completeStats.total_lifi, completeStats.latency)}
+                  {renderStatRow('Decryption', completeStats.total_crypt, completeStats.total_encryption + (completeStats.slimsoft_decryption || 0), completeStats.decryption)}
+                  {renderStatRow('Cache', completeStats.total_cache, completeStats.total_memory, completeStats.cache)}
+                </div>
+
+                {/* Hardware Stats */}
+                <div>
+                  <div className="text-gray-400 text-xs uppercase font-bold mb-2">Hardware Components</div>
+                  <div className="space-y-2">
+                    {renderStatRow('Cell Capacity', 0, completeStats.total_cell_capacity, completeStats.total_cell_capacity)}
+                    {renderStatRow('Processor', 0, completeStats.total_processor, completeStats.total_processor)}
+                    {renderStatRow('Heat Sink', 0, completeStats.total_heat_sink, completeStats.total_heat_sink)}
+                    {renderStatRow('Memory', 0, completeStats.total_memory, completeStats.total_memory)}
+                    {renderStatRow('Li-Fi', 0, completeStats.total_lifi, completeStats.total_lifi)}
+                    {renderStatRow('Encryption', 0, completeStats.total_encryption, completeStats.total_encryption)}
+                  </div>
+                </div>
+              </>
+            )}
+          </CxCard>
+
+          {/* Calculated Stats Section */}
+          <CxCard>
+            {renderSectionHeader('Calculated Stats (Formulas)', showCalculatedStats, () => setShowCalculatedStats(!showCalculatedStats))}
+            
+            {showCalculatedStats && (
+              <div className="space-y-4">
+                {/* Consciousness */}
+                <div className="p-3 bg-charcoal-75 rounded">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white font-bold text-sm">Max Consciousness</span>
+                    <span className="pill-cloud-gray font-bold">{completeStats.max_consciousness}</span>
+                  </div>
+                  <div className="text-gray-400 text-xs">
+                    = Cognition × Resilience = {stats.cognition} × {stats.resilience}
+                  </div>
+                </div>
+
+                {/* Stamina */}
+                <div className="p-3 bg-charcoal-75 rounded">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white font-bold text-sm">Max Stamina</span>
+                    <span className="pill-cloud-gray font-bold">{completeStats.max_stamina}</span>
+                  </div>
+                  <div className="text-gray-400 text-xs">
+                    = Power × Resilience = {stats.power} × {stats.resilience}
+                  </div>
+                </div>
+
+                {/* Charge */}
+                <div className="p-3 bg-charcoal-75 rounded">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white font-bold text-sm">Max Charge</span>
+                    <span className="pill-cloud-gray font-bold">{completeStats.max_charge}</span>
+                  </div>
+                  <div className="text-gray-400 text-xs">
+                    = Clock Speed + Cell Capacity = {completeStats.clock_speed} + {completeStats.total_cell_capacity}
+                  </div>
+                </div>
+
+                {/* Thermal */}
+                <div className="p-3 bg-charcoal-75 rounded">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white font-bold text-sm">Max Thermal Load</span>
+                    <span className="pill-cloud-gray font-bold">{completeStats.max_thermal}</span>
+                  </div>
+                  <div className="text-gray-400 text-xs">
+                    = Clock Speed + Cooling + Heat Sink = {completeStats.clock_speed} + {completeStats.cooling} + {completeStats.total_heat_sink}
+                  </div>
+                </div>
+
+                {/* Neural */}
+                <div className="p-3 bg-charcoal-75 rounded">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white font-bold text-sm">Max Neural Load</span>
+                    <span className="pill-cloud-gray font-bold">{completeStats.max_neural}</span>
+                  </div>
+                  <div className="text-gray-400 text-xs">
+                    = Cognition + Resilience + Bandwidth = {stats.cognition} + {stats.resilience} + {completeStats.max_bandwidth}
+                  </div>
+                </div>
+
+                {/* Bandwidth */}
+                <div className="p-3 bg-charcoal-75 rounded">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white font-bold text-sm">Max Bandwidth</span>
+                    <span className="pill-cloud-gray font-bold">{completeStats.max_bandwidth}</span>
+                  </div>
+                  <div className="text-gray-400 text-xs">
+                    = ((Processor + Memory) × ((Clock Speed + Cache) / Latency)) / Li-Fi
+                  </div>
+                  <div className="text-gray-500 text-xs mt-1">
+                    = (({completeStats.total_processor} + {completeStats.total_memory}) × (({completeStats.clock_speed} + {completeStats.cache}) / {completeStats.latency || 1})) / {completeStats.total_lifi || 1}
+                  </div>
+                </div>
+              </div>
+            )}
+          </CxCard>
+
+        </div>
+
+        {/* Confirmation Modal */}
+        {showConfirmModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+            <div className="bg-charcoal border border-fuschia rounded-lg p-6 max-w-md w-full">
+              <h2 className="text-xl font-bold text-white uppercase mb-4">Confirm Allocation</h2>
+              <p className="text-gray-300 mb-4">
+                You are about to allocate {totalAllocated} stat point{totalAllocated !== 1 ? 's' : ''}:
+              </p>
+              <ul className="text-gray-400 text-sm mb-6 space-y-1">
+                {Object.entries(allocations)
+                  .filter(([_, points]) => points > 0)
+                  .map(([stat, points]) => (
+                    <li key={stat}>
+                      • {statLabels[stat as keyof typeof statLabels].name}: +{points}
+                    </li>
+                  ))}
+              </ul>
+              <p className="text-gray-400 text-sm mb-6">
+                This action cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button 
+                  className="btn-cx btn-cx-secondary flex-1"
+                  onClick={() => setShowConfirmModal(false)}
+                  disabled={saving}
+                >
+                  CANCEL
+                </button>
+                <button 
+                  className="btn-cx btn-cx-primary flex-1"
+                  onClick={handleConfirm}
+                  disabled={saving}
+                >
+                  {saving ? 'SAVING...' : 'CONFIRM'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </>
   );
