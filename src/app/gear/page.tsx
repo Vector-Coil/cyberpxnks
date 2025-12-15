@@ -35,6 +35,7 @@ export default function GearPage() {
   const [userStats, setUserStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'acquisition' | 'alphabetical' | 'type'>('acquisition');
+  const [activeTab, setActiveTab] = useState<'all' | 'hardware' | 'software' | 'data'>('all');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
@@ -83,6 +84,25 @@ export default function GearPage() {
     return icons[itemType.toLowerCase()] || 'inventory_2';
   };
 
+  // Filter items based on active tab
+  const getFilteredItems = () => {
+    switch (activeTab) {
+      case 'hardware':
+        return items.filter(item => 
+          ['chip', 'cyberdeck', 'peripheral', 'key item', 'upgrade', 'accessory'].includes(item.item_type.toLowerCase())
+        );
+      case 'software':
+        return items.filter(item => item.item_type.toLowerCase() === 'slimsoft');
+      case 'data':
+        return items.filter(item => item.item_type.toLowerCase() === 'intel');
+      case 'all':
+      default:
+        return items;
+    }
+  };
+
+  const filteredItems = getFilteredItems();
+
   return (
     <>
       <NavDrawer 
@@ -111,10 +131,55 @@ export default function GearPage() {
       </div>
 
       <div className="frame-body pt-0">
-        {/* Sorting Options */}
-        <div className="mb-2">
-          <div className="flex items-center justify-between mb-3">
-            <div className="font-bold uppercase" style={{ color: 'var(--fuschia)' }}>Sort By</div>
+        {/* Tabs */}
+        <div className="mb-4 flex gap-2">
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`flex-1 py-3 px-4 rounded-lg font-bold uppercase text-sm transition-colors ${
+              activeTab === 'all' 
+                ? 'bg-fuschia text-white' 
+                : 'bg-charcoal text-gray-400 hover:bg-charcoal-75'
+            }`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setActiveTab('hardware')}
+            className={`flex-1 py-3 px-4 rounded-lg font-bold uppercase text-sm transition-colors ${
+              activeTab === 'hardware' 
+                ? 'bg-fuschia text-white' 
+                : 'bg-charcoal text-gray-400 hover:bg-charcoal-75'
+            }`}
+          >
+            Hardware
+          </button>
+          <button
+            onClick={() => setActiveTab('software')}
+            className={`flex-1 py-3 px-4 rounded-lg font-bold uppercase text-sm transition-colors ${
+              activeTab === 'software' 
+                ? 'bg-fuschia text-white' 
+                : 'bg-charcoal text-gray-400 hover:bg-charcoal-75'
+            }`}
+          >
+            Software
+          </button>
+          <button
+            onClick={() => setActiveTab('data')}
+            className={`flex-1 py-3 px-4 rounded-lg font-bold uppercase text-sm transition-colors ${
+              activeTab === 'data' 
+                ? 'bg-fuschia text-white' 
+                : 'bg-charcoal text-gray-400 hover:bg-charcoal-75'
+            }`}
+          >
+            Data
+          </button>
+        </div>
+
+        {/* Inventory Grid */}
+        <CxCard>
+          {/* Sorting Options - moved inside card */}
+          <div className="flex items-center justify-between mb-4">
+            <div className="font-bold uppercase text-sm" style={{ color: 'var(--fuschia)' }}>Sort By</div>
             <div className="flex gap-2">
               <button
                 onClick={() => setSortBy('acquisition')}
@@ -136,29 +201,19 @@ export default function GearPage() {
               </button>
             </div>
           </div>
-        </div>
-
-        {/* Inventory Grid */}
-        <CxCard>
-          <div className="flex justify-between align-center mb-4">
-            <div className="meta-heading" style={{ color: 'var(--fuschia)' }}>
-                Inventory
-            </div>
-            <div className="meta-eyebrow">{items.length} items</div>
-          </div>
 
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin w-12 h-12 border-4 border-gray-600 border-t-fuschia rounded-full"></div>
             </div>
-          ) : items.length === 0 ? (
+          ) : filteredItems.length === 0 ? (
             <div className="text-center text-gray-400 py-12">
               <span className="material-symbols-outlined text-6xl mb-4 block">inventory_2</span>
-              <div className="text-lg">No items in inventory</div>
+              <div className="text-lg">No items in this category</div>
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-3">
-              {items.map((item) => (
+              {filteredItems.map((item) => (
                 <Link 
                   key={item.id} 
                   href={`/gear/${item.id}`}
