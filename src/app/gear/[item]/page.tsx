@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { NavStrip, CxCard } from '../../../components/CxShared';
+import NavDrawer from '../../../components/NavDrawer';
 import { useNavData } from '../../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../../hooks/useAuthenticatedUser';
 import { getItemTypeColor } from '../../../lib/itemUtils';
@@ -40,6 +41,7 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
   const navData = useNavData(userFid || 0);
   const [itemData, setItemData] = useState<ItemData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
     params.then(({ item }) => {
@@ -85,32 +87,51 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
 
   if (loading) {
     return (
-      <div className="frame-container frame-main">
-        <div className="frame-body pt-6 pb-2 px-6 mb-2">
-          <NavStrip 
-            username={navData.username}
-            userProfileImage={navData.profileImage}
-            cxBalance={navData.cxBalance}
-          />
+      <>
+        <NavDrawer 
+          isOpen={isDrawerOpen}
+          onClose={() => setIsDrawerOpen(false)}
+          username={navData.username}
+          profileImage={navData.profileImage}
+          cxBalance={navData.cxBalance}
+        />
+        <div className="frame-container frame-main">
+          <div className="frame-body pt-6 pb-2 px-6 mb-2">
+            <NavStrip 
+              username={navData.username}
+              userProfileImage={navData.profileImage}
+              cxBalance={navData.cxBalance}
+              onMenuClick={() => setIsDrawerOpen(true)}
+            />
+          </div>
+          <div className="frame-body flex items-center justify-center min-h-[400px]">
+            <div className="animate-spin w-12 h-12 border-4 border-gray-600 border-t-fuschia rounded-full"></div>
+          </div>
         </div>
-        <div className="frame-body flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin w-12 h-12 border-4 border-gray-600 border-t-fuschia rounded-full"></div>
-        </div>
-      </div>
+      </>
     );
   }
 
   if (!itemData || !itemData.owned) {
     return (
-      <div className="frame-container frame-main">
-        <div className="frame-body pt-6 pb-2 px-6 mb-2">
-          <NavStrip 
-            username={navData.username}
-            userProfileImage={navData.profileImage}
-            cxBalance={navData.cxBalance}
-          />
-        </div>
-        <div className="pt-5 pb-2 px-6 flex flex-row gap-1">
+      <>
+        <NavDrawer 
+          isOpen={isDrawerOpen}
+          onClose={() => setIsDrawerOpen(false)}
+          username={navData.username}
+          profileImage={navData.profileImage}
+          cxBalance={navData.cxBalance}
+        />
+        <div className="frame-container frame-main">
+          <div className="frame-body pt-6 pb-2 px-6 mb-2">
+            <NavStrip 
+              username={navData.username}
+              userProfileImage={navData.profileImage}
+              cxBalance={navData.cxBalance}
+              onMenuClick={() => setIsDrawerOpen(true)}
+            />
+          </div>
+          <div className="pt-5 pb-2 px-6 flex flex-row gap-1">
           <a href="/gear" className="w-[25px] h-[25px] rounded-full overflow-hidden bg-bright-blue flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors">
             <span className="material-symbols-outlined text-white text-xl">chevron_left</span>
           </a>
@@ -125,18 +146,28 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
           </CxCard>
         </div>
       </div>
+      </>
     );
   }
 
   const { item } = itemData;
 
   return (
-    <div className="frame-container frame-main">
-      <div className="frame-body pt-6 pb-2 px-6 mb-2">
-        <NavStrip 
-          username={navData.username}
-          userProfileImage={navData.profileImage}
-          cxBalance={navData.cxBalance}
+    <>
+      <NavDrawer 
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        username={navData.username}
+        profileImage={navData.profileImage}
+        cxBalance={navData.cxBalance}
+      />
+      <div className="frame-container frame-main">
+        <div className="frame-body pt-6 pb-2 px-6 mb-2">
+          <NavStrip 
+            username={navData.username}
+            userProfileImage={navData.profileImage}
+            cxBalance={navData.cxBalance}
+            onMenuClick={() => setIsDrawerOpen(true)}
         />
       </div>
 
@@ -302,5 +333,6 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
         )}
       </div>
     </div>
+    </>
   );
 }

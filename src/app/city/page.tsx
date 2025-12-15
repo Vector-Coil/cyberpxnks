@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { NavStrip, CxCard } from '../../components/CxShared';
+import NavDrawer from '../../components/NavDrawer';
 import LevelUpModal from '../../components/LevelUpModal';
 import ConfirmModal from '../../components/ConfirmModal';
 import CompactMeterStrip from '../../components/CompactMeterStrip';
@@ -55,6 +56,7 @@ export default function CityPage() {
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   const [newLevel, setNewLevel] = useState(0);
   const [cityHistory, setCityHistory] = useState<any[]>([]);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
   // Use countdown timer hook for active explore
   const { timeRemaining, isComplete } = useCountdownTimer(activeExplore?.end_time || null);
@@ -230,15 +232,24 @@ export default function CityPage() {
   };
 
   return (
-    <div className="frame-container frame-city">
-      <div className="frame-body pt-6 pb-2 px-6">
-        <NavStrip 
-          username={navData.username}
-          userProfileImage={navData.profileImage}
-          cxBalance={navData.cxBalance}
-        />
-      </div>
-      <CompactMeterStrip meters={getMeterData(userStats)} />
+    <>
+      <NavDrawer 
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        username={navData.username}
+        profileImage={navData.profileImage}
+        cxBalance={navData.cxBalance}
+      />
+      <div className="frame-container frame-city">
+        <div className="frame-body pt-6 pb-2 px-6">
+          <NavStrip 
+            username={navData.username}
+            userProfileImage={navData.profileImage}
+            cxBalance={navData.cxBalance}
+            onMenuClick={() => setIsDrawerOpen(true)}
+          />
+        </div>
+        <CompactMeterStrip meters={getMeterData(userStats)} />
 
       <div className="pt-5 pb-2 px-6 flex flex-row gap-3 items-center">
         <a href="/dashboard" className="w-[25px] h-[25px] rounded-full overflow-hidden bg-gray-700 flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors">
@@ -522,5 +533,6 @@ export default function CityPage() {
         onDismiss={() => setShowLevelUpModal(false)} 
       />
     </div>
+    </>
   );
 }
