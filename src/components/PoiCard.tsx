@@ -13,6 +13,7 @@ interface POI {
   image_url?: string;
   unlocked_at: string;
   unlock_method: string;
+  type_label?: string;
 }
 
 interface UserStats {
@@ -64,11 +65,22 @@ export default function PoiCard({
     userStats.current_stamina >= requiredStamina &&
     !activeBreach;
 
+  // Check if POI was recently unlocked (within last 24 hours)
+  const isNewlyUnlocked = poiItem.unlocked_at && 
+    (new Date().getTime() - new Date(poiItem.unlocked_at).getTime()) < 24 * 60 * 60 * 1000;
+
   console.log('PoiCard render:', { id: poiItem.id, name: poiItem.name, image_url: poiItem.image_url });
 
   return (
     <CxCard>
-      <div className="flex gap-4 items-stretch">
+      <div className="flex gap-4 items-stretch relative">
+        {/* NEW alert badge */}
+        {isNewlyUnlocked && (
+          <div className="absolute top-0 right-0 -mt-2 -mr-2 bg-bright-green text-black text-xs font-semibold px-2 py-0.5 rounded-full shadow-xl animate-pulse z-10">
+            NEW
+          </div>
+        )}
+        
         {/* Left side: Image + Info (2/3 width) */}
         <div className="flex flex-1" style={{ gap: '6px' }}>
           {/* POI Image */}

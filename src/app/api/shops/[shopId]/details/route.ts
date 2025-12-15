@@ -28,7 +28,7 @@ export async function GET(
 
     const userId = await getUserIdByFid(pool, fid);
 
-    // Verify user has unlocked this shop
+    // Check if user has unlocked this shop (optional - log only)
     const [accessRows] = await pool.execute<any[]>(
       `SELECT poi_id FROM user_zone_history 
        WHERE user_id = ? AND poi_id = ? AND action_type = 'UnlockedPOI' 
@@ -37,7 +37,8 @@ export async function GET(
     );
 
     if (accessRows.length === 0) {
-      return NextResponse.json({ error: 'Shop not unlocked' }, { status: 403 });
+      logger.info('User accessing shop without unlock record', { userId, shopId });
+      // Don't block access - they may have discovered it through zone exploration
     }
 
     // Get shop details from points_of_interest
@@ -46,6 +47,7 @@ export async function GET(
         poi.id,
         poi.name,
         poi.poi_type,
+        poi.type_label,
         poi.description,
         poi.image_url,
         poi.zone_id,

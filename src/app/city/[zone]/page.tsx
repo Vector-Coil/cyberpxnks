@@ -55,6 +55,7 @@ interface POI {
   image_url?: string;
   unlocked_at: string;
   unlock_method: string;
+  type_label?: string;
 }
 
 export default function ZoneDetailPage({ params }: { params: Promise<{ zone: string }> }) {
@@ -728,37 +729,63 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
             {poi.filter(p => p.poi_type === 'shop').length > 0 && (
               <div className="mb-6">
                 <h2 className="text-white font-bold uppercase text-lg mb-3">SHOPS</h2>
-                <div className="space-y-3">
-                  {poi.filter(p => p.poi_type === 'shop').map((shop) => (
-                    <a 
-                      key={shop.id} 
-                      href={`/shops/${shop.id}`}
-                      className="block"
-                    >
-                      <div className="cx-banner cursor-pointer hover:border-fuschia transition-colors">
-                        <div className="banner-left">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xl">🏪</span>
-                            <div className="banner-heading-2">{shop.name}</div>
+                <div className="space-y-4">
+                  {poi.filter(p => p.poi_type === 'shop').map((shop) => {
+                    // Check if shop was recently unlocked (within last 24 hours)
+                    const isNewlyUnlocked = shop.unlocked_at && 
+                      (new Date().getTime() - new Date(shop.unlocked_at).getTime()) < 24 * 60 * 60 * 1000;
+                    
+                    return (
+                      <CxCard key={shop.id}>
+                        <div className="flex gap-4 items-stretch relative">
+                          {/* NEW alert badge */}
+                          {isNewlyUnlocked && (
+                            <div className="absolute top-0 right-0 -mt-2 -mr-2 bg-bright-green text-black text-xs font-semibold px-2 py-0.5 rounded-full shadow-xl animate-pulse z-10">
+                              NEW
+                            </div>
+                          )}
+                          
+                          {/* Type label pill in top right */}
+                          {shop.type_label && (
+                            <div className="absolute top-2 right-2 z-10">
+                              <span className="pill-cloud-gray uppercase text-xs">
+                                {shop.type_label}
+                              </span>
+                            </div>
+                          )}
+                          
+                          {/* Left side: Image + Info (2/3 width) */}
+                          <div className="flex flex-1" style={{ gap: '6px' }}>
+                            {/* Shop Image */}
+                            <div className="w-[75px] h-[75px] flex-shrink-0">
+                              {shop.image_url ? (
+                                <img src={shop.image_url} alt={shop.name} className="w-full h-full object-contain" />
+                              ) : (
+                                <div className="w-full h-full bg-gray-700 flex items-center justify-center text-3xl">
+                                  🏪
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Shop Info */}
+                            <div className="flex-1">
+                              <h3 className="text-white font-bold uppercase text-sm mb-1">{shop.name}</h3>
+                              <p className="text-gray-400 text-xs">{shop.description || 'Shop access point'}</p>
+                            </div>
                           </div>
-                          <p className="text-gray-400 text-xs mb-2">{shop.description}</p>
-                          <span className="pill-cloud-gray uppercase text-xs">
-                            {shop.zone_id ? 'physical' : shop.subnet_id ? 'virtual' : 'protocol'} shop
-                          </span>
+                          
+                          {/* Right side: Shop Button (1/3 width) */}
+                          <div className="w-1/3 flex flex-col justify-center">
+                            <a href={`/shops/${shop.id}`}>
+                              <button className="btn-cx btn-cx-primary btn-cx-full">
+                                SHOP
+                              </button>
+                            </a>
+                          </div>
                         </div>
-                        {shop.image_url && (
-                          <div 
-                            className="banner-right"
-                            style={{
-                              backgroundImage: `url(${shop.image_url})`,
-                              backgroundSize: 'cover',
-                              backgroundPosition: 'center'
-                            }}
-                          />
-                        )}
-                      </div>
-                    </a>
-                  ))}
+                      </CxCard>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -885,12 +912,6 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
                         </button>
                       );
                     })}
-                    <button 
-                      className="btn-cx btn-cx-secondary btn-cx-full"
-                      onClick={handleLeaveZone}
-                    >
-                      LEAVE ZONE
-                    </button>
                   </>
                 );
               })()}
