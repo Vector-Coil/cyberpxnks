@@ -921,6 +921,14 @@ export default function Dashboard() {
               />
             ))}
           </div>
+
+          <CxButton 
+            label="Stats Breakdown" 
+            icon="bar_chart" 
+            link="/allocate-points" 
+            style="btn-cx-secondary" 
+            size="btn-cx-full" 
+          />
           
         </CxCard>
         

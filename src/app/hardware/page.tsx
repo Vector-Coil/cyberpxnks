@@ -324,7 +324,11 @@ export default function HardwarePage() {
         <a href="/dashboard" className="w-[25px] h-[25px] rounded-full overflow-hidden bg-bright-blue flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors">
           <span className="material-symbols-outlined text-white text-xl">chevron_left</span>
         </a>
-        <div className="masthead">HARDWARE</div>
+        <div className="masthead">LOADOUT</div>
+      </div>
+
+      <div className="px-6 pb-4">
+        <p className="text-gray-400 text-sm">Your personal tech stack of equipped hardware and software. Manage and optimize your technical loadout.</p>
       </div>
 
       <div className="frame-body pt-0">
@@ -509,9 +513,18 @@ export default function HardwarePage() {
                 );
               })()}
 
+              <a href="/allocate-points" className="block mb-4">
+                <button className="btn-cx btn-cx-secondary btn-cx-full">
+                  <span className="material-symbols-outlined text-lg">bar_chart</span>
+                  Stats Breakdown
+                </button>
+              </a>
+
               {/* Other Cyberdecks */}
               {unequippedCyberdecks.length > 0 && (
-                <div className="grid grid-cols-3 gap-3">
+                <>
+                  <div className="font-bold uppercase mb-3 text-sm" style={{ color: 'var(--fuschia)' }}>Available Hardware</div>
+                  <div className="grid grid-cols-3 gap-3">
                   {unequippedCyberdecks.map((deck) => (
                     <div 
                       key={deck.id} 
@@ -689,6 +702,7 @@ export default function HardwarePage() {
                     </div>
                   ))}
                 </div>
+                </>
               )}
             </CxCard>
 
@@ -868,7 +882,9 @@ export default function HardwarePage() {
 
               {/* Available Slimsoft - Grid Layout Like Cyberdecks */}
               {unequippedSlimsoft.length > 0 && (
-                <div className="grid grid-cols-3 gap-3">
+                <>
+                  <div className="font-bold uppercase mb-3 text-sm" style={{ color: 'var(--fuschia)' }}>Available Software</div>
+                  <div className="grid grid-cols-3 gap-3">
                   {unequippedSlimsoft.map((soft) => {
                     const isCompatible = soft.tier <= equippedDeckTier;
                     
@@ -995,6 +1011,7 @@ export default function HardwarePage() {
                     );
                   })}
                 </div>
+                </>
               )}
 
               {unequippedSlimsoft.length === 0 && equippedSlimsoft.length === 0 && (

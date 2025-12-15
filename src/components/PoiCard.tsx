@@ -101,7 +101,7 @@ export default function PoiCard({
         <div className="w-1/3 flex flex-col justify-center">
           {breachResults && selectedPoi?.id === poiItem.id ? (
             <button 
-              className="btn-cx btn-cx-secondary btn-cx-full"
+              className="btn-cx btn-cx-secondary btn-cx-auto"
               onClick={onBackFromBreachResults}
             >
               DISMISS
@@ -109,7 +109,7 @@ export default function PoiCard({
           ) : activeBreach ? (
             <>
               <button 
-                className={`btn-cx btn-cx-pause mb-2 ${!isBreachComplete ? 'cursor-default opacity-75' : ''}`}
+                className={`btn-cx btn-cx-pause btn-cx-auto mb-2 ${!isBreachComplete ? 'cursor-default opacity-75' : ''}`}
                 onClick={() => {
                   if (isBreachComplete) {
                     onViewBreachResults(poiItem);
@@ -184,7 +184,7 @@ export default function PoiCard({
           {/* Dismiss button (only show if no encounter or after handling encounter) */}
           {!breachResults.encounter && (
             <button 
-              className="btn-cx btn-cx-secondary btn-cx-full"
+              className="btn-cx btn-cx-secondary btn-cx-auto"
               onClick={onBackFromBreachResults}
             >
               DISMISS

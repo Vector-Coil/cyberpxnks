@@ -17,6 +17,7 @@ interface Zone {
   name: string;
   zone_type: number;
   zone_type_name?: string;
+  district?: number;
   district_name?: string;
   description: string;
   image_url?: string;
@@ -650,10 +651,10 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
           ) : (
             <div className="w-full h-48 bg-gray-700" />
           )}
-          {zone.district_name && (
-            <div className="absolute top-3 left-3 px-3 py-1 bg-fuschia text-white text-xs font-bold uppercase rounded">
+          {zone.district_name && zone.district && (
+            <a href={`/city/district/${zone.district}`} className="absolute top-3 left-3 px-3 py-1 bg-fuschia text-white text-xs font-bold uppercase rounded hover:opacity-80 transition-opacity">
               {zone.district_name}
-            </div>
+            </a>
           )}
           {zone.zone_type_name && (
             <div className="absolute top-3 right-3 px-3 py-1 bg-cloud-gray text-white text-xs font-bold uppercase rounded">
@@ -745,15 +746,6 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
                             </div>
                           )}
                           
-                          {/* Type label pill in top right */}
-                          {shop.type_label && (
-                            <div className="absolute top-2 right-2 z-10">
-                              <span className="pill-cloud-gray uppercase text-xs">
-                                {shop.type_label}
-                              </span>
-                            </div>
-                          )}
-                          
                           {/* Left side: Image + Info (2/3 width) */}
                           <div className="flex flex-1" style={{ gap: '6px' }}>
                             {/* Shop Image */}
@@ -770,6 +762,13 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
                             {/* Shop Info */}
                             <div className="flex-1">
                               <h3 className="text-white font-bold uppercase text-sm mb-1">{shop.name}</h3>
+                              {shop.type_label && (
+                                <div className="mb-1">
+                                  <span className="pill-cloud-gray uppercase text-xs">
+                                    {shop.type_label}
+                                  </span>
+                                </div>
+                              )}
                               <p className="text-gray-400 text-xs">{shop.description || 'Shop access point'}</p>
                             </div>
                           </div>
@@ -777,7 +776,7 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
                           {/* Right side: Shop Button (1/3 width) */}
                           <div className="w-1/3 flex flex-col justify-center">
                             <a href={`/shops/${shop.id}`}>
-                              <button className="btn-cx btn-cx-primary btn-cx-full">
+                              <button className="btn-cx btn-cx-primary btn-cx-auto">
                                 SHOP
                               </button>
                             </a>

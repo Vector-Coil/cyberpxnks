@@ -198,6 +198,13 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                 </div>
               </div>
             </div>
+
+            <a href="/allocate-points" className="block mt-4">
+              <button className="btn-cx btn-cx-secondary btn-cx-full">
+                <span className="material-symbols-outlined text-lg">bar_chart</span>
+                Stats Breakdown
+              </button>
+            </a>
           </CxCard>
 
           {/* Activity Section */}

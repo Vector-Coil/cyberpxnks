@@ -308,7 +308,7 @@ export default function StatsPage() {
           <a href="/dashboard" className="w-[25px] h-[25px] rounded-full overflow-hidden bg-bright-blue flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors">
             <span className="material-symbols-outlined text-white text-xl">chevron_left</span>
           </a>
-          <div className="masthead">CHARACTER STATS</div>
+          <div className="masthead">STATS</div>
         </div>
       
         <div className="frame-body p-6 space-y-6">
