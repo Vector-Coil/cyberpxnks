@@ -703,7 +703,6 @@ export default function HardwarePage() {
                     </div>
                   ))}
                 </div>
-                </>
               )}
             </CxCard>
 
