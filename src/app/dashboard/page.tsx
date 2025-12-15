@@ -922,13 +922,12 @@ export default function Dashboard() {
             ))}
           </div>
 
-          <CxButton 
-            label="Stats Breakdown" 
-            icon="bar_chart" 
-            link="/allocate-points" 
-            style="btn-cx-secondary" 
-            size="btn-cx-full" 
-          />
+          <a href="/allocate-points" className="block mt-4">
+            <button className="btn-cx btn-cx-secondary btn-cx-full">
+              <span className="material-symbols-outlined text-lg">bar_chart</span>
+              Stats Breakdown
+            </button>
+          </a>
           
         </CxCard>
         
