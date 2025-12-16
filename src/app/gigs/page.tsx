@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { FrameHeader, CxCard, NavStrip } from '../../components/CxShared';
 import NavDrawer from '../../components/NavDrawer';
-import { useNavData } from '../../hooks/useNavData';
+import { useAuthenticatedUser } from '../../hooks/useAuthenticatedUser';
 
 interface Gig {
   id: number;
@@ -31,15 +31,15 @@ export default function GigsPage({ searchParams }: { searchParams?: { sort?: str
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
-  const navData = useNavData();
+  const { user, loading: userLoading } = useAuthenticatedUser();
   const sortMode = searchParams?.sort || 'newest';
 
   useEffect(() => {
-    if (!navData.fid) return;
+    if (userLoading || !user?.fid) return;
 
     async function loadGigs() {
       try {
-        const response = await fetch(`/api/gigs?fid=${navData.fid}&sort=${sortMode}`);
+        const response = await fetch(`/api/gigs?fid=${user.fid}&sort=${sortMode}`);
         if (!response.ok) throw new Error('Failed to fetch gigs');
         
         const data = await response.json();
@@ -53,7 +53,7 @@ export default function GigsPage({ searchParams }: { searchParams?: { sort?: str
     }
 
     loadGigs();
-  }, [navData.fid, sortMode]);
+  }, [user?.fid, userLoading, sortMode]);
 
   if (error) {
     return (
@@ -66,6 +66,14 @@ export default function GigsPage({ searchParams }: { searchParams?: { sort?: str
     );
   }
 
+  if (userLoading) {
+    return (
+      <div className="frame-container frame-main flex items-center justify-center min-h-screen">
+        <div className="text-gray-400">Loading...</div>
+      </div>
+    );
+  }
+
   const isContactMode = sortMode.toLowerCase() === 'contact';
 
   return (
@@ -73,16 +81,16 @@ export default function GigsPage({ searchParams }: { searchParams?: { sort?: str
       <NavDrawer 
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
-        username={navData.username}
-        profileImage={navData.profileImage}
-        cxBalance={navData.cxBalance}
+        username={user?.username || 'user'}
+        profileImage={user?.profileImage}
+        cxBalance={user?.cxBalance || 0}
       />
 
       <div className="frame-body pt-6 pb-2 px-6">
         <NavStrip 
-          username={navData.username}
-          userProfileImage={navData.profileImage}
-          cxBalance={navData.cxBalance}
+          username={user?.username || 'user'}
+          userProfileImage={user?.profileImage}
+          cxBalance={user?.cxBalance || 0}
           onMenuClick={() => setIsDrawerOpen(true)}
         />
       </div>
