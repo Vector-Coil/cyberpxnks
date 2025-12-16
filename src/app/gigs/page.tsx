@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { FrameHeader, CxCard, NavStrip } from '../../components/CxShared';
 import NavDrawer from '../../components/NavDrawer';
 import { useAuthenticatedUser } from '../../hooks/useAuthenticatedUser';
+import { useNavData } from '../../hooks/useNavData';
 
 interface Gig {
   id: number;
@@ -31,15 +32,16 @@ export default function GigsPage({ searchParams }: { searchParams?: { sort?: str
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
-  const { user, loading: userLoading } = useAuthenticatedUser();
+  const { userFid, isLoading: userLoading } = useAuthenticatedUser();
+  const navData = useNavData(userFid || 300187);
   const sortMode = searchParams?.sort || 'newest';
 
   useEffect(() => {
-    if (userLoading || !user?.fid) return;
+    if (userLoading || !userFid) return;
 
     async function loadGigs() {
       try {
-        const response = await fetch(`/api/gigs?fid=${user.fid}&sort=${sortMode}`);
+        const response = await fetch(`/api/gigs?fid=${userFid}&sort=${sortMode}`);
         if (!response.ok) throw new Error('Failed to fetch gigs');
         
         const data = await response.json();
@@ -53,7 +55,7 @@ export default function GigsPage({ searchParams }: { searchParams?: { sort?: str
     }
 
     loadGigs();
-  }, [user?.fid, userLoading, sortMode]);
+  }, [userFid, userLoading, sortMode]);
 
   if (error) {
     return (
@@ -81,16 +83,16 @@ export default function GigsPage({ searchParams }: { searchParams?: { sort?: str
       <NavDrawer 
         isOpen={isDrawerOpen}
         onClose={() => setIsDrawerOpen(false)}
-        username={user?.username || 'user'}
-        profileImage={user?.profileImage}
-        cxBalance={user?.cxBalance || 0}
+        username={navData.username}
+        profileImage={navData.profileImage}
+        cxBalance={navData.cxBalance}
       />
 
       <div className="frame-body pt-6 pb-2 px-6">
         <NavStrip 
-          username={user?.username || 'user'}
-          userProfileImage={user?.profileImage}
-          cxBalance={user?.cxBalance || 0}
+          username={navData.username}
+          userProfileImage={navData.profileImage}
+          cxBalance={navData.cxBalance}
           onMenuClick={() => setIsDrawerOpen(true)}
         />
       </div>
