@@ -17,13 +17,13 @@ export async function GET(req: Request) {
         (
           SELECT COUNT(*) FROM gig_history gh
           JOIN gigs g ON gh.gig_id = g.id
-          WHERE gh.user_id = u.id AND g.contact = c.id
+          WHERE gh.user_id = ? AND g.contact = c.id
             AND gh.status = 'UNLOCKED' AND gh.last_completed_at IS NULL
         ) AS gigs_count,
         (
           SELECT COUNT(*) FROM msg_history mh
           JOIN messages m ON mh.msg_id = m.id
-          WHERE mh.user_id = u.id AND m.contact = c.id
+          WHERE mh.user_id = ? AND m.contact = c.id
             AND mh.status = 'UNREAD'
         ) AS messages_count
       FROM contact_history ch
@@ -32,7 +32,7 @@ export async function GET(req: Request) {
       ORDER BY ch.unlocked_at DESC
     `;
 
-    const [rows] = await pool.execute<any[]>(query, [userId]);
+    const [rows] = await pool.execute<any[]>(query, [userId, userId, userId]);
     logger.info('Retrieved contacts', { fid, count: rows.length });
 
     return NextResponse.json(rows.map(r => ({
