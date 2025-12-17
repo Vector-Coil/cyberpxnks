@@ -226,7 +226,12 @@ export default function HardwarePage() {
   }
 
   async function performEquip(itemId: number, slotType: string) {
-    if (!userFid) return;
+    if (!userFid) {
+      console.error('Cannot equip: userFid is null');
+      return;
+    }
+    
+    console.log('Attempting to equip:', { itemId, slotType, userFid });
     
     try {
       setIsProcessing(true);
@@ -237,6 +242,8 @@ export default function HardwarePage() {
       });
 
       if (res.ok) {
+        const result = await res.json();
+        console.log('Equip successful:', result);
         await loadData();
         setExpandedCyberdeck(null);
         setSelectedSoftId(null);
@@ -246,10 +253,12 @@ export default function HardwarePage() {
         setPreviewArsenalId(null);
       } else {
         const error = await res.json();
-        console.error('Equip failed:', error.error);
+        console.error('Equip failed:', error);
+        alert(`Failed to equip: ${error.error || 'Unknown error'}`);
       }
     } catch (err) {
-      console.error('Failed to equip:', err);
+      console.error('Failed to equip (exception):', err);
+      alert('Failed to equip item. Check console for details.');
     } finally {
       setIsProcessing(false);
       setShowReplaceModal(false);

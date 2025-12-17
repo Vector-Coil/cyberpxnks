@@ -162,7 +162,10 @@ async function updateSlimsoftStats(pool: any, userId: number) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { fid, itemId, slotType, action } = await request.json();
+    const body = await request.json();
+    const { fid, itemId, slotType, action } = body;
+    
+    logger.info('Hardware equip request', { fid, itemId, slotType, action });
     
     if (!itemId || !slotType) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -175,6 +178,7 @@ export async function POST(request: NextRequest) {
     const pool = await getDbPool();
 
     const userId = await getUserIdByFid(pool, fid || 300187);
+    logger.info('Got userId', { userId });
 
     // Verify user owns the item
     const [inventoryRows] = await pool.execute<any[]>(
@@ -187,8 +191,10 @@ export async function POST(request: NextRequest) {
     );
     const inventoryItem = (inventoryRows as any[])[0];
     if (!inventoryItem) {
+      logger.warn('Item not found in inventory', { userId, itemId });
       return NextResponse.json({ error: 'Item not found in inventory' }, { status: 404 });
     }
+    logger.info('Found inventory item', { itemName: inventoryItem.name });
 
     if (action === 'unequip') {
       if (slotType === 'cyberdeck') {
@@ -425,81 +431,99 @@ export async function POST(request: NextRequest) {
 
     // Handle arsenal equipping
     if (slotType === 'arsenal') {
-      // Get currently used arsenal slots
-      const [equippedRows] = await pool.execute<any[]>(
-        `SELECT slot_name FROM user_loadout 
-         WHERE user_id = ? AND slot_type = ?`,
-        [userId, slotType]
-      );
-      const usedSlots = (equippedRows as any[]).map(row => row.slot_name);
+      try {
+        logger.info('Arsenal equip attempt', { userId, itemId });
+        
+        // Get currently used arsenal slots
+        const [equippedRows] = await pool.execute<any[]>(
+          `SELECT slot_name FROM user_loadout 
+           WHERE user_id = ? AND slot_type = ?`,
+          [userId, slotType]
+        );
+        const usedSlots = (equippedRows as any[]).map(row => row.slot_name);
+        logger.info('Current arsenal slots', { usedSlots });
 
-      // Calculate max arsenal slots based on Power stat
-      const [statsRows] = await pool.execute<any[]>(
-        `SELECT power FROM user_stats WHERE user_id = ? LIMIT 1`,
-        [userId]
-      );
-      const power = (statsRows as any[])[0]?.power || 0;
-      const maxArsenalSlots = Math.max(1, Math.floor(Math.floor(power / 2) - 2));
+        // Calculate max arsenal slots based on Power stat
+        const [statsRows] = await pool.execute<any[]>(
+          `SELECT power FROM user_stats WHERE user_id = ? LIMIT 1`,
+          [userId]
+        );
+        const power = (statsRows as any[])[0]?.power || 0;
+        const maxArsenalSlots = Math.max(1, Math.floor(Math.floor(power / 2) - 2));
+        logger.info('Arsenal slot calculation', { power, maxArsenalSlots });
 
-      // Check if we're at max slots
-      if (usedSlots.length >= maxArsenalSlots) {
-        return NextResponse.json({ 
-          error: `Maximum ${maxArsenalSlots} arsenal slots already equipped` 
-        }, { status: 400 });
-      }
-
-      // Check if this specific item is already equipped
-      const [alreadyEquippedRows] = await pool.execute<any[]>(
-        `SELECT id FROM user_loadout 
-         WHERE user_id = ? AND item_id = ? AND slot_type = ?
-         LIMIT 1`,
-        [userId, itemId, slotType]
-      );
-      
-      if ((alreadyEquippedRows as any[]).length > 0) {
-        return NextResponse.json({ 
-          error: 'Item already equipped' 
-        }, { status: 400 });
-      }
-
-      // Find the first available slot (arsenal_1, arsenal_2, etc.)
-      let slotName = '';
-      for (let i = 1; i <= maxArsenalSlots; i++) {
-        const testSlot = `arsenal_${i}`;
-        if (!usedSlots.includes(testSlot)) {
-          slotName = testSlot;
-          break;
+        // Check if we're at max slots
+        if (usedSlots.length >= maxArsenalSlots) {
+          logger.warn('Arsenal slots full', { usedSlots: usedSlots.length, maxArsenalSlots });
+          return NextResponse.json({ 
+            error: `Maximum ${maxArsenalSlots} arsenal slots already equipped` 
+          }, { status: 400 });
         }
+
+        // Check if this specific item is already equipped
+        const [alreadyEquippedRows] = await pool.execute<any[]>(
+          `SELECT id FROM user_loadout 
+           WHERE user_id = ? AND item_id = ? AND slot_type = ?
+           LIMIT 1`,
+          [userId, itemId, slotType]
+        );
+        
+        if ((alreadyEquippedRows as any[]).length > 0) {
+          logger.warn('Item already equipped', { itemId });
+          return NextResponse.json({ 
+            error: 'Item already equipped' 
+          }, { status: 400 });
+        }
+
+        // Find the first available slot (arsenal_1, arsenal_2, etc.)
+        let slotName = '';
+        for (let i = 1; i <= maxArsenalSlots; i++) {
+          const testSlot = `arsenal_${i}`;
+          if (!usedSlots.includes(testSlot)) {
+            slotName = testSlot;
+            break;
+          }
+        }
+        logger.info('Found available slot', { slotName });
+
+        // Add to loadout
+        await pool.execute(
+          `INSERT INTO user_loadout (user_id, slot_name, item_id, slot_type)
+           VALUES (?, ?, ?, ?)`,
+          [userId, slotName, itemId, slotType]
+        );
+
+        // Log to activity ledger
+        await logActivity(
+          userId,
+          'hardware',
+          'equip_arsenal',
+          null,
+          itemId,
+          `Equipped ${inventoryItem.name}`
+        );
+
+        logger.info('Arsenal equipped successfully', { itemId, slotName });
+        return NextResponse.json({ 
+          success: true,
+          message: `${inventoryItem.name} equipped`,
+          slotName
+        });
+      } catch (arsenalError: any) {
+        logger.error('Arsenal equip error', { error: arsenalError.message, stack: arsenalError.stack });
+        throw arsenalError; // Re-throw to be caught by outer catch
       }
-
-      // Add to loadout
-      await pool.execute(
-        `INSERT INTO user_loadout (user_id, slot_name, item_id, slot_type)
-         VALUES (?, ?, ?, ?)`,
-        [userId, slotName, itemId, slotType]
-      );
-
-      // Log to activity ledger
-      await logActivity(
-        userId,
-        'hardware',
-        'equip_arsenal',
-        null,
-        itemId,
-        `Equipped ${inventoryItem.name}`
-      );
-
-      return NextResponse.json({ 
-        success: true,
-        message: `${inventoryItem.name} equipped`,
-        slotName
-      });
     }
 
     return NextResponse.json({ 
       error: 'Invalid operation'
     }, { status: 400 });
   } catch (err: any) {
+    logger.error('Hardware equip error', { 
+      error: err.message, 
+      stack: err.stack,
+      name: err.name 
+    });
     return handleApiError(err, 'Failed to equip item');
   }
 }
