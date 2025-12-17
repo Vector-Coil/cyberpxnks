@@ -212,12 +212,14 @@ export default function HardwarePage() {
   }
 
   async function performEquip(itemId: number, slotType: string) {
+    if (!userFid) return;
+    
     try {
       setIsProcessing(true);
       const res = await fetch('/api/hardware/equip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fid: 300187, itemId, slotType, action: 'equip' })
+        body: JSON.stringify({ fid: userFid, itemId, slotType, action: 'equip' })
       });
 
       if (res.ok) {
@@ -240,12 +242,14 @@ export default function HardwarePage() {
   }
 
   async function handleUnequip(itemId: number, slotType: string) {
+    if (!userFid) return;
+    
     try {
       setIsProcessing(true);
       const res = await fetch('/api/hardware/equip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fid: 300187, itemId, slotType, action: 'unequip' })
+        body: JSON.stringify({ fid: userFid, itemId, slotType, action: 'unequip' })
       });
 
       if (res.ok) {
@@ -259,7 +263,7 @@ export default function HardwarePage() {
   }
 
   async function handleUpgrade() {
-    if (!upgradeTarget) return;
+    if (!upgradeTarget || !userFid) return;
 
     try {
       setIsProcessing(true);
@@ -267,7 +271,7 @@ export default function HardwarePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fid: 300187,
+          fid: userFid,
           hardwareId: upgradeTarget.hardwareId,
           requiredQty: upgradeTarget.requiredQty
         })
@@ -344,10 +348,6 @@ export default function HardwarePage() {
         <div className="masthead">LOADOUT</div>
       </div>
 
-      <div className="px-6 pb-4">
-        <p className="text-gray-400 text-sm">Your personal tech stack of equipped hardware and software. Manage and optimize your technical loadout.</p>
-      </div>
-
       <div className="frame-body pt-0">
         {/* Tabs */}
         <div className="mb-4 flex gap-2">
@@ -379,6 +379,10 @@ export default function HardwarePage() {
           </div>
         ) : activeTab === 'tech' ? (
           <>
+            <div className="mb-4">
+              <p className="text-gray-400 text-sm">Your personal tech stack of equipped hardware and software. Manage and optimize your technical loadout.</p>
+            </div>
+
             {/* HARDWARE SECTION - Cyberdecks */}
             <CxCard className="mb-4">
               <div className="font-bold uppercase mb-4" style={{ color: 'var(--fuschia)' }}>Cyberdeck</div>
@@ -1145,7 +1149,7 @@ export default function HardwarePage() {
             </CxCard>
 
             {/* Available Items */}
-            <div className="mb-4">
+            <CxCard>
               <div className="font-bold uppercase mb-3 text-sm" style={{ color: 'var(--fuschia)' }}>Available Items</div>
               
               {(() => {
@@ -1157,12 +1161,10 @@ export default function HardwarePage() {
                 
                 if (unequippedArsenal.length === 0) {
                   return (
-                    <CxCard>
-                      <div className="text-center text-gray-400 py-8">
-                        <span className="material-symbols-outlined text-5xl mb-2 block">swords</span>
-                        <div>No unequipped arsenal items</div>
-                      </div>
-                    </CxCard>
+                    <div className="text-center text-gray-400 py-8">
+                      <span className="material-symbols-outlined text-5xl mb-2 block">swords</span>
+                      <div>No unequipped arsenal items</div>
+                    </div>
                   );
                 }
                 
@@ -1171,68 +1173,86 @@ export default function HardwarePage() {
                     {unequippedArsenal.map((item) => (
                       <div 
                         key={item.id}
-                        className={`arsenal-tile aspect-square rounded bg-charcoal-75 border-2 transition-all cursor-pointer relative ${
+                        className={`arsenal-tile rounded-lg bg-charcoal-75 border-2 ${
                           selectedArsenalId === item.id
-                            ? 'border-bright-blue scale-105'
-                            : 'border-gray-700 hover:border-gray-500'
-                        }`}
+                            ? 'border-bright-blue'
+                            : 'border-gray-700'
+                        } relative cursor-pointer transition-colors`}
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedArsenalId(item.id);
+                          setSelectedArsenalId(selectedArsenalId === item.id ? null : item.id);
                         }}
                       >
-                        <div className="w-full h-full p-2 flex items-center justify-center">
-                          {item.image_url ? (
-                            <img src={item.image_url} alt={item.name} className="max-w-full max-h-full object-contain" />
-                          ) : (
-                            <span className="material-symbols-outlined text-4xl text-gray-600">
-                              {item.item_type.toLowerCase() === 'weapon' ? 'swords' : 
-                               item.item_type.toLowerCase() === 'accessory' ? 'watch' : 'star'}
-                            </span>
-                          )}
-                        </div>
-                        
-                        {/* Item Name */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
-                          <div className="text-xs font-bold text-white truncate">
-                            {item.name}{item.upgrade && item.upgrade > 0 ? ` +${item.upgrade}` : ''}
-                          </div>
-                        </div>
-
-                        {/* Action buttons when selected */}
-                        {selectedArsenalId === item.id && (
-                          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-2 p-2">
-                            {canEquipMore ? (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEquip(item.id, 'arsenal');
-                                }}
-                                disabled={isProcessing}
-                                className="w-full py-2 px-3 rounded bg-bright-blue hover:bg-blue-600 text-white text-xs font-bold uppercase transition-colors disabled:opacity-50"
-                              >
-                                Equip
-                              </button>
+                        <div className="w-full flex flex-col relative">
+                          <div className="aspect-square flex items-center justify-center p-2 relative overflow-hidden rounded-t-lg">
+                            {item.image_url ? (
+                              <img src={item.image_url} alt={item.name} className="max-w-full max-h-full object-contain" />
                             ) : (
-                              <div className="w-full py-2 px-3 rounded bg-gray-700 text-gray-400 text-xs font-bold uppercase text-center">
-                                Arsenal Full
+                              <span className="material-symbols-outlined text-4xl text-gray-600">
+                                {item.item_type.toLowerCase() === 'weapon' ? 'swords' : 
+                                 item.item_type.toLowerCase() === 'accessory' ? 'watch' : 'star'}
+                              </span>
+                            )}
+                            
+                            {/* Item Name Overlay */}
+                            {selectedArsenalId !== item.id && (
+                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                                <div className="text-xs font-bold text-white line-clamp-2">
+                                  {item.name}{item.upgrade && item.upgrade > 0 ? ` +${item.upgrade}` : ''}
+                                </div>
                               </div>
                             )}
-                            <a
-                              href={`/gear/${item.id}`}
-                              className="w-full py-2 px-3 rounded bg-charcoal hover:bg-gray-700 text-white text-xs font-bold uppercase text-center transition-colors"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              See Details
-                            </a>
+
+                            {/* Action buttons when selected */}
+                            {selectedArsenalId === item.id && (
+                              <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/75 p-3">
+                                <div className="flex items-center gap-2 text-sm text-bright-blue font-bold mb-4">
+                                  <span>SELECTED</span>
+                                  <span className="material-symbols-outlined text-lg">close</span>
+                                </div>
+                                {canEquipMore ? (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEquip(item.id, 'arsenal');
+                                    }}
+                                    disabled={isProcessing}
+                                    className="py-2 px-6 rounded bg-bright-blue hover:bg-blue-600 text-white text-xs font-bold uppercase transition-colors disabled:opacity-50 mb-2"
+                                  >
+                                    Equip
+                                  </button>
+                                ) : (
+                                  <div className="py-2 px-6 rounded bg-gray-700 text-gray-400 text-xs font-bold uppercase mb-2">
+                                    Arsenal Full
+                                  </div>
+                                )}
+                                <a 
+                                  href={`/gear/${item.id}`}
+                                  className="text-xs text-gray-400 hover:text-bright-blue transition-colors underline"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  See details
+                                </a>
+                              </div>
+                            )}
                           </div>
-                        )}
+                          
+                          {/* Item Info */}
+                          <div className="p-2 bg-charcoal">
+                            <div className="text-xs font-bold text-white truncate">
+                              {item.name}{item.upgrade && item.upgrade > 0 ? ` +${item.upgrade}` : ''}
+                            </div>
+                            <div className="text-[10px] text-gray-400 uppercase mt-1">
+                              {item.item_type}
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     ))}
                   </div>
                 );
               })()}
-            </div>
+            </CxCard>
 
             {/* View All Gear Button */}
             <div className="mt-4">
