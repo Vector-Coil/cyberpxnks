@@ -442,12 +442,12 @@ export async function POST(request: NextRequest) {
       const usedSlots = (equippedRows as any[]).map(row => row.slot_name);
       logger.info('Current arsenal slots', { usedSlots });
 
-      // Calculate max arsenal slots based on Power stat
-      const [statsRows] = await pool.execute<any[]>(
-        `SELECT power FROM user_stats WHERE user_id = ? LIMIT 1`,
+      // Calculate max arsenal slots based on Power stat (from users table)
+      const [userRows] = await pool.execute<any[]>(
+        `SELECT power FROM users WHERE id = ? LIMIT 1`,
         [userId]
       );
-      const power = (statsRows as any[])[0]?.power || 0;
+      const power = (userRows as any[])[0]?.power || 0;
       const maxArsenalSlots = Math.max(1, Math.floor(Math.floor(power / 2) - 2));
       logger.info('Arsenal slot calculation', { power, maxArsenalSlots });
 
