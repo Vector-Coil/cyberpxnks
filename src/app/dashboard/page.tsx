@@ -177,28 +177,39 @@ const CxTabLink: React.FC<CxTabLinkProps> = ({ href, label, iconSrc, alertText, 
 
   return (
     <a href={href}>
-      <div 
-        className="cx-tab cursor-pointer"
-        style={backgroundImage ? { 
-          backgroundImage: `url(${backgroundImage})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
-        } : undefined}
-      >
-        {alertText && (
-          <div className="tab-alert absolute top-0 right-0 -mt-2 -mr-2 bg-bright-green text-black text-xs font-semibold px-2 py-0.5 rounded-full shadow-xl animate-pulse">
-            {alertText}
-          </div>
+      <div className="cx-tab cursor-pointer relative">
+        {/* Background image with reduced opacity */}
+        {backgroundImage && (
+          <div 
+            className="absolute inset-0 rounded-lg"
+            style={{ 
+              backgroundImage: `url(${backgroundImage})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              opacity: 0.4
+            }}
+          />
         )}
-        {!isBlank && iconSrc && !hideIcon && (
-          <div className="tab-icon">
-            <img 
-              src={iconSrc} 
-              alt="Icon"  
-            />
-          </div>
-        )}
-        <div className="tab-label">{label}</div>
+        
+        {/* Content wrapper with relative positioning */}
+        <div className="relative z-10 w-full h-full flex flex-col items-center justify-end pb-2">
+          {alertText && (
+            <div className="tab-alert absolute top-0 right-0 -mt-2 -mr-2 bg-bright-green text-black text-xs font-semibold px-2 py-0.5 rounded-full shadow-xl animate-pulse">
+              {alertText}
+            </div>
+          )}
+          {!isBlank && iconSrc && !hideIcon && (
+            <div className="tab-icon mb-auto">
+              <img 
+                src={iconSrc} 
+                alt="Icon"  
+              />
+            </div>
+          )}
+          {/* Spacer to keep label at bottom when no icon */}
+          {hideIcon && <div className="flex-grow" />}
+          <div className="tab-label">{label}</div>
+        </div>
       </div>
     </a>
   );
