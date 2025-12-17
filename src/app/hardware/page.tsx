@@ -122,6 +122,16 @@ export default function HardwarePage() {
     }
   }, [userFid, isAuthLoading]);
 
+  // Check URL hash to set initial active tab
+  useEffect(() => {
+    const hash = window.location.hash.replace('#', '');
+    if (hash === 'arsenal') {
+      setActiveTab('arsenal');
+    } else if (hash === 'slimsoft' || hash === 'tech') {
+      setActiveTab('tech');
+    }
+  }, []);
+
   // Dismiss selected slimsoft when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -241,8 +251,9 @@ export default function HardwarePage() {
         body: JSON.stringify({ fid: userFid, itemId, slotType, action: 'equip' })
       });
 
+      const result = await res.json();
+
       if (res.ok) {
-        const result = await res.json();
         console.log('Equip successful:', result);
         await loadData();
         setExpandedCyberdeck(null);
@@ -252,13 +263,14 @@ export default function HardwarePage() {
         setSelectedArsenalId(null);
         setPreviewArsenalId(null);
       } else {
-        const error = await res.json();
-        console.error('Equip failed:', error);
-        alert(`Failed to equip: ${error.error || 'Unknown error'}`);
+        console.error('Equip failed:', result);
+        // Show the specific error message from the server
+        const errorMsg = result.error || result.message || 'Unknown error';
+        alert(`Failed to equip: ${errorMsg}`);
       }
     } catch (err) {
       console.error('Failed to equip (exception):', err);
-      alert('Failed to equip item. Check console for details.');
+      alert(`Failed to equip item: ${err instanceof Error ? err.message : 'Network error'}`);
     } finally {
       setIsProcessing(false);
       setShowReplaceModal(false);
@@ -1173,6 +1185,35 @@ export default function HardwarePage() {
               })()}
             </CxCard>
 
+            {/* Arsenal Effects Preview Section */}
+            {previewArsenalId && (() => {
+              const previewItem = arsenalItems.find(item => item.id === previewArsenalId);
+              if (!previewItem) return null;
+
+              return (
+                <div className="mb-4 p-3 bg-charcoal-75 rounded border border-orange-500">
+                  <div className="font-bold uppercase text-xs mb-3 text-orange-400">
+                    Preview: Arsenal Item
+                  </div>
+                  
+                  <div className="text-xs bg-charcoal p-2 rounded border border-gray-700">
+                    <div className="flex items-start justify-between mb-1">
+                      <div className="font-bold text-bright-blue">
+                        {previewItem.name}{previewItem.upgrade && previewItem.upgrade > 0 ? ` +${previewItem.upgrade}` : ''}
+                      </div>
+                      <div className="text-fuchsia-400 text-[10px] uppercase">{previewItem.item_type}</div>
+                    </div>
+                    {previewItem.description && (
+                      <div className="text-gray-400 text-[11px] mt-2">{previewItem.description}</div>
+                    )}
+                    <div className="mt-2 text-gray-500 text-[11px] italic">
+                      Arsenal effects coming soon...
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Available Items */}
             <CxCard>
               <div className="font-bold uppercase mb-3 text-sm" style={{ color: 'var(--fuschia)' }}>Available Items</div>
@@ -1269,35 +1310,6 @@ export default function HardwarePage() {
                 );
               })()}
             </CxCard>
-
-            {/* Arsenal Effects Preview Section */}
-            {previewArsenalId && (() => {
-              const previewItem = arsenalItems.find(item => item.id === previewArsenalId);
-              if (!previewItem) return null;
-
-              return (
-                <div className="mb-4 p-3 bg-charcoal-75 rounded border border-orange-500">
-                  <div className="font-bold uppercase text-xs mb-3 text-orange-400">
-                    Preview: Arsenal Item
-                  </div>
-                  
-                  <div className="text-xs bg-charcoal p-2 rounded border border-gray-700">
-                    <div className="flex items-start justify-between mb-1">
-                      <div className="font-bold text-bright-blue">
-                        {previewItem.name}{previewItem.upgrade && previewItem.upgrade > 0 ? ` +${previewItem.upgrade}` : ''}
-                      </div>
-                      <div className="text-fuchsia-400 text-[10px] uppercase">{previewItem.item_type}</div>
-                    </div>
-                    {previewItem.description && (
-                      <div className="text-gray-400 text-[11px] mt-2">{previewItem.description}</div>
-                    )}
-                    <div className="mt-2 text-gray-500 text-[11px] italic">
-                      Arsenal effects coming soon...
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
 
             {/* View All Gear Button */}
             <div className="mt-4">
