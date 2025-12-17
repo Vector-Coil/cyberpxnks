@@ -904,30 +904,6 @@ export default function Dashboard() {
                 />
 
           </div>
-
-          {/* Stats Header */}
-          <div className="card-cx-header">
-            Your Calculated Stats
-          </div>
-
-          {/* Stats Grid */}
-          <div className="stat-grid border-t border-gray-700">
-            {statsData.map((stat, index) => (
-              <StatRow 
-                key={index}
-                label={stat.label}
-                mod={stat.mod}
-                value={stat.value}
-              />
-            ))}
-          </div>
-
-          <a href="/allocate-points" className="block mt-4">
-            <button className="btn-cx btn-cx-secondary btn-cx-full">
-              <span className="material-symbols-outlined text-lg">bar_chart</span>
-              Stats Breakdown
-            </button>
-          </a>
           
         </CxCard>
         

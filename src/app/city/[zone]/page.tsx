@@ -699,100 +699,6 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
           )}
         </CxCard>
 
-        {/* Points of Interest */}
-        {poi.length > 0 && (
-          <div className="mb-6">
-            {/* Terminals Section */}
-            {poi.filter(p => p.poi_type !== 'shop').length > 0 && (
-              <div className="mb-6">
-                <h2 className="text-white font-bold uppercase text-lg mb-3">TERMINALS</h2>
-                <div className="space-y-4">
-                  {poi.filter(p => p.poi_type !== 'shop').map((poiItem) => (
-                    <PoiCard
-                      key={poiItem.id}
-                      poiItem={poiItem}
-                      isAtLocation={isAtLocation}
-                      userStats={userStats}
-                      activeBreach={activeBreaches.get(poiItem.id)}
-                      timeLeft={breachTimeRemaining.get(poiItem.id) || ''}
-                      breachResults={breachResults}
-                      selectedPoi={selectedPoi}
-                      onBreachClick={handleBreachClick}
-                      onViewBreachResults={handleViewBreachResults}
-                      onBackFromBreachResults={handleBackFromBreachResults}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Shops Section */}
-            {poi.filter(p => p.poi_type === 'shop').length > 0 && (
-              <div className="mb-6">
-                <h2 className="text-white font-bold uppercase text-lg mb-3">SHOPS</h2>
-                <div className="space-y-4">
-                  {poi.filter(p => p.poi_type === 'shop').map((shop) => {
-                    // Check if shop was recently unlocked (within last 24 hours)
-                    const isNewlyUnlocked = shop.unlocked_at && 
-                      (new Date().getTime() - new Date(shop.unlocked_at).getTime()) < 24 * 60 * 60 * 1000;
-                    
-                    return (
-                      <CxCard key={shop.id}>
-                        <div className="flex gap-4 items-stretch relative">
-                          {/* NEW alert badge */}
-                          {isNewlyUnlocked && (
-                            <div className="absolute top-0 right-0 -mt-2 -mr-2 bg-bright-green text-black text-xs font-semibold px-2 py-0.5 rounded-full shadow-xl animate-pulse z-10">
-                              NEW
-                            </div>
-                          )}
-                          
-                          {/* Left side: Image + Info (2/3 width) */}
-                          <div className="flex flex-1" style={{ gap: '6px' }}>
-                            {/* Shop Image */}
-                            <div className="w-[75px] h-[75px] flex-shrink-0">
-                              {shop.image_url ? (
-                                <img src={shop.image_url} alt={shop.name} className="w-full h-full object-contain" />
-                              ) : (
-                                <div className="w-full h-full bg-gray-700 flex items-center justify-center text-3xl">
-                                  🏪
-                                </div>
-                              )}
-                            </div>
-                            
-                            {/* Shop Info */}
-                            <div className="flex-1">
-                              <h3 className="text-white font-bold uppercase text-sm mb-1">{shop.name}</h3>
-                              {shop.type_label && (
-                                <div className="mb-1">
-                                  <span className="pill-cloud-gray uppercase text-xs">
-                                    {shop.type_label}
-                                  </span>
-                                </div>
-                              )}
-                              <p className="text-gray-400 text-xs">{shop.description || 'Shop access point'}</p>
-                            </div>
-                          </div>
-                          
-                          {/* Right side: Shop Button (1/3 width) */}
-                          <div className="w-1/3 flex flex-col justify-center">
-                            <a href={`/shops/${shop.id}`}>
-                              <button className="btn-cx btn-cx-primary btn-cx-auto">
-                                SHOP
-                              </button>
-                            </a>
-                          </div>
-                        </div>
-                      </CxCard>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Breach Results - shown inline in POI section */}
-
         {/* Actions */}
         <div className="mb-12">
           <h2 className="text-white font-bold uppercase text-lg mb-3">ACTIONS</h2>
@@ -916,6 +822,85 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
               })()}
             </div>
           </div>
+
+        {/* Points of Interest */}
+        {poi.length > 0 && (
+          <div className="mb-6">
+            {/* Terminals Section */}
+            {poi.filter(p => p.poi_type !== 'shop').length > 0 && (
+              <div className="mb-6">
+                <h2 className="text-white font-bold uppercase text-lg mb-3">TERMINALS</h2>
+                <div className="space-y-4">
+                  {poi.filter(p => p.poi_type !== 'shop').map((poiItem) => (
+                    <PoiCard
+                      key={poiItem.id}
+                      poiItem={poiItem}
+                      isAtLocation={isAtLocation}
+                      userStats={userStats}
+                      activeBreach={activeBreaches.get(poiItem.id)}
+                      timeLeft={breachTimeRemaining.get(poiItem.id) || ''}
+                      breachResults={breachResults}
+                      selectedPoi={selectedPoi}
+                      onBreachClick={handleBreachClick}
+                      onViewBreachResults={handleViewBreachResults}
+                      onBackFromBreachResults={handleBackFromBreachResults}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Shops Section */}
+            {poi.filter(p => p.poi_type === 'shop').length > 0 && (
+              <div className="mb-6">
+                <h2 className="text-white font-bold uppercase text-lg mb-3">SHOPS</h2>
+                <div className="space-y-4">
+                  {poi.filter(p => p.poi_type === 'shop').map((shop) => {
+                    // Check if shop was recently unlocked (within last 24 hours)
+                    const isNewlyUnlocked = shop.unlocked_at && 
+                      (new Date().getTime() - new Date(shop.unlocked_at).getTime()) < 24 * 60 * 60 * 1000;
+                    
+                    return (
+                      <CxCard key={shop.id}>
+                        <div className="flex gap-4 items-stretch relative">
+                          {/* NEW alert badge */}
+                          {isNewlyUnlocked && (
+                            <div className="absolute top-0 right-0 -mt-2 -mr-2 bg-bright-green text-black text-xs font-semibold px-2 py-0.5 rounded-full shadow-xl animate-pulse z-10">
+                              NEW
+                            </div>
+                          )}
+                          
+                          {/* Left side: Shop Image */}
+                          <div className="w-[75px] h-[75px] flex-shrink-0">
+                            {shop.image_url ? (
+                              <img src={shop.image_url} alt={shop.name} className="w-full h-full object-contain" />
+                            ) : (
+                              <div className="w-full h-full bg-gray-700 flex items-center justify-center text-3xl">
+                                🏪
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Right side: Title and Button stacked */}
+                          <div className="flex-1 flex flex-col justify-center gap-2">
+                            <h3 className="text-white font-bold uppercase text-sm">{shop.name}</h3>
+                            <a href={`/shops/${shop.id}`}>
+                              <button className="btn-cx btn-cx-primary btn-cx-full">
+                                SHOP
+                              </button>
+                            </a>
+                          </div>
+                        </div>
+                      </CxCard>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Breach Results - shown inline in POI section */}
 
         {/* History */}
         <div className="mb-6">

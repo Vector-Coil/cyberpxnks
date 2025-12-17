@@ -81,27 +81,20 @@ export default function PoiCard({
           </div>
         )}
         
-        {/* Left side: Image + Info (2/3 width) */}
-        <div className="flex flex-1" style={{ gap: '6px' }}>
-          {/* POI Image */}
-          {poiItem.image_url && (
-            <div className="w-[75px] h-[75px] flex-shrink-0">
-              <img src={poiItem.image_url} alt={poiItem.name} className="w-full h-full object-contain" />
-            </div>
-          )}
-          
-          {/* POI Info */}
-          <div className="flex-1">
-            <h3 className="text-white font-bold uppercase text-sm mb-1">{poiItem.name}</h3>
-            <p className="text-gray-400 text-xs">{poiItem.description || 'Terminal access point'}</p>
+        {/* Left side: POI Image */}
+        {poiItem.image_url && (
+          <div className="w-[75px] h-[75px] flex-shrink-0">
+            <img src={poiItem.image_url} alt={poiItem.name} className="w-full h-full object-contain" />
           </div>
-        </div>
+        )}
         
-        {/* Right side: Breach Button or Status (1/3 width) */}
-        <div className="w-1/3 flex flex-col justify-center">
+        {/* Right side: Title and Button stacked */}
+        <div className="flex-1 flex flex-col justify-center gap-2">
+          <h3 className="text-white font-bold uppercase text-sm">{poiItem.name}</h3>
+          
           {breachResults && selectedPoi?.id === poiItem.id ? (
             <button 
-              className="btn-cx btn-cx-secondary btn-cx-auto"
+              className="btn-cx btn-cx-secondary btn-cx-full"
               onClick={onBackFromBreachResults}
             >
               DISMISS
@@ -109,7 +102,7 @@ export default function PoiCard({
           ) : activeBreach ? (
             <>
               <button 
-                className={`btn-cx btn-cx-pause btn-cx-auto mb-2 ${!isBreachComplete ? 'cursor-default opacity-75' : ''}`}
+                className={`btn-cx btn-cx-pause btn-cx-full ${!isBreachComplete ? 'cursor-default opacity-75' : ''}`}
                 onClick={() => {
                   if (isBreachComplete) {
                     onViewBreachResults(poiItem);
@@ -123,7 +116,7 @@ export default function PoiCard({
             </>
           ) : (
             <button 
-              className={`btn-cx-auto btn-cx-harsh ${canBreach ? '' : 'btn-cx-disabled'}`}
+              className={`btn-cx btn-cx-full btn-cx-harsh ${canBreach ? '' : 'btn-cx-disabled'}`}
               onClick={() => onBreachClick(poiItem)}
               disabled={!canBreach}
             >

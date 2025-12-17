@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    if (!['cyberdeck', 'slimsoft'].includes(slotType)) {
+    if (!['cyberdeck', 'slimsoft', 'arsenal'].includes(slotType)) {
       return NextResponse.json({ error: 'Invalid slot type' }, { status: 400 });
     }
 
@@ -212,25 +212,38 @@ export async function POST(request: NextRequest) {
           `Unequipped ${inventoryItem.name}`
         );
       } else {
-        // For slimsoft, delete the specific item row
+        // For slimsoft and arsenal, delete the specific item row
         await pool.execute(
           'DELETE FROM user_loadout WHERE user_id = ? AND item_id = ? AND slot_type = ?',
           [userId, itemId, slotType]
         );
-        // Update user_stats to remove slimsoft modifiers
-        await updateSlimsoftStats(pool, userId);
-        // Cap current stats at new max values (in case slimsoft affected max calculations)
-        const statsService = new StatsService(pool, userId);
-        await statsService.capAtMax();
-        // Log to activity ledger
-        await logActivity(
-          userId,
-          'hardware',
-          'unequip_slimsoft',
-          null,
-          itemId,
-          `Unequipped ${inventoryItem.name}`
-        );
+        
+        if (slotType === 'slimsoft') {
+          // Update user_stats to remove slimsoft modifiers
+          await updateSlimsoftStats(pool, userId);
+          // Cap current stats at new max values (in case slimsoft affected max calculations)
+          const statsService = new StatsService(pool, userId);
+          await statsService.capAtMax();
+          // Log to activity ledger
+          await logActivity(
+            userId,
+            'hardware',
+            'unequip_slimsoft',
+            null,
+            itemId,
+            `Unequipped ${inventoryItem.name}`
+          );
+        } else if (slotType === 'arsenal') {
+          // Log to activity ledger for arsenal
+          await logActivity(
+            userId,
+            'hardware',
+            'unequip_arsenal',
+            null,
+            itemId,
+            `Unequipped ${inventoryItem.name}`
+          );
+        }
       }
 
       return NextResponse.json({ 
@@ -398,6 +411,79 @@ export async function POST(request: NextRequest) {
         userId,
         'hardware',
         'equip_slimsoft',
+        null,
+        itemId,
+        `Equipped ${inventoryItem.name}`
+      );
+
+      return NextResponse.json({ 
+        success: true,
+        message: `${inventoryItem.name} equipped`,
+        slotName
+      });
+    }
+
+    // Handle arsenal equipping
+    if (slotType === 'arsenal') {
+      // Get currently used arsenal slots
+      const [equippedRows] = await pool.execute<any[]>(
+        `SELECT slot_name FROM user_loadout 
+         WHERE user_id = ? AND slot_type = ?`,
+        [userId, slotType]
+      );
+      const usedSlots = (equippedRows as any[]).map(row => row.slot_name);
+
+      // Calculate max arsenal slots based on Power stat
+      const [statsRows] = await pool.execute<any[]>(
+        `SELECT power FROM user_stats WHERE user_id = ? LIMIT 1`,
+        [userId]
+      );
+      const power = (statsRows as any[])[0]?.power || 0;
+      const maxArsenalSlots = Math.max(1, Math.floor(Math.floor(power / 2) - 2));
+
+      // Check if we're at max slots
+      if (usedSlots.length >= maxArsenalSlots) {
+        return NextResponse.json({ 
+          error: `Maximum ${maxArsenalSlots} arsenal slots already equipped` 
+        }, { status: 400 });
+      }
+
+      // Check if this specific item is already equipped
+      const [alreadyEquippedRows] = await pool.execute<any[]>(
+        `SELECT id FROM user_loadout 
+         WHERE user_id = ? AND item_id = ? AND slot_type = ?
+         LIMIT 1`,
+        [userId, itemId, slotType]
+      );
+      
+      if ((alreadyEquippedRows as any[]).length > 0) {
+        return NextResponse.json({ 
+          error: 'Item already equipped' 
+        }, { status: 400 });
+      }
+
+      // Find the first available slot (arsenal_1, arsenal_2, etc.)
+      let slotName = '';
+      for (let i = 1; i <= maxArsenalSlots; i++) {
+        const testSlot = `arsenal_${i}`;
+        if (!usedSlots.includes(testSlot)) {
+          slotName = testSlot;
+          break;
+        }
+      }
+
+      // Add to loadout
+      await pool.execute(
+        `INSERT INTO user_loadout (user_id, slot_name, item_id, slot_type)
+         VALUES (?, ?, ?, ?)`,
+        [userId, slotName, itemId, slotType]
+      );
+
+      // Log to activity ledger
+      await logActivity(
+        userId,
+        'hardware',
+        'equip_arsenal',
         null,
         itemId,
         `Equipped ${inventoryItem.name}`
