@@ -35,7 +35,7 @@ export default function GearPage() {
   const [userStats, setUserStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'acquisition' | 'alphabetical' | 'type'>('acquisition');
-  const [activeTab, setActiveTab] = useState<'all' | 'hardware' | 'software' | 'data'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'hardware' | 'software' | 'data' | 'arsenal'>('all');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
@@ -79,7 +79,9 @@ export default function GearPage() {
       upgrade: 'upgrade',
       accessory: 'watch',
       intel: 'article',
-      slimsoft: 'terminal'
+      slimsoft: 'terminal',
+      weapon: 'swords',
+      relic: 'star'
     };
     return icons[itemType.toLowerCase()] || 'inventory_2';
   };
@@ -89,12 +91,16 @@ export default function GearPage() {
     switch (activeTab) {
       case 'hardware':
         return items.filter(item => 
-          ['chip', 'cyberdeck', 'peripheral', 'key item', 'upgrade', 'accessory'].includes(item.item_type.toLowerCase())
+          ['chip', 'cyberdeck', 'peripheral', 'key item', 'upgrade'].includes(item.item_type.toLowerCase())
         );
       case 'software':
         return items.filter(item => item.item_type.toLowerCase() === 'slimsoft');
       case 'data':
         return items.filter(item => item.item_type.toLowerCase() === 'intel');
+      case 'arsenal':
+        return items.filter(item => 
+          ['weapon', 'accessory', 'relic'].includes(item.item_type.toLowerCase())
+        );
       case 'all':
       default:
         return items;
@@ -152,6 +158,16 @@ export default function GearPage() {
             }`}
           >
             Hardware
+          </button>
+          <button
+            onClick={() => setActiveTab('arsenal')}
+            className={`flex-1 py-3 px-4 rounded-lg font-bold uppercase text-sm transition-colors ${
+              activeTab === 'arsenal' 
+                ? 'bg-fuschia text-white' 
+                : 'bg-charcoal text-gray-400 hover:bg-charcoal-75'
+            }`}
+          >
+            Arsenal
           </button>
           <button
             onClick={() => setActiveTab('software')}

@@ -94,6 +94,7 @@ export default function HardwarePage() {
   const [cyberdecks, setCyberdecks] = useState<HardwareItem[]>([]);
   const [peripherals, setPeripherals] = useState<HardwareItem[]>([]);
   const [slimsoft, setSlimsoft] = useState<HardwareItem[]>([]);
+  const [arsenalItems, setArsenalItems] = useState<HardwareItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedCyberdeck, setExpandedCyberdeck] = useState<number | null>(null);
   const [previewSoftId, setPreviewSoftId] = useState<number | null>(null);
@@ -111,6 +112,8 @@ export default function HardwarePage() {
   const [slimsoftEffects, setSlimsoftEffects] = useState<any[]>([]);
   const [selectedIncompatibleId, setSelectedIncompatibleId] = useState<number | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'tech' | 'arsenal'>('tech');
+  const [selectedArsenalId, setSelectedArsenalId] = useState<number | null>(null);
 
   useEffect(() => {
     if (userFid && !isAuthLoading) {
@@ -129,9 +132,12 @@ export default function HardwarePage() {
       if (selectedIncompatibleId !== null && !target.closest('.incompatible-soft-tile') && !target.closest('[role="dialog"]')) {
         setSelectedIncompatibleId(null);
       }
+      if (selectedArsenalId !== null && !target.closest('.arsenal-tile') && !target.closest('[role="dialog"]')) {
+        setSelectedArsenalId(null);
+      }
     };
 
-    if (selectedSoftId !== null || selectedIncompatibleId !== null) {
+    if (selectedSoftId !== null || selectedIncompatibleId !== null || selectedArsenalId !== null) {
       // Use setTimeout to add listener after current click finishes
       const timeoutId = setTimeout(() => {
         document.addEventListener('click', handleClickOutside);
@@ -142,16 +148,17 @@ export default function HardwarePage() {
         document.removeEventListener('click', handleClickOutside);
       };
     }
-  }, [selectedSoftId, selectedIncompatibleId]);
+  }, [selectedSoftId, selectedIncompatibleId, selectedArsenalId]);
 
   async function loadData() {
     if (!userFid) return;
     
     try {
       setLoading(true);
-      const [hardwareRes, statsRes] = await Promise.all([
+      const [hardwareRes, statsRes, inventoryRes] = await Promise.all([
         fetch(`/api/hardware?fid=${userFid}`),
-        fetch(`/api/stats?fid=${userFid}`)
+        fetch(`/api/stats?fid=${userFid}`),
+        fetch(`/api/inventory?fid=${userFid}`)
       ]);
 
       if (hardwareRes.ok) {
@@ -165,6 +172,16 @@ export default function HardwarePage() {
       if (statsRes.ok) {
         const stats = await statsRes.json();
         setUserStats(stats);
+      }
+
+      if (inventoryRes.ok) {
+        const inv = await inventoryRes.json();
+        // Filter for weapons, accessories, and relics
+        const arsenalTypes = ['weapon', 'accessory', 'relic'];
+        const arsenalFiltered = (inv.items || []).filter((item: any) => 
+          arsenalTypes.includes(item.item_type.toLowerCase())
+        );
+        setArsenalItems(arsenalFiltered);
       }
 
       // Fetch slimsoft effects
@@ -332,11 +349,35 @@ export default function HardwarePage() {
       </div>
 
       <div className="frame-body pt-0">
+        {/* Tabs */}
+        <div className="mb-4 flex gap-2">
+          <button
+            onClick={() => setActiveTab('tech')}
+            className={`flex-1 py-3 px-4 rounded-lg font-bold uppercase text-sm transition-colors ${
+              activeTab === 'tech' 
+                ? 'bg-fuschia text-white' 
+                : 'bg-charcoal text-gray-400 hover:bg-charcoal-75'
+            }`}
+          >
+            Tech Stack
+          </button>
+          <button
+            onClick={() => setActiveTab('arsenal')}
+            className={`flex-1 py-3 px-4 rounded-lg font-bold uppercase text-sm transition-colors ${
+              activeTab === 'arsenal' 
+                ? 'bg-fuschia text-white' 
+                : 'bg-charcoal text-gray-400 hover:bg-charcoal-75'
+            }`}
+          >
+            Arsenal
+          </button>
+        </div>
+
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin w-12 h-12 border-4 border-gray-600 border-t-fuschia rounded-full"></div>
           </div>
-        ) : (
+        ) : activeTab === 'tech' ? (
           <>
             {/* HARDWARE SECTION - Cyberdecks */}
             <CxCard className="mb-4">
@@ -1021,6 +1062,176 @@ export default function HardwarePage() {
                 </div>
               )}
               </CxCard>
+            </div>
+
+            {/* View All Gear Button */}
+            <div className="mt-4">
+              <a 
+                href="/gear"
+                className="block w-full py-3 px-4 rounded bg-bright-blue hover:bg-blue-600 text-white text-center font-bold uppercase transition-colors"
+              >
+                View All Gear
+              </a>
+            </div>
+          </>
+        ) : (
+          /* ARSENAL TAB */
+          <>
+            <div className="mb-4">
+              <p className="text-gray-400 text-sm">Your carry capacity of equipped weapons, accessories, and key items. Total equip capacity determined by Power attribute.</p>
+            </div>
+
+            {/* Arsenal Slots Card */}
+            <CxCard className="mb-4">
+              {(() => {
+                const power = userStats?.power || 0;
+                const arsenalSlots = Math.max(1, Math.floor(Math.floor(power / 2) - 2));
+                const equippedArsenal = arsenalItems.filter(item => item.is_equipped === 1);
+                
+                return (
+                  <>
+                    <div className="font-bold uppercase mb-4" style={{ color: 'var(--fuschia)' }}>
+                      Arsenal ({equippedArsenal.length}/{arsenalSlots} slots)
+                    </div>
+
+                    {/* Equipped Arsenal Slots */}
+                    <div className="grid grid-cols-3 gap-3 mb-4">
+                      {Array.from({ length: arsenalSlots }).map((_, index) => {
+                        const item = equippedArsenal[index];
+                        
+                        return (
+                          <div key={index} className={`aspect-square rounded bg-charcoal-75 flex items-center justify-center border-2 ${
+                            item ? 'border-bright-blue' : 'border-gray-700 border-dashed'
+                          }`}>
+                            {item ? (
+                              <div className="w-full h-full p-2">
+                                <a href={`/gear/${item.id}`} className="w-full h-[calc(100%-32px)] flex items-center justify-center mb-2 hover:opacity-75 transition-opacity">
+                                  {item.image_url ? (
+                                    <img src={item.image_url} alt={item.name} className="max-w-full max-h-full object-contain" />
+                                  ) : (
+                                    <span className="material-symbols-outlined text-4xl text-gray-600">
+                                      {item.item_type.toLowerCase() === 'weapon' ? 'swords' : 
+                                       item.item_type.toLowerCase() === 'accessory' ? 'watch' : 'star'}
+                                    </span>
+                                  )}
+                                </a>
+                                <button
+                                  onClick={() => handleUnequip(item.id, 'arsenal')}
+                                  disabled={isProcessing}
+                                  className="w-full py-1 px-2 rounded bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase transition-colors disabled:opacity-50"
+                                >
+                                  Unequip
+                                </button>
+                              </div>
+                            ) : (
+                              <div className="text-center">
+                                <span className="material-symbols-outlined text-4xl text-gray-700">add_circle</span>
+                                <div className="text-xs text-gray-600 mt-1">Empty Slot</div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Active Arsenal Effects */}
+                    <div className="mt-4 p-3 bg-charcoal-75 rounded">
+                      <div className="font-bold text-sm mb-2" style={{ color: 'var(--fuschia)' }}>Active Arsenal Effects</div>
+                      <div className="text-sm text-gray-400 italic">Arsenal effects coming soon...</div>
+                    </div>
+                  </>
+                );
+              })()}
+            </CxCard>
+
+            {/* Available Items */}
+            <div className="mb-4">
+              <div className="font-bold uppercase mb-3 text-sm" style={{ color: 'var(--fuschia)' }}>Available Items</div>
+              
+              {(() => {
+                const unequippedArsenal = arsenalItems.filter(item => item.is_equipped !== 1);
+                const power = userStats?.power || 0;
+                const arsenalSlots = Math.max(1, Math.floor(Math.floor(power / 2) - 2));
+                const equippedCount = arsenalItems.filter(item => item.is_equipped === 1).length;
+                const canEquipMore = equippedCount < arsenalSlots;
+                
+                if (unequippedArsenal.length === 0) {
+                  return (
+                    <CxCard>
+                      <div className="text-center text-gray-400 py-8">
+                        <span className="material-symbols-outlined text-5xl mb-2 block">swords</span>
+                        <div>No unequipped arsenal items</div>
+                      </div>
+                    </CxCard>
+                  );
+                }
+                
+                return (
+                  <div className="grid grid-cols-3 gap-3">
+                    {unequippedArsenal.map((item) => (
+                      <div 
+                        key={item.id}
+                        className={`arsenal-tile aspect-square rounded bg-charcoal-75 border-2 transition-all cursor-pointer relative ${
+                          selectedArsenalId === item.id
+                            ? 'border-bright-blue scale-105'
+                            : 'border-gray-700 hover:border-gray-500'
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedArsenalId(item.id);
+                        }}
+                      >
+                        <div className="w-full h-full p-2 flex items-center justify-center">
+                          {item.image_url ? (
+                            <img src={item.image_url} alt={item.name} className="max-w-full max-h-full object-contain" />
+                          ) : (
+                            <span className="material-symbols-outlined text-4xl text-gray-600">
+                              {item.item_type.toLowerCase() === 'weapon' ? 'swords' : 
+                               item.item_type.toLowerCase() === 'accessory' ? 'watch' : 'star'}
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Item Name */}
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                          <div className="text-xs font-bold text-white truncate">
+                            {item.name}{item.upgrade && item.upgrade > 0 ? ` +${item.upgrade}` : ''}
+                          </div>
+                        </div>
+
+                        {/* Action buttons when selected */}
+                        {selectedArsenalId === item.id && (
+                          <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-2 p-2">
+                            {canEquipMore ? (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEquip(item.id, 'arsenal');
+                                }}
+                                disabled={isProcessing}
+                                className="w-full py-2 px-3 rounded bg-bright-blue hover:bg-blue-600 text-white text-xs font-bold uppercase transition-colors disabled:opacity-50"
+                              >
+                                Equip
+                              </button>
+                            ) : (
+                              <div className="w-full py-2 px-3 rounded bg-gray-700 text-gray-400 text-xs font-bold uppercase text-center">
+                                Arsenal Full
+                              </div>
+                            )}
+                            <a
+                              href={`/gear/${item.id}`}
+                              className="w-full py-2 px-3 rounded bg-charcoal hover:bg-gray-700 text-white text-xs font-bold uppercase text-center transition-colors"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              See Details
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* View All Gear Button */}
