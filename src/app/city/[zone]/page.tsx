@@ -176,25 +176,19 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
           setUserLocation(zoneData.userLocation);
           
           // Check for active scout action
-          // Show as active if:
-          // 1. In progress: end_time > now AND no result_status
-          // 2. Ready for results: result_status = 'completed'
+          // Only show as active if in progress (no result_status)
+          // Exclude completed/dismissed scouts
           const now = new Date().getTime();
-          const activeOrCompleted = zoneData.history.find((h: ZoneHistory) => {
+          const activeScout = zoneData.history.find((h: ZoneHistory) => {
             if (h.action_type !== 'Scouted' || !h.end_time) return false;
-            // Exclude dismissed scouts
-            if (h.result_status === 'dismissed') return false;
-            // Include if completed (ready for results)
-            if (h.result_status === 'completed') return true;
-            // Include if in progress (no result_status and end_time in future)
-            if (!h.result_status) {
-              const endTime = new Date(h.end_time).getTime();
-              return endTime > now;
-            }
-            return false;
+            // Only include scouts with NO result_status (truly in progress or ready for results)
+            if (h.result_status) return false;
+            const endTime = new Date(h.end_time).getTime();
+            // Include both in-progress and completed-but-not-viewed
+            return true;
           });
-          if (activeOrCompleted) {
-            setActiveScout(activeOrCompleted);
+          if (activeScout) {
+            setActiveScout(activeScout);
           }
 
           // Check for active breaches for each POI in this zone
@@ -202,16 +196,15 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
             const newActiveBreaches = new Map<number, any>();
             
             // Check history for active breaches in this zone (both physical and remote)
-            // Include:
-            // 1. In progress: no result_status (regardless of end_time)
-            // 2. Ready for results: result_status = 'completed'
+            // Only include breaches that are truly in progress (no result_status)
+            // Exclude:
+            // - 'completed': Already processed, results viewed
+            // - 'dismissed': User dismissed the action
             const activeZoneBreaches = zoneData.history.filter((h: any) => {
               if (!(h.action_type === 'Breached' || h.action_type === 'RemoteBreach')) return false;
               if (!h.end_time || !h.poi_id) return false; // Must have end_time and POI
-              // Exclude dismissed breaches
-              if (h.result_status === 'dismissed') return false;
-              // Include completed (ready for results) or in progress (no result_status)
-              return h.result_status === 'completed' || !h.result_status;
+              // Only include breaches with NO result_status (in progress or ready for results)
+              return !h.result_status || h.result_status === '';
             });
             
             // Map breaches to their POI IDs

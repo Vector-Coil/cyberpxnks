@@ -70,6 +70,15 @@ export interface TechStats {
   cache: number;
 }
 
+export interface CombatStats {
+  tactical: number;
+  smart_tech: number;
+  offense: number;
+  defense: number;
+  evasion: number;
+  stealth: number;
+}
+
 export interface CompleteStats {
   // Current values
   current: CurrentStats;
@@ -77,6 +86,8 @@ export interface CompleteStats {
   max: MaxStats;
   // Tech stats (base + hardware + slimsoft)
   tech: TechStats;
+  // Combat stats (base + arsenal modifiers)
+  combat: CombatStats;
   // User attributes
   attributes: UserAttributes;
   // Hardware modifiers (from equipped cyberdeck)
@@ -140,12 +151,14 @@ export class StatsService {
       cache: user.class_cache || 0
     };
 
-    // Step 2: Get current meter values from user_stats
+// Step 2: Get current meter values and combat stats from user_stats
     const [statsRows] = await this.pool.execute(
       `SELECT 
-        current_consciousness, current_stamina, current_charge, 
+        current_consciousness, current_stamina, current_charge,
         current_bandwidth, current_thermal, current_neural,
         base_clock, base_cooling, base_signal, base_latency, base_crypt, base_cache,
+        base_tac, mod_tac, base_smt, mod_smt, base_off, mod_off,
+        base_def, mod_def, base_evn, mod_evn, base_sth, mod_sth,
         last_regeneration, updated_at
       FROM user_stats 
       WHERE user_id = ? LIMIT 1`,
@@ -297,11 +310,22 @@ export class StatsService {
       bandwidth: bandwidth
     };
 
+    // Step 6: Calculate combat stats (base + mod, similar to tech stats)
+    const combat: CombatStats = {
+      tactical: (stats.base_tac || 0) + (stats.mod_tac || 0),
+      smart_tech: (stats.base_smt || 0) + (stats.mod_smt || 0),
+      offense: (stats.base_off || 0) + (stats.mod_off || 0),
+      defense: (stats.base_def || 0) + (stats.mod_def || 0),
+      evasion: (stats.base_evn || 0) + (stats.mod_evn || 0),
+      stealth: (stats.base_sth || 0) + (stats.mod_sth || 0)
+    };
+
     // Return complete snapshot
     return {
       current,
       max,
       tech,
+      combat,
       attributes,
       hardware,
       slimsoft,

@@ -106,6 +106,69 @@ async function updateHardwareStats(pool: any, userId: number) {
   );
 }
 
+// Helper function to update user_stats with combat stats from arsenal
+async function updateCombatStats(pool: any, userId: number) {
+  // Get equipped arsenal modifiers
+  const [arsenalRows] = await pool.execute(
+    `SELECT 
+      am.tactical, am.smart_tech, am.offense,
+      am.defense, am.evasion, am.stealth
+    FROM user_loadout ul
+    INNER JOIN arsenal_modifiers am ON ul.item_id = am.item_id
+    WHERE ul.user_id = ? AND ul.slot_type = 'arsenal'`,
+    [userId]
+  );
+
+  // Sum all modifiers from equipped items
+  let tacticalMod = 0, smartTechMod = 0, offenseMod = 0;
+  let defenseMod = 0, evasionMod = 0, stealthMod = 0;
+
+  for (const item of arsenalRows as any[]) {
+    tacticalMod += item.tactical || 0;
+    smartTechMod += item.smart_tech || 0;
+    offenseMod += item.offense || 0;
+    defenseMod += item.defense || 0;
+    evasionMod += item.evasion || 0;
+    stealthMod += item.stealth || 0;
+  }
+
+  // Get base values from user_stats (set from class on creation)
+  const [baseRows] = await pool.execute(
+    `SELECT base_tac, base_smt, base_off, base_def, base_evn, base_sth
+     FROM user_stats WHERE user_id = ? LIMIT 1`,
+    [userId]
+  );
+  
+  const base = (baseRows as any[])[0] || {};
+  const baseTac = base.base_tac || 0;
+  const baseSmt = base.base_smt || 0;
+  const baseOff = base.base_off || 0;
+  const baseDef = base.base_def || 0;
+  const baseEvn = base.base_evn || 0;
+  const baseSth = base.base_sth || 0;
+
+  // Update user_stats with modifiers only (totals calculated on-the-fly)
+  await pool.execute(
+    `UPDATE user_stats 
+     SET mod_tac = ?,
+         mod_smt = ?,
+         mod_off = ?,
+         mod_def = ?,
+         mod_evn = ?,
+         mod_sth = ?
+     WHERE user_id = ?`,
+    [
+      tacticalMod,
+      smartTechMod,
+      offenseMod,
+      defenseMod,
+      evasionMod,
+      stealthMod,
+      userId
+    ]
+  );
+}
+
 // Helper function to update user_stats with slimsoft modifiers
 async function updateSlimsoftStats(pool: any, userId: number) {
   // Get all equipped slimsoft effects
@@ -240,6 +303,8 @@ export async function POST(request: NextRequest) {
             `Unequipped ${inventoryItem.name}`
           );
         } else if (slotType === 'arsenal') {
+          // Update combat stats after unequipping arsenal
+          await updateCombatStats(pool, userId);
           // Log to activity ledger for arsenal
           await logActivity(
             userId,
@@ -491,6 +556,9 @@ export async function POST(request: NextRequest) {
          VALUES (?, ?, ?, ?)`,
         [userId, slotName, itemId, slotType]
       );
+
+      // Update combat stats after equipping arsenal
+      await updateCombatStats(pool, userId);
 
       // Log to activity ledger
       await logActivity(
