@@ -167,21 +167,30 @@ interface CxTabLinkProps {
   label?: string;
   iconSrc?: string;
   alertText?: string;
+  backgroundImage?: string;
+  hideIcon?: boolean;
 }
 
-const CxTabLink: React.FC<CxTabLinkProps> = ({ href, label, iconSrc, alertText }) => {
+const CxTabLink: React.FC<CxTabLinkProps> = ({ href, label, iconSrc, alertText, backgroundImage, hideIcon }) => {
   // Determine if the tab is 'blank' based on props
   const isBlank = !label && !iconSrc;
 
   return (
     <a href={href}>
-      <div className="cx-tab cursor-pointer">
+      <div 
+        className="cx-tab cursor-pointer"
+        style={backgroundImage ? { 
+          backgroundImage: `url(${backgroundImage})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        } : undefined}
+      >
         {alertText && (
           <div className="tab-alert absolute top-0 right-0 -mt-2 -mr-2 bg-bright-green text-black text-xs font-semibold px-2 py-0.5 rounded-full shadow-xl animate-pulse">
             {alertText}
           </div>
         )}
-        {!isBlank && iconSrc && (
+        {!isBlank && iconSrc && !hideIcon && (
           <div className="tab-icon">
             <img 
               src={iconSrc} 
@@ -380,6 +389,8 @@ export default function Dashboard() {
     const [jobTimers, setJobTimers] = useState<Map<string, string>>(new Map());
     const [equippedSlimsoft, setEquippedSlimsoft] = useState<any[]>([]);
     const [equippedCyberdeck, setEquippedCyberdeck] = useState<any>(null);
+    const [equippedArsenal, setEquippedArsenal] = useState<any>(null);
+    const [recentInventoryItem, setRecentInventoryItem] = useState<any>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isLoadingAuth, setIsLoadingAuth] = useState(true);
     const [isLoadingStats, setIsLoadingStats] = useState(true);
@@ -436,12 +447,13 @@ export default function Dashboard() {
     async function load() {
       try {
         // Parallelize all independent API calls for faster loading
-        const [statsRes, regenRes, alertsRes, jobsRes, hardwareRes] = await Promise.all([
+        const [statsRes, regenRes, alertsRes, jobsRes, hardwareRes, inventoryRes] = await Promise.all([
           fetch(`/api/stats?fid=${userFid}`),  // Fetch calculated stats (tech stats + hardware modifiers)
           fetch(`/api/regenerate?fid=${userFid}`, { method: 'POST' }),  // Regenerate time-based meters
           fetch(`/api/alerts?fid=${userFid}`),
           fetch(`/api/active-jobs?fid=${userFid}`),
-          fetch(`/api/hardware?fid=${userFid}`)  // Fetch hardware including equipped slimsoft
+          fetch(`/api/hardware?fid=${userFid}`),  // Fetch hardware including equipped slimsoft
+          fetch(`/api/inventory?fid=${userFid}&sortBy=acquisition`)  // Fetch inventory for arsenal and recent items
         ]);
 
         // Process calculated stats (static until hardware/stat allocation changes)
@@ -513,6 +525,23 @@ export default function Dashboard() {
           if (mounted && hardwareData.cyberdecks) {
             const equippedDeck = hardwareData.cyberdecks.find((d: any) => d.is_equipped === 1);
             setEquippedCyberdeck(equippedDeck || null);
+          }
+        }
+
+        // Process inventory data to get equipped arsenal and most recent item
+        if (inventoryRes.ok) {
+          const inventoryData = await inventoryRes.json();
+          if (mounted && inventoryData.items) {
+            // Get first equipped arsenal item (weapon, accessory, or relic)
+            const arsenalTypes = ['weapon', 'accessory', 'relic'];
+            const equippedArsenalItem = inventoryData.items.find((item: any) => 
+              arsenalTypes.includes(item.item_type?.toLowerCase()) && item.is_equipped === 1
+            );
+            setEquippedArsenal(equippedArsenalItem || null);
+            
+            // Get most recently acquired item (first in acquisition sort)
+            const mostRecent = inventoryData.items[0] || null;
+            setRecentInventoryItem(mostRecent);
           }
         }
 
@@ -648,9 +677,9 @@ export default function Dashboard() {
   */
   
   const techStackTabs = [
-    { href: "/hardware", label: "Hardware", iconSrc: equippedCyberdeck?.image_url || iconSrc },
-    { href: "/hardware#slimsoft", label: "Slimsoft", iconSrc },
-    { href: "/gear", label: "Gear", iconSrc },
+    { href: "/hardware", label: "Hardware", iconSrc: equippedCyberdeck?.image_url || iconSrc, backgroundImage: equippedCyberdeck?.image_url, hideIcon: !!equippedCyberdeck?.image_url },
+    { href: "/hardware#arsenal", label: "Arsenal", iconSrc: equippedArsenal?.image_url || iconSrc, backgroundImage: equippedArsenal?.image_url, hideIcon: !!equippedArsenal?.image_url },
+    { href: "/gear", label: "Gear", iconSrc: recentInventoryItem?.image_url || iconSrc, backgroundImage: recentInventoryItem?.image_url, hideIcon: !!recentInventoryItem?.image_url },
   ];
   
   /*
@@ -853,12 +882,12 @@ export default function Dashboard() {
         />
 
         
-        {/* Tech Stack Card */}
-        <CxCard title="Tech Stack" className="mb-2">
+        {/* Equipment Loadout Card */}
+        <CxCard title="Equipment Loadout" className="mb-2">
           
             <div className="dashboard-container">
 
-                {/* Tech Stack Tabs (Hardware, Slimsoft, Compute) */}
+                {/* Equipment Loadout Tabs (Hardware, Arsenal, Gear) */}
                 <div className="cx-tabs">
                     {techStackTabs.map((tab) => (
                     <CxTabLink 
@@ -866,6 +895,8 @@ export default function Dashboard() {
                         href={tab.href}
                         label={tab.label}
                         iconSrc={tab.iconSrc}
+                        backgroundImage={tab.backgroundImage}
+                        hideIcon={tab.hideIcon}
                     />
                     ))}
                 </div>
