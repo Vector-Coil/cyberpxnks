@@ -519,6 +519,12 @@ export async function POST(request: NextRequest) {
       stack: err.stack,
       name: err.name 
     });
-    return handleApiError(err, 'Failed to equip item');
+    
+    // Return detailed error in response
+    return NextResponse.json({ 
+      error: err.message || 'Internal server error',
+      details: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+      timestamp: new Date().toISOString()
+    }, { status: 500 });
   }
 }
