@@ -25,7 +25,7 @@ export interface User extends RowDataPacket {
   admin?: boolean | number; // Database may store as TINYINT (number) or BOOLEAN
   pfp_url?: string;
   level?: number;
-  current_xp?: number;
+  xp?: number;
   credits?: number;
   street_cred?: number;
   class_id?: number;
@@ -39,7 +39,7 @@ export async function getUserByFid(pool: Pool, fid: number): Promise<User> {
   logger.dbQuery('SELECT user by FID', [fid]);
   
   const [rows] = await pool.execute<User[]>(
-    'SELECT id, fid, username, admin, pfp_url, level, current_xp, credits, street_cred, class_id FROM users WHERE fid = ? LIMIT 1',
+    'SELECT id, fid, username, admin, pfp_url, level, xp, credits, street_cred, class_id FROM users WHERE fid = ? LIMIT 1',
     [fid]
   );
 
@@ -88,7 +88,7 @@ export async function getUserById(pool: Pool, userId: number): Promise<User> {
   logger.dbQuery('SELECT user by ID', [userId]);
   
   const [rows] = await pool.execute<User[]>(
-    'SELECT id, fid, username, admin, pfp_url, level, current_xp, credits, street_cred, class_id FROM users WHERE id = ? LIMIT 1',
+    'SELECT id, fid, username, admin, pfp_url, level, xp, credits, street_cred, class_id FROM users WHERE id = ? LIMIT 1',
     [userId]
   );
 
