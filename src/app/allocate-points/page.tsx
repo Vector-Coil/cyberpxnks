@@ -70,7 +70,23 @@ interface CompleteStats {
   slimsoft_encryption: number;
   antivirus: number;
   
-  // Combat stats
+  // Combat stats (base from class)
+  base_tac: number;
+  base_smt: number;
+  base_off: number;
+  base_def: number;
+  base_evn: number;
+  base_sth: number;
+  
+  // Combat stats (mods from arsenal)
+  mod_tac: number;
+  mod_smt: number;
+  mod_off: number;
+  mod_def: number;
+  mod_evn: number;
+  mod_sth: number;
+  
+  // Combat stats (totals)
   tactical: number;
   smart_tech: number;
   offense: number;
@@ -278,7 +294,11 @@ export default function StatsPage() {
         {description && <div className="text-gray-500 text-xs">{description}</div>}
       </div>
       <div className="text-center">
-        <span className="pill-charcoal text-xs">{base}</span>
+        {base === 0 ? (
+          <span className="pill-charcoal text-xs opacity-50">—</span>
+        ) : (
+          <span className="pill-charcoal text-xs">{base}</span>
+        )}
       </div>
       <div className="text-center">
         {mod > 0 ? (
@@ -426,61 +446,22 @@ export default function StatsPage() {
                 {/* Right Column - Combat Stats */}
                 <div>
                   <div className="text-fuschia font-bold text-xs uppercase mb-3">Combat Stats</div>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between p-3 bg-charcoal-75 rounded">
-                      <div className="flex-1">
-                        <div className="text-white font-bold uppercase text-sm">Tactical</div>
-                        <div className="text-gray-500 text-xs">Combat planning & strategy</div>
-                      </div>
-                      <div>
-                        <span className="pill-cloud-gray text-lg font-bold">{completeStats.tactical || 0}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-charcoal-75 rounded">
-                      <div className="flex-1">
-                        <div className="text-white font-bold uppercase text-sm">Smart Tech</div>
-                        <div className="text-gray-500 text-xs">Smart weapons & systems</div>
-                      </div>
-                      <div>
-                        <span className="pill-cloud-gray text-lg font-bold">{completeStats.smart_tech || 0}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-charcoal-75 rounded">
-                      <div className="flex-1">
-                        <div className="text-white font-bold uppercase text-sm">Offense</div>
-                        <div className="text-gray-500 text-xs">Damage output & critical hits</div>
-                      </div>
-                      <div>
-                        <span className="pill-cloud-gray text-lg font-bold">{completeStats.offense || 0}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-charcoal-75 rounded">
-                      <div className="flex-1">
-                        <div className="text-white font-bold uppercase text-sm">Defense</div>
-                        <div className="text-gray-500 text-xs">Damage mitigation & resilience</div>
-                      </div>
-                      <div>
-                        <span className="pill-cloud-gray text-lg font-bold">{completeStats.defense || 0}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-charcoal-75 rounded">
-                      <div className="flex-1">
-                        <div className="text-white font-bold uppercase text-sm">Evasion</div>
-                        <div className="text-gray-500 text-xs">Dodge & avoidance</div>
-                      </div>
-                      <div>
-                        <span className="pill-cloud-gray text-lg font-bold">{completeStats.evasion || 0}</span>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-charcoal-75 rounded">
-                      <div className="flex-1">
-                        <div className="text-white font-bold uppercase text-sm">Stealth</div>
-                        <div className="text-gray-500 text-xs">Covert operations</div>
-                      </div>
-                      <div>
-                        <span className="pill-cloud-gray text-lg font-bold">{completeStats.stealth || 0}</span>
-                      </div>
-                    </div>
+                  
+                  {/* Table header */}
+                  <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 items-center py-2 border-b-2 border-fuschia mb-3">
+                    <div className="text-fuschia font-bold text-xs uppercase">Stat</div>
+                    <div className="text-center text-fuschia font-bold text-xs uppercase">Base</div>
+                    <div className="text-center text-fuschia font-bold text-xs uppercase">Mods</div>
+                    <div className="text-center text-fuschia font-bold text-xs uppercase">Total</div>
+                  </div>
+                  
+                  <div className="space-y-0">
+                    {renderStatRow('Tactical', completeStats.base_tac || 0, completeStats.mod_tac || 0, completeStats.tactical || 0, 'Combat planning & strategy')}
+                    {renderStatRow('Smart Tech', completeStats.base_smt || 0, completeStats.mod_smt || 0, completeStats.smart_tech || 0, 'Smart weapons & systems')}
+                    {renderStatRow('Offense', completeStats.base_off || 0, completeStats.mod_off || 0, completeStats.offense || 0, 'Damage output & critical hits')}
+                    {renderStatRow('Defense', completeStats.base_def || 0, completeStats.mod_def || 0, completeStats.defense || 0, 'Damage mitigation & resilience')}
+                    {renderStatRow('Evasion', completeStats.base_evn || 0, completeStats.mod_evn || 0, completeStats.evasion || 0, 'Dodge & avoidance')}
+                    {renderStatRow('Stealth', completeStats.base_sth || 0, completeStats.mod_sth || 0, completeStats.stealth || 0, 'Covert operations')}
                   </div>
                 </div>
               </div>

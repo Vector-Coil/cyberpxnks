@@ -94,6 +94,26 @@ export interface CompleteStats {
   hardware: HardwareModifiers;
   // Slimsoft modifiers (from equipped slimsoft)
   slimsoft: SlimsoftModifiers;
+  // Combat stat components (for UI display)
+  base_tac: number;
+  mod_tac: number;
+  base_smt: number;
+  mod_smt: number;
+  base_off: number;
+  mod_off: number;
+  base_def: number;
+  mod_def: number;
+  base_evn: number;
+  mod_evn: number;
+  base_sth: number;
+  mod_sth: number;
+  // Combat totals (convenience - same as combat object)
+  tactical: number;
+  smart_tech: number;
+  offense: number;
+  defense: number;
+  evasion: number;
+  stealth: number;
   // Metadata
   lastRegeneration: Date | null;
   updatedAt: Date | null;
@@ -329,6 +349,26 @@ export class StatsService {
       attributes,
       hardware,
       slimsoft,
+      // Combat stat components (for UI display)
+      base_tac: stats.base_tac || 0,
+      mod_tac: stats.mod_tac || 0,
+      base_smt: stats.base_smt || 0,
+      mod_smt: stats.mod_smt || 0,
+      base_off: stats.base_off || 0,
+      mod_off: stats.mod_off || 0,
+      base_def: stats.base_def || 0,
+      mod_def: stats.mod_def || 0,
+      base_evn: stats.base_evn || 0,
+      mod_evn: stats.mod_evn || 0,
+      base_sth: stats.base_sth || 0,
+      mod_sth: stats.mod_sth || 0,
+      // Combat totals (for convenience)
+      tactical: combat.tactical,
+      smart_tech: combat.smart_tech,
+      offense: combat.offense,
+      defense: combat.defense,
+      evasion: combat.evasion,
+      stealth: combat.stealth,
       lastRegeneration: stats.last_regeneration || null,
       updatedAt: stats.updated_at || null
     };
