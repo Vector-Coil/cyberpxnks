@@ -113,7 +113,7 @@ export interface CxTabLinkProps {
   href: string;
   label?: string;
   iconSrc?: string;
-  icon?: string; // Material Symbols icon name
+  icon?: string; // Material Symbols icon name (e.g. 'memory', 'swords', 'inventory_2')
   alertText?: string;
   backgroundImage?: string;
   hideIcon?: boolean;
