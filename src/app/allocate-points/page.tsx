@@ -69,6 +69,14 @@ interface CompleteStats {
   slimsoft_decryption: number;
   slimsoft_encryption: number;
   antivirus: number;
+  
+  // Combat stats
+  tactical: number;
+  smart_tech: number;
+  offense: number;
+  defense: number;
+  evasion: number;
+  stealth: number;
 }
 
 export default function StatsPage() {
@@ -393,28 +401,95 @@ export default function StatsPage() {
             {renderSectionHeader('Netrunner Base Stats', showUserStats, () => setShowUserStats(!showUserStats))}
             
             {showUserStats && (
-              <div className="space-y-3">
-                {Object.entries(statLabels).map(([key, { name, desc }]) => {
-                  const value = stats[key as keyof typeof stats] as number;
-                  return (
-                    <div key={key} className="flex items-center justify-between p-3 bg-charcoal-75 rounded">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Left Column - Base Stats */}
+                <div>
+                  <div className="text-fuschia font-bold text-xs uppercase mb-3">Attributes</div>
+                  <div className="space-y-3">
+                    {Object.entries(statLabels).map(([key, { name, desc }]) => {
+                      const value = stats[key as keyof typeof stats] as number;
+                      return (
+                        <div key={key} className="flex items-center justify-between p-3 bg-charcoal-75 rounded">
+                          <div className="flex-1">
+                            <div className="text-white font-bold uppercase text-sm">{name}</div>
+                            <div className="text-gray-500 text-xs">{desc}</div>
+                          </div>
+                          <div>
+                            <span className="pill-cloud-gray text-lg font-bold">{value}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                {/* Right Column - Combat Stats */}
+                <div>
+                  <div className="text-fuschia font-bold text-xs uppercase mb-3">Combat Stats</div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-charcoal-75 rounded">
                       <div className="flex-1">
-                        <div className="text-white font-bold uppercase text-sm">{name}</div>
-                        <div className="text-gray-500 text-xs">{desc}</div>
+                        <div className="text-white font-bold uppercase text-sm">Tactical</div>
+                        <div className="text-gray-500 text-xs">Combat planning & strategy</div>
                       </div>
                       <div>
-                        <span className="pill-cloud-gray text-lg font-bold">{value}</span>
+                        <span className="pill-cloud-gray text-lg font-bold">{completeStats.tactical || 0}</span>
                       </div>
                     </div>
-                  );
-                })}
+                    <div className="flex items-center justify-between p-3 bg-charcoal-75 rounded">
+                      <div className="flex-1">
+                        <div className="text-white font-bold uppercase text-sm">Smart Tech</div>
+                        <div className="text-gray-500 text-xs">Smart weapons & systems</div>
+                      </div>
+                      <div>
+                        <span className="pill-cloud-gray text-lg font-bold">{completeStats.smart_tech || 0}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-charcoal-75 rounded">
+                      <div className="flex-1">
+                        <div className="text-white font-bold uppercase text-sm">Offense</div>
+                        <div className="text-gray-500 text-xs">Damage output & critical hits</div>
+                      </div>
+                      <div>
+                        <span className="pill-cloud-gray text-lg font-bold">{completeStats.offense || 0}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-charcoal-75 rounded">
+                      <div className="flex-1">
+                        <div className="text-white font-bold uppercase text-sm">Defense</div>
+                        <div className="text-gray-500 text-xs">Damage mitigation & resilience</div>
+                      </div>
+                      <div>
+                        <span className="pill-cloud-gray text-lg font-bold">{completeStats.defense || 0}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-charcoal-75 rounded">
+                      <div className="flex-1">
+                        <div className="text-white font-bold uppercase text-sm">Evasion</div>
+                        <div className="text-gray-500 text-xs">Dodge & avoidance</div>
+                      </div>
+                      <div>
+                        <span className="pill-cloud-gray text-lg font-bold">{completeStats.evasion || 0}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-charcoal-75 rounded">
+                      <div className="flex-1">
+                        <div className="text-white font-bold uppercase text-sm">Stealth</div>
+                        <div className="text-gray-500 text-xs">Covert operations</div>
+                      </div>
+                      <div>
+                        <span className="pill-cloud-gray text-lg font-bold">{completeStats.stealth || 0}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </CxCard>
 
           {/* Tech Stats Section (Hardware-based) */}
           <CxCard>
-            {renderSectionHeader('Tech Stats (Hardware & Software)', showTechStats, () => setShowTechStats(!showTechStats))}
+            {renderSectionHeader('Tech Stats', showTechStats, () => setShowTechStats(!showTechStats))}
             
             {showTechStats && (
               <>
@@ -455,7 +530,7 @@ export default function StatsPage() {
 
           {/* Calculated Stats Section */}
           <CxCard>
-            {renderSectionHeader('Calculated Stats (Formulas)', showCalculatedStats, () => setShowCalculatedStats(!showCalculatedStats))}
+            {renderSectionHeader('Stat Meters', showCalculatedStats, () => setShowCalculatedStats(!showCalculatedStats))}
             
             {showCalculatedStats && (
               <div className="space-y-4">
