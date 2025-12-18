@@ -166,14 +166,15 @@ interface CxTabLinkProps {
   href: string;
   label?: string;
   iconSrc?: string;
+  icon?: string; // Material Symbols icon name
   alertText?: string;
   backgroundImage?: string;
   hideIcon?: boolean;
 }
 
-const CxTabLink: React.FC<CxTabLinkProps> = ({ href, label, iconSrc, alertText, backgroundImage, hideIcon }) => {
+const CxTabLink: React.FC<CxTabLinkProps> = ({ href, label, iconSrc, icon, alertText, backgroundImage, hideIcon }) => {
   // Determine if the tab is 'blank' based on props
-  const isBlank = !label && !iconSrc;
+  const isBlank = !label && !iconSrc && !icon;
 
   return (
     <a href={href}>
@@ -198,17 +199,28 @@ const CxTabLink: React.FC<CxTabLinkProps> = ({ href, label, iconSrc, alertText, 
               {alertText}
             </div>
           )}
-          {!isBlank && iconSrc && !hideIcon && (
-            <div className="tab-icon mb-auto">
-              <img 
-                src={iconSrc} 
-                alt="Icon"  
-              />
-            </div>
+          {!isBlank && !hideIcon && (
+            icon ? (
+              <div className="tab-icon mb-auto">
+                <span className="material-symbols-outlined" style={{ 
+                  fontSize: '50px', 
+                  color: backgroundImage ? 'white' : 'inherit'
+                }}>
+                  {icon}
+                </span>
+              </div>
+            ) : iconSrc ? (
+              <div className="tab-icon mb-auto">
+                <img 
+                  src={iconSrc} 
+                  alt="Icon"  
+                />
+              </div>
+            ) : null
           )}
           {/* Spacer to keep label at bottom when no icon */}
           {hideIcon && <div className="flex-grow" />}
-          <div className="tab-label">{label}</div>
+          <div className="tab-label" style={backgroundImage ? { color: 'white' } : {}}>{label}</div>
         </div>
       </div>
     </a>
