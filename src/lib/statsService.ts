@@ -505,4 +505,80 @@ export class StatsService {
 
     return this.getStats();
   }
+
+  /**
+   * Proportionally scale current meter values when max values increase from equipment
+   * For Consciousness, Stamina, Charge, and Bandwidth only
+   * - If at max (or old max was 0), fill to new max
+   * - If partially filled, scale proportionally
+   * 
+   * Call this AFTER updating equipment but AFTER stats have been recalculated
+   * Requires passing in the old max values from before equipment change
+   */
+  async scaleCurrentOnEquip(oldMaxValues: { consciousness: number; stamina: number; charge: number; bandwidth: number }): Promise<CompleteStats> {
+    // Get current stats (after equipment change, so max values are new)
+    const statsAfter = await this.getStats();
+    
+    // Calculate new current values based on proportion from OLD max to NEW max
+    const calculateScaled = (currentVal: number, oldMax: number, newMax: number): number => {
+      // If old max was 0 or current was at old max, fill to new max
+      if (oldMax === 0 || currentVal >= oldMax) {
+        return newMax;
+      }
+      // Otherwise scale proportionally
+      const proportion = oldMax > 0 ? currentVal / oldMax : 0;
+      return Math.ceil(proportion * newMax);
+    };
+    
+    const [currentRows] = await this.pool.execute<any[]>(
+      `SELECT current_consciousness, current_stamina, current_charge, current_bandwidth
+       FROM user_stats WHERE user_id = ? LIMIT 1`,
+      [this.userId]
+    );
+    
+    const current = (currentRows as any[])[0];
+    
+    const newConsciousness = calculateScaled(
+      current.current_consciousness || 0,
+      oldMaxValues.consciousness,
+      statsAfter.max.consciousness
+    );
+    
+    const newStamina = calculateScaled(
+      current.current_stamina || 0,
+      oldMaxValues.stamina,
+      statsAfter.max.stamina
+    );
+    
+    const newCharge = calculateScaled(
+      current.current_charge || 0,
+      oldMaxValues.charge,
+      statsAfter.max.charge
+    );
+    
+    const newBandwidth = calculateScaled(
+      current.current_bandwidth || 0,
+      oldMaxValues.bandwidth,
+      statsAfter.max.bandwidth
+    );
+
+    await this.pool.execute(
+      `UPDATE user_stats 
+       SET current_consciousness = ?,
+           current_stamina = ?,
+           current_charge = ?,
+           current_bandwidth = ?,
+           updated_at = NOW()
+       WHERE user_id = ?`,
+      [
+        newConsciousness,
+        newStamina,
+        newCharge,
+        newBandwidth,
+        this.userId
+      ]
+    );
+
+    return this.getStats();
+  }
 }

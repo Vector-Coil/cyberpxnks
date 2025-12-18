@@ -325,6 +325,16 @@ export async function POST(request: NextRequest) {
 
     // Handle cyberdeck equipping
     if (slotType === 'cyberdeck') {
+      // Capture old max values BEFORE equipping
+      const statsService = new StatsService(pool, userId);
+      const oldStats = await statsService.getStats();
+      const oldMaxValues = {
+        consciousness: oldStats.max.consciousness,
+        stamina: oldStats.max.stamina,
+        charge: oldStats.max.charge,
+        bandwidth: oldStats.max.bandwidth
+      };
+
       // Get the tier of the new cyberdeck
       const [deckRows] = await pool.execute<any[]>(
         `SELECT tier FROM items WHERE id = ? LIMIT 1`,
@@ -371,9 +381,8 @@ export async function POST(request: NextRequest) {
       // Update slimsoft stats (in case any were auto-unequipped)
       await updateSlimsoftStats(pool, userId);
 
-      // Cap current stats at new max values (max values may have changed)
-      const statsService = new StatsService(pool, userId);
-      await statsService.capAtMax();
+      // Proportionally scale current values based on new max values
+      await statsService.scaleCurrentOnEquip(oldMaxValues);
 
       // Log to activity ledger
       await logActivity(
