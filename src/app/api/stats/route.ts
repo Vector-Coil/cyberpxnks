@@ -76,6 +76,27 @@ export async function GET(req: Request) {
       slimsoft_xp_multiplier: stats.slimsoft.xp_multiplier,
       slimsoft_credits_multiplier: stats.slimsoft.credits_multiplier,
       antivirus: stats.slimsoft.antivirus,
+      // Combat stats (base from class)
+      base_tac: stats.base_tac,
+      base_smt: stats.base_smt,
+      base_off: stats.base_off,
+      base_def: stats.base_def,
+      base_evn: stats.base_evn,
+      base_sth: stats.base_sth,
+      // Combat stats (mods from arsenal)
+      mod_tac: stats.mod_tac,
+      mod_smt: stats.mod_smt,
+      mod_off: stats.mod_off,
+      mod_def: stats.mod_def,
+      mod_evn: stats.mod_evn,
+      mod_sth: stats.mod_sth,
+      // Combat stats (totals)
+      tactical: stats.tactical,
+      smart_tech: stats.smart_tech,
+      offense: stats.offense,
+      defense: stats.defense,
+      evasion: stats.evasion,
+      stealth: stats.stealth,
       // Metadata
       _source: 'StatsService',
       lastRegeneration: stats.lastRegeneration,

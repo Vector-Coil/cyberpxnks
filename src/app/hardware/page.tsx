@@ -108,7 +108,7 @@ export default function HardwarePage() {
   const [equippedDeckTier, setEquippedDeckTier] = useState<number>(0);
   const [selectedSoftId, setSelectedSoftId] = useState<number | null>(null);
   const [showUnequipModal, setShowUnequipModal] = useState(false);
-  const [unequipTarget, setUnequipTarget] = useState<{ itemId: number; name: string } | null>(null);
+  const [unequipTarget, setUnequipTarget] = useState<{ itemId: number; name: string; type: 'slimsoft' | 'cyberdeck' | 'arsenal' } | null>(null);
   const [slimsoftEffects, setSlimsoftEffects] = useState<any[]>([]);
   const [selectedIncompatibleId, setSelectedIncompatibleId] = useState<number | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -437,7 +437,10 @@ export default function HardwarePage() {
                         )}
                       </a>
                       <button
-                        onClick={() => handleUnequip(equippedCyberdeck.id, 'cyberdeck')}
+                        onClick={() => {
+                          setUnequipTarget({ itemId: equippedCyberdeck.id, name: equippedCyberdeck.name, type: 'cyberdeck' });
+                          setShowUnequipModal(true);
+                        }}
                         disabled={isProcessing}
                         className="w-24 py-2 px-2 rounded bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase transition-colors disabled:opacity-50"
                       >
@@ -856,7 +859,7 @@ export default function HardwarePage() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setUnequipTarget({ itemId: soft.id, name: soft.name });
+                                  setUnequipTarget({ itemId: soft.id, name: soft.name, type: 'slimsoft' });
                                   setShowUnequipModal(true);
                                 }}
                                 disabled={isProcessing}
@@ -1157,7 +1160,10 @@ export default function HardwarePage() {
                                   )}
                                 </a>
                                 <button
-                                  onClick={() => handleUnequip(item.id, 'arsenal')}
+                                  onClick={() => {
+                                    setUnequipTarget({ itemId: item.id, name: item.name, type: 'arsenal' });
+                                    setShowUnequipModal(true);
+                                  }}
                                   disabled={isProcessing}
                                   className="w-full py-1 px-2 rounded bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase transition-colors disabled:opacity-50"
                                 >
@@ -1324,16 +1330,20 @@ export default function HardwarePage() {
         )}
       </div>
 
-      {/* Unequip Slimsoft Modal */}
+      {/* Unequip Confirmation Modal (Slimsoft, Cyberdeck, Arsenal) */}
       <ConfirmModal
         isOpen={showUnequipModal}
-        title="Unequip Slimsoft"
-        description={`Do you want to unequip ${unequipTarget?.name || 'this slimsoft'}?`}
+        title={`Unequip ${unequipTarget?.type === 'slimsoft' ? 'Slimsoft' : unequipTarget?.type === 'cyberdeck' ? 'Cyberdeck' : 'Arsenal'}`}
+        description={`Do you want to unequip ${unequipTarget?.name || `this ${unequipTarget?.type || 'item'}`}?`}
         onConfirm={async () => {
           if (unequipTarget) {
-            await handleUnequip(unequipTarget.itemId, 'slimsoft');
+            await handleUnequip(unequipTarget.itemId, unequipTarget.type);
             setUnequipTarget(null);
-            setSelectedSoftId(null);
+            if (unequipTarget.type === 'slimsoft') {
+              setSelectedSoftId(null);
+            } else if (unequipTarget.type === 'arsenal') {
+              setSelectedArsenalId(null);
+            }
           }
           setShowUnequipModal(false);
         }}
