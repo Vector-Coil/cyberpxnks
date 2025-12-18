@@ -113,23 +113,54 @@ export interface CxTabLinkProps {
   href: string;
   label?: string;
   iconSrc?: string;
+  icon?: string; // Material Symbols icon name
   alertText?: string;
+  backgroundImage?: string;
+  hideIcon?: boolean;
 }
 
-export const CxTabLink: React.FC<CxTabLinkProps> = ({ href, label, iconSrc, alertText }) => {
-  const isBlank = !label && !iconSrc;
+export const CxTabLink: React.FC<CxTabLinkProps> = ({ href, label, iconSrc, icon, alertText, backgroundImage, hideIcon }) => {
+  const isBlank = !label && !iconSrc && !icon;
   return (
     <a href={href}>
-      <div className="cx-tab cursor-pointer">
-        {alertText && (
-          <div className="tab-alert absolute top-0 right-0 -mt-2 -mr-2 bg-bright-green text-black text-xs font-semibold px-2 py-0.5 rounded-full shadow-xl animate-pulse">
-            {alertText}
-          </div>
+      <div className="cx-tab cursor-pointer" style={backgroundImage ? {
+        backgroundImage: `url(${backgroundImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        position: 'relative'
+      } : {}}>
+        {backgroundImage && (
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            borderRadius: '10px'
+          }} />
         )}
-        {!isBlank && iconSrc && (
-          <div className="tab-icon"><img src={iconSrc} alt="icon"/></div>
-        )}
-        <div className="tab-label">{label}</div>
+        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+          {alertText && (
+            <div className="tab-alert absolute top-0 right-0 -mt-2 -mr-2 bg-bright-green text-black text-xs font-semibold px-2 py-0.5 rounded-full shadow-xl animate-pulse">
+              {alertText}
+            </div>
+          )}
+          {!isBlank && (
+            icon ? (
+              <div className="tab-icon">
+                <span className="material-symbols-outlined" style={{ 
+                  fontSize: '50px', 
+                  marginBottom: '12px', 
+                  display: 'block',
+                  color: backgroundImage ? 'white' : 'inherit'
+                }}>
+                  {icon}
+                </span>
+              </div>
+            ) : iconSrc ? (
+              <div className="tab-icon"><img src={iconSrc} alt="icon"/></div>
+            ) : null
+          )}
+          <div className="tab-label" style={backgroundImage ? { color: 'white' } : {}}>{label}</div>
+        </div>
       </div>
     </a>
   );

@@ -688,9 +688,9 @@ export default function Dashboard() {
   */
   
   const techStackTabs = [
-    { href: "/hardware", label: "Hardware", iconSrc: equippedCyberdeck?.image_url || iconSrc, backgroundImage: equippedCyberdeck?.image_url, hideIcon: !!equippedCyberdeck?.image_url },
-    { href: "/hardware#arsenal", label: "Arsenal", iconSrc: equippedArsenal?.image_url || iconSrc, backgroundImage: equippedArsenal?.image_url, hideIcon: !!equippedArsenal?.image_url },
-    { href: "/gear", label: "Gear", iconSrc: recentInventoryItem?.image_url || iconSrc, backgroundImage: recentInventoryItem?.image_url, hideIcon: !!recentInventoryItem?.image_url },
+    { href: "/hardware", label: "Hardware", icon: "memory", backgroundImage: equippedCyberdeck?.image_url },
+    { href: "/hardware#arsenal", label: "Arsenal", icon: "swords", backgroundImage: equippedArsenal?.image_url },
+    { href: "/gear", label: "Gear", icon: "inventory_2", backgroundImage: recentInventoryItem?.image_url },
   ];
   
   /*
@@ -905,9 +905,8 @@ export default function Dashboard() {
                         key={tab.href}
                         href={tab.href}
                         label={tab.label}
-                        iconSrc={tab.iconSrc}
+                        icon={tab.icon}
                         backgroundImage={tab.backgroundImage}
-                        hideIcon={tab.hideIcon}
                     />
                     ))}
                 </div>
