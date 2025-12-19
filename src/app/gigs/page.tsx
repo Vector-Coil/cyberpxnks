@@ -14,6 +14,7 @@ interface Gig {
   reward_credits: number;
   contact: number;
   contact_name?: string;
+  contact_image_url?: string;
   req_1?: string;
   req_2?: string;
   req_3?: string;
@@ -148,7 +149,9 @@ export default function GigsPage() {
                     <div className="flex flex-col gap-4">
                       <div className="flex flex-row items-start gap-4">
                         <div className="w-20 h-20 bg-gray-700 rounded overflow-hidden flex-shrink-0">
-                          {gig.contact_name ? (
+                          {gig.contact_image_url ? (
+                            <img src={gig.contact_image_url} alt={gig.contact_name || 'Contact'} className="w-full h-full object-cover" />
+                          ) : gig.contact_name ? (
                             <div className="w-full h-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-2xl">
                               {gig.contact_name.charAt(0)}
                             </div>
@@ -177,7 +180,7 @@ export default function GigsPage() {
                           </div>
 
                           <a href={`/gigs/${gig.id}`} className="inline-block mt-3">
-                            <button className="btn-primary">
+                            <button className="btn-cx-primary">
                               VIEW GIG
                             </button>
                           </a>
@@ -236,9 +239,13 @@ export default function GigsPage() {
                               <div className="flex flex-col gap-4">
                                 <div className="flex flex-row items-start gap-4">
                                   <div className="w-20 h-20 bg-gray-700 rounded overflow-hidden flex-shrink-0">
-                                    <div className="w-full h-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-2xl">
-                                      {contactName.charAt(0)}
-                                    </div>
+                                    {gig.contact_image_url ? (
+                                      <img src={gig.contact_image_url} alt={contactName} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <div className="w-full h-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-2xl">
+                                        {contactName.charAt(0)}
+                                      </div>
+                                    )}
                                   </div>
 
                                   <div className="flex-1">
@@ -259,7 +266,7 @@ export default function GigsPage() {
                                     </div>
 
                                     <a href={`/gigs/${gig.id}`} className="inline-block mt-3">
-                                      <button className="btn-primary">
+                                      <button className="btn-cx-primary">
                                         VIEW GIG
                                       </button>
                                     </a>
