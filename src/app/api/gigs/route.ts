@@ -13,67 +13,64 @@ export async function GET(request: NextRequest) {
   const pool = await getDbPool();
 
   try {
-    // Get gigs based on sort order
+    // Get user ID
+    const [userRows] = await pool.execute<any[]>(
+      'SELECT id FROM users WHERE fid = ? LIMIT 1',
+      [fid]
+    );
+    
+    if (!userRows.length) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+    
+    const userId = userRows[0].id;
+
+    // Query gigs with user's history
     let query, params;
 
     if (sort === 'contact') {
+      // Sort by contact - show gigs from unlocked contacts
       query = `
         SELECT 
           g.id, g.title, g.description, g.reward,
-          g.posted_at, g.state,
-          gp.post_fid, gp.is_active,
-          u.username as posted_by_username,
-          u.pfp_url as posted_by_pfp,
-          u.username as posted_by_display_name,
+          g.posted_at, g.state, g.contact,
+          c.display_name as contact_name,
           gr.item1_name, gr.item1_qty,
           gr.item2_name, gr.item2_qty,
           gr.item3_name, gr.item3_qty,
-          CASE 
-            WHEN gc.fid IS NOT NULL THEN 'claimed'
-            WHEN gp.post_fid IS NULL THEN 'not_posted'
-            WHEN gp.is_active = false THEN 'inactive'
-            ELSE 'available'
-          END as status
+          gh.status,
+          gh.last_completed_at,
+          gh.completed_count
         FROM gigs g
         LEFT JOIN gig_requirements gr ON g.id = gr.gig_id
-        LEFT JOIN gig_posts gp ON g.id = gp.gig_id
-        LEFT JOIN users u ON gp.post_fid = u.fid
-        LEFT JOIN gig_claims gc ON g.id = gc.gig_id AND gc.claimed_by_fid = ?
-        WHERE u.fid IN (
-          SELECT target_fid FROM contacts WHERE source_fid = ?
-        ) OR g.id IN (
-          SELECT gig_id FROM gig_claims WHERE claimed_by_fid = ?
-        )
-        ORDER BY FIELD(status, 'available', 'not_posted', 'inactive', 'claimed'), g.posted_at DESC
+        LEFT JOIN gig_history gh ON g.id = gh.gig_id AND gh.user_id = ?
+        LEFT JOIN contacts c ON g.contact = c.id
+        WHERE gh.status = 'UNLOCKED' OR gh.last_completed_at IS NOT NULL
+        ORDER BY g.contact, g.posted_at DESC
       `;
-      params = [fid, fid, fid];
+      params = [userId];
     } else {
+      // Default - show all unlocked gigs for this user
       query = `
         SELECT 
           g.id, g.title, g.description, g.reward,
-          g.posted_at, g.state,
-          gp.post_fid, gp.is_active,
-          u.username as posted_by_username,
-          u.pfp_url as posted_by_pfp,
-          u.username as posted_by_display_name,
+          g.posted_at, g.state, g.contact,
+          c.display_name as contact_name,
           gr.item1_name, gr.item1_qty,
           gr.item2_name, gr.item2_qty,
           gr.item3_name, gr.item3_qty,
-          CASE 
-            WHEN gc.fid IS NOT NULL THEN 'claimed'
-            WHEN gp.post_fid IS NULL THEN 'not_posted'
-            WHEN gp.is_active = false THEN 'inactive'
-            ELSE 'available'
-          END as status
+          gh.status,
+          gh.last_completed_at,
+          gh.completed_count
         FROM gigs g
         LEFT JOIN gig_requirements gr ON g.id = gr.gig_id
-        LEFT JOIN gig_posts gp ON g.id = gp.gig_id
-        LEFT JOIN users u ON gp.post_fid = u.fid
-        LEFT JOIN gig_claims gc ON g.id = gc.gig_id AND gc.claimed_by_fid = ?
+        LEFT JOIN gig_history gh ON g.id = gh.gig_id AND gh.user_id = ?
+        LEFT JOIN contacts c ON g.contact = c.id
+        WHERE gh.status = 'UNLOCKED' OR gh.last_completed_at IS NOT NULL
         ORDER BY g.posted_at DESC
         LIMIT 100
       `;
-      params = [fid];
+      params = [userId];
     }
 
     const [rows] = await pool.execute(query, params);
