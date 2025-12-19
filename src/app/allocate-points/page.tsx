@@ -522,7 +522,10 @@ export default function StatsPage() {
                     <span className="pill-cloud-gray font-bold">{completeStats.max_consciousness}</span>
                   </div>
                   <div className="text-gray-400 text-xs">
-                    = Cognition × Resilience = {stats.cognition} × {stats.resilience}
+                    Cognition × Resilience
+                  </div>
+                  <div className="text-gray-500 text-xs mt-1">
+                    {stats.cognition} × {stats.resilience} = {stats.cognition * stats.resilience}
                   </div>
                 </div>
 
@@ -533,7 +536,10 @@ export default function StatsPage() {
                     <span className="pill-cloud-gray font-bold">{completeStats.max_stamina}</span>
                   </div>
                   <div className="text-gray-400 text-xs">
-                    = Power × Resilience = {stats.power} × {stats.resilience}
+                    Power × Resilience
+                  </div>
+                  <div className="text-gray-500 text-xs mt-1">
+                    {stats.power} × {stats.resilience} = {stats.power * stats.resilience}
                   </div>
                 </div>
 
@@ -544,7 +550,10 @@ export default function StatsPage() {
                     <span className="pill-cloud-gray font-bold">{completeStats.max_charge}</span>
                   </div>
                   <div className="text-gray-400 text-xs">
-                    = Clock Speed + Cell Capacity = {completeStats.clock_speed} + {completeStats.total_cell_capacity}
+                    Clock Speed + Cell Capacity
+                  </div>
+                  <div className="text-gray-500 text-xs mt-1">
+                    {completeStats.clock_speed} + {completeStats.total_cell_capacity} = {completeStats.clock_speed + completeStats.total_cell_capacity}
                   </div>
                 </div>
 
@@ -555,7 +564,10 @@ export default function StatsPage() {
                     <span className="pill-cloud-gray font-bold">{completeStats.max_thermal}</span>
                   </div>
                   <div className="text-gray-400 text-xs">
-                    = Clock Speed + Cooling + Heat Sink = {completeStats.clock_speed} + {completeStats.cooling} + {completeStats.total_heat_sink}
+                    Clock Speed + Cooling
+                  </div>
+                  <div className="text-gray-500 text-xs mt-1">
+                    {completeStats.clock_speed} + {completeStats.cooling} = {completeStats.clock_speed + completeStats.cooling}
                   </div>
                 </div>
 
@@ -566,7 +578,10 @@ export default function StatsPage() {
                     <span className="pill-cloud-gray font-bold">{completeStats.max_neural}</span>
                   </div>
                   <div className="text-gray-400 text-xs">
-                    = Cognition + Resilience + Bandwidth = {stats.cognition} + {stats.resilience} + {completeStats.max_bandwidth}
+                    Cognition + Resilience + Max Bandwidth
+                  </div>
+                  <div className="text-gray-500 text-xs mt-1">
+                    {stats.cognition} + {stats.resilience} + {completeStats.max_bandwidth} = {stats.cognition + stats.resilience + completeStats.max_bandwidth}
                   </div>
                 </div>
 
@@ -577,10 +592,13 @@ export default function StatsPage() {
                     <span className="pill-cloud-gray font-bold">{completeStats.max_bandwidth}</span>
                   </div>
                   <div className="text-gray-400 text-xs">
-                    = ((Processor + Memory) × ((Clock Speed + Cache) / Latency)) / Li-Fi
+                    ((Processor + Memory) × ((Clock + Cache) / Latency)) / Li-Fi
                   </div>
                   <div className="text-gray-500 text-xs mt-1">
-                    = (({completeStats.total_processor} + {completeStats.total_memory}) × (({completeStats.clock_speed} + {completeStats.cache}) / {completeStats.latency || 1})) / {completeStats.total_lifi || 1}
+                    (({completeStats.total_processor} + {completeStats.total_memory}) × (({completeStats.clock_speed} + {completeStats.cache}) / {completeStats.latency || 1})) / {completeStats.total_lifi || 1}
+                  </div>
+                  <div className="text-gray-600 text-xs mt-1">
+                    = {Math.floor(((completeStats.total_processor + completeStats.total_memory) * ((completeStats.clock_speed + completeStats.cache) / (completeStats.latency || 1))) / (completeStats.total_lifi || 1))}
                   </div>
                 </div>
               </div>

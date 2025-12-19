@@ -139,7 +139,7 @@ export const CxTabLink: React.FC<CxTabLinkProps> = ({ href, label, iconSrc, icon
         )}
         <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
           {alertText && (
-            <div className="tab-alert absolute top-0 right-0 -mt-2 -mr-2 bg-bright-green text-black text-xs font-semibold px-2 py-0.5 rounded-full shadow-xl animate-pulse">
+            <div className="pill pill-alert pill-alert-pulse absolute -top-1 -right-1 z-10">
               {alertText}
             </div>
           )}

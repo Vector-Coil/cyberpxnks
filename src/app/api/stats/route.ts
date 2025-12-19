@@ -31,6 +31,14 @@ export async function GET(req: Request) {
 
     // Transform to match old API format for backward compatibility
     return NextResponse.json({
+      // User attributes (base stats)
+      cognition: stats.attributes.cognition,
+      insight: stats.attributes.insight,
+      interface: stats.attributes.interface,
+      power: stats.attributes.power,
+      resilience: stats.attributes.resilience,
+      agility: stats.attributes.agility,
+      unallocated_points: stats.attributes.unallocated_points,
       // Current stats
       current_consciousness: stats.current.consciousness,
       current_stamina: stats.current.stamina,
