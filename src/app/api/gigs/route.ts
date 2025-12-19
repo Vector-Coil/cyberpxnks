@@ -33,21 +33,19 @@ export async function GET(request: NextRequest) {
       query = `
         SELECT 
           g.id, g.gig_name as title, g.gig_desc as description,
-          g.reward_item, g.reward_credits,
-          g.posted_at, g.state, g.contact,
+          g.reward_item, g.reward_credits, g.contact,
           c.display_name as contact_name,
-          gr.item1_name, gr.item1_qty,
-          gr.item2_name, gr.item2_qty,
-          gr.item3_name, gr.item3_qty,
+          gr.req_1, gr.req_2, gr.req_3,
           gh.status,
           gh.last_completed_at,
-          gh.completed_count
+          gh.completed_count,
+          gh.unlocked_at
         FROM gigs g
         LEFT JOIN gig_requirements gr ON g.id = gr.gig_id
         LEFT JOIN gig_history gh ON g.id = gh.gig_id AND gh.user_id = ?
         LEFT JOIN contacts c ON g.contact = c.id
         WHERE gh.status = 'UNLOCKED' OR gh.last_completed_at IS NOT NULL
-        ORDER BY g.contact, g.posted_at DESC
+        ORDER BY g.contact, g.id DESC
       `;
       params = [userId];
     } else {
@@ -55,21 +53,19 @@ export async function GET(request: NextRequest) {
       query = `
         SELECT 
           g.id, g.gig_name as title, g.gig_desc as description,
-          g.reward_item, g.reward_credits,
-          g.posted_at, g.state, g.contact,
+          g.reward_item, g.reward_credits, g.contact,
           c.display_name as contact_name,
-          gr.item1_name, gr.item1_qty,
-          gr.item2_name, gr.item2_qty,
-          gr.item3_name, gr.item3_qty,
+          gr.req_1, gr.req_2, gr.req_3,
           gh.status,
           gh.last_completed_at,
-          gh.completed_count
+          gh.completed_count,
+          gh.unlocked_at
         FROM gigs g
         LEFT JOIN gig_requirements gr ON g.id = gr.gig_id
         LEFT JOIN gig_history gh ON g.id = gh.gig_id AND gh.user_id = ?
         LEFT JOIN contacts c ON g.contact = c.id
         WHERE gh.status = 'UNLOCKED' OR gh.last_completed_at IS NOT NULL
-        ORDER BY g.posted_at DESC
+        ORDER BY g.id DESC
         LIMIT 100
       `;
       params = [userId];
