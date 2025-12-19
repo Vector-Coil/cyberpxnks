@@ -9,21 +9,17 @@ interface Gig {
   id: number;
   title: string;
   description: string;
-  reward: number;
-  posted_at: string;
-  state: string;
-  post_fid: number | null;
-  is_active: boolean;
-  posted_by_username: string | null;
-  posted_by_pfp: string | null;
-  posted_by_display_name: string | null;
-  item1_name: string | null;
-  item1_qty: number | null;
-  item2_name: string | null;
-  item2_qty: number | null;
-  item3_name: string | null;
-  item3_qty: number | null;
-  status: 'available' | 'claimed' | 'not_posted' | 'inactive';
+  reward_item?: number;
+  reward_credits: number;
+  contact: number;
+  contact_name?: string;
+  req_1?: string;
+  req_2?: string;
+  req_3?: string;
+  status: string;
+  last_completed_at?: string;
+  completed_count: number;
+  unlocked_at: string;
 }
 
 export default function GigsPage({ searchParams }: { searchParams?: { sort?: string } }) {
@@ -129,53 +125,64 @@ export default function GigsPage({ searchParams }: { searchParams?: { sort?: str
           <div className="space-y-2">
             {gigs.length === 0 && <div className="text-gray-400 p-4">No gigs available.</div>}
             {gigs.map((gig) => {
+              // Parse requirements
               const requirements = [];
-              if (gig.item1_name) requirements.push(`${gig.item1_name} (${gig.item1_qty})`);
-              if (gig.item2_name) requirements.push(`${gig.item2_name} (${gig.item2_qty})`);
-              if (gig.item3_name) requirements.push(`${gig.item3_name} (${gig.item3_qty})`);
+              [gig.req_1, gig.req_2, gig.req_3].forEach((req) => {
+                if (!req) return;
+                const [type, id] = req.split('_');
+                if (type === 'item') requirements.push(`Item #${id}`);
+                else if (type === 'contact') requirements.push(`Contact #${id}`);
+                else if (type === 'gig') requirements.push(`Gig #${id}`);
+              });
 
-              const statusPill = 
-                gig.status === 'claimed' ? { label: 'CLAIMED', className: 'bg-green-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full' } :
-                gig.status === 'not_posted' ? { label: 'NOT POSTED', className: 'bg-gray-500 text-gray-200 text-xs font-semibold px-2 py-0.5 rounded-full' } :
-                gig.status === 'inactive' ? { label: 'INACTIVE', className: 'bg-gray-500 text-gray-200 text-xs font-semibold px-2 py-0.5 rounded-full' } :
-                { label: 'AVAILABLE', className: 'bg-bright-green text-black text-xs font-semibold px-2 py-0.5 rounded-full shadow-xl' };
+              // Check if gig is newly unlocked (within last 24 hours)
+              const hoursSinceUnlock = (new Date().getTime() - new Date(gig.unlocked_at).getTime()) / (1000 * 60 * 60);
+              const isNew = hoursSinceUnlock < 24;
 
               return (
                 <div key={gig.id}>
-                  <CxCard className="cursor-pointer hover:opacity-90 transition-opacity">
+                  <CxCard className="cursor-pointer hover:opacity-90 transition-opacity relative">
+                    {isNew && (
+                      <div className="pill pill-alert pill-alert-pulse absolute -top-1 -right-1 z-10">
+                        NEW
+                      </div>
+                    )}
                     <div className="flex flex-col gap-4">
                       <div className="flex flex-row items-start gap-4">
                         <div className="w-20 h-20 bg-gray-700 rounded overflow-hidden flex-shrink-0">
-                          {gig.posted_by_pfp ? (
-                            <img src={gig.posted_by_pfp} alt={gig.title} className="w-full h-full object-cover" />
+                          {gig.contact_name ? (
+                            <div className="w-full h-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-2xl">
+                              {gig.contact_name.charAt(0)}
+                            </div>
                           ) : (
                             <div className="w-full h-full bg-gray-600" />
                           )}
                         </div>
 
                         <div className="flex-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="meta-eyebrow">{gig.posted_by_display_name || gig.posted_by_username || 'Unknown'}</div>
-                            <div className={statusPill.className}>{statusPill.label}</div>
-                          </div>
+                          <div className="meta-eyebrow">{gig.contact_name || 'Unknown Contact'}</div>
 
-                          <div className="flex items-center justify-between">
-                            <div className="card-title">{gig.title}</div>
-                          </div>
+                          <div className="card-title">{gig.title}</div>
 
                           <div className="mt-1 text-sm text-gray-400">{gig.description}</div>
 
                           {requirements.length > 0 && (
-                            <div className="mt-1">
+                            <div className="mt-2">
                               <span className="meta-heading text-sm">Requirements:</span>{' '}
                               <span className="text-gray-300">{requirements.join(', ')}</span>
                             </div>
                           )}
 
-                          <div className="mt-1">
+                          <div className="mt-2">
                             <span className="meta-heading text-sm">Reward:</span>{' '}
-                            <span className="text-bright-green">{gig.reward} CX</span>
+                            <span className="text-bright-green">{gig.reward_credits} CX</span>
                           </div>
+
+                          <a href={`/gigs/${gig.id}`} className="inline-block mt-3">
+                            <button className="btn-primary btn-sm">
+                              BEGIN GIG
+                            </button>
+                          </a>
                         </div>
                       </div>
                     </div>
@@ -190,78 +197,78 @@ export default function GigsPage({ searchParams }: { searchParams?: { sort?: str
         {!loading && isContactMode && (
           <div className="space-y-2">
             {(() => {
-              // Group by posted_by
+              // Group by contact
               const groups = new Map<string, Gig[]>();
               for (const gig of gigs) {
-                const key = gig.posted_by_username || 'unknown';
+                const key = gig.contact_name || 'Unknown Contact';
                 if (!groups.has(key)) groups.set(key, []);
                 groups.get(key)!.push(gig);
               }
 
-              return Array.from(groups.entries()).map(([username, items]) => {
-                const first = items[0];
+              return Array.from(groups.entries()).map(([contactName, items]) => {
                 return (
-                  <div key={`group-${username}`}>
+                  <div key={`group-${contactName}`}>
                     <div className="flex items-center gap-2 mb-2 mt-2">
-                      <div className="w-6 h-6 rounded overflow-hidden bg-gray-700 flex-shrink-0">
-                        {first.posted_by_pfp ? (
-                          <img src={first.posted_by_pfp} alt={username} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full bg-gray-600" />
-                        )}
+                      <div className="w-6 h-6 rounded overflow-hidden bg-gradient-to-br from-cyan-500 to-blue-600 flex-shrink-0 flex items-center justify-center text-white font-bold text-sm">
+                        {contactName.charAt(0)}
                       </div>
-                      <div className="meta-heading text-sm">{first.posted_by_display_name || username}</div>
+                      <div className="meta-heading text-sm">{contactName}</div>
                     </div>
 
                     <div className="space-y-3">
                       {items.map((gig) => {
+                        // Parse requirements
                         const requirements = [];
-                        if (gig.item1_name) requirements.push(`${gig.item1_name} (${gig.item1_qty})`);
-                        if (gig.item2_name) requirements.push(`${gig.item2_name} (${gig.item2_qty})`);
-                        if (gig.item3_name) requirements.push(`${gig.item3_name} (${gig.item3_qty})`);
+                        [gig.req_1, gig.req_2, gig.req_3].forEach((req) => {
+                          if (!req) return;
+                          const [type, id] = req.split('_');
+                          if (type === 'item') requirements.push(`Item #${id}`);
+                          else if (type === 'contact') requirements.push(`Contact #${id}`);
+                          else if (type === 'gig') requirements.push(`Gig #${id}`);
+                        });
 
-                        const statusPill = 
-                          gig.status === 'claimed' ? { label: 'CLAIMED', className: 'bg-green-500 text-white text-xs font-semibold px-2 py-0.5 rounded-full' } :
-                          gig.status === 'not_posted' ? { label: 'NOT POSTED', className: 'bg-gray-500 text-gray-200 text-xs font-semibold px-2 py-0.5 rounded-full' } :
-                          gig.status === 'inactive' ? { label: 'INACTIVE', className: 'bg-gray-500 text-gray-200 text-xs font-semibold px-2 py-0.5 rounded-full' } :
-                          { label: 'AVAILABLE', className: 'bg-bright-green text-black text-xs font-semibold px-2 py-0.5 rounded-full shadow-xl' };
+                        // Check if gig is newly unlocked (within last 24 hours)
+                        const hoursSinceUnlock = (new Date().getTime() - new Date(gig.unlocked_at).getTime()) / (1000 * 60 * 60);
+                        const isNew = hoursSinceUnlock < 24;
 
                         return (
                           <div key={gig.id}>
-                            <CxCard className="cursor-pointer hover:opacity-90 transition-opacity">
+                            <CxCard className="cursor-pointer hover:opacity-90 transition-opacity relative">
+                              {isNew && (
+                                <div className="pill pill-alert pill-alert-pulse absolute -top-1 -right-1 z-10">
+                                  NEW
+                                </div>
+                              )}
                               <div className="flex flex-col gap-4">
                                 <div className="flex flex-row items-start gap-4">
                                   <div className="w-20 h-20 bg-gray-700 rounded overflow-hidden flex-shrink-0">
-                                    {gig.posted_by_pfp ? (
-                                      <img src={gig.posted_by_pfp} alt={gig.title} className="w-full h-full object-cover" />
-                                    ) : (
-                                      <div className="w-full h-full bg-gray-600" />
-                                    )}
+                                    <div className="w-full h-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-2xl">
+                                      {contactName.charAt(0)}
+                                    </div>
                                   </div>
 
                                   <div className="flex-1">
-                                    <div className="flex items-center justify-between gap-2">
-                                      <div className="meta-eyebrow">{gig.posted_by_display_name || gig.posted_by_username || 'Unknown'}</div>
-                                      <div className={statusPill.className}>{statusPill.label}</div>
-                                    </div>
-
-                                    <div className="flex items-center justify-between">
-                                      <div className="card-title">{gig.title}</div>
-                                    </div>
+                                    <div className="card-title">{gig.title}</div>
 
                                     <div className="mt-1 text-sm text-gray-400">{gig.description}</div>
 
                                     {requirements.length > 0 && (
-                                      <div className="mt-1">
+                                      <div className="mt-2">
                                         <span className="meta-heading text-sm">Requirements:</span>{' '}
                                         <span className="text-gray-300">{requirements.join(', ')}</span>
                                       </div>
                                     )}
 
-                                    <div className="mt-1">
+                                    <div className="mt-2">
                                       <span className="meta-heading text-sm">Reward:</span>{' '}
-                                      <span className="text-bright-green">{gig.reward} CX</span>
+                                      <span className="text-bright-green">{gig.reward_credits} CX</span>
                                     </div>
+
+                                    <a href={`/gigs/${gig.id}`} className="inline-block mt-3">
+                                      <button className="btn-primary btn-sm">
+                                        BEGIN GIG
+                                      </button>
+                                    </a>
                                   </div>
                                 </div>
                               </div>
