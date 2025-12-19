@@ -409,7 +409,7 @@ export default function CityPage() {
                   } : undefined}
                 >
                   <div className="banner-left flex flex-col gap-2">
-                    <div className="flex items-start gap-2">
+                    <div className="flex items-start justify-between gap-2">
                       {zone.district_name && (
                         <span className="px-2 py-1 bg-fuschia text-white text-xs font-bold uppercase rounded flex-shrink-0">
                           {zone.district_name}
@@ -417,7 +417,7 @@ export default function CityPage() {
                       )}
                       <span className="pill-cloud-gray uppercase flex-shrink-0">{zone.zone_type_name || zone.zone_type}</span>
                     </div>
-                    <div className="banner-heading-3">{zone.name}</div>
+                    <div className="text-white font-bold uppercase text-lg">{zone.name}</div>
                   </div>
                 </div>
               </a>
