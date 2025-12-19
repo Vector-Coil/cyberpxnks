@@ -186,13 +186,13 @@ const NavDrawer: React.FC<NavDrawerProps> = ({ isOpen, onClose, username, profil
               </div>
             </Link>
 
-            {/* Slimsoft */}
-            <Link href="/slimsoft" onClick={onClose}>
+            {/* Arsenal */}
+            <Link href="/hardware#arsenal" onClick={onClose}>
               <div className="cx-tab cursor-pointer">
                 <div className="tab-icon">
-                  <img src="/icon_crest.png" alt="Slimsoft" />
+                  <img src="/icon_crest.png" alt="Arsenal" />
                 </div>
-                <div className="tab-label text-white">Slimsoft</div>
+                <div className="tab-label text-white">Arsenal</div>
               </div>
             </Link>
 
@@ -207,7 +207,40 @@ const NavDrawer: React.FC<NavDrawerProps> = ({ isOpen, onClose, username, profil
             </Link>
           </div>
 
-          {/* Row 4: Crafting, Factions, Precepts (Placeholders) */}
+          {/* Row 4: City, Grid, Terminals */}
+          <div className="cx-tabs">
+            {/* City */}
+            <Link href="/city" onClick={onClose}>
+              <div className="cx-tab cursor-pointer">
+                <div className="tab-icon">
+                  <span className="material-icons" style={{ fontSize: '48px', color: 'white' }}>location_city</span>
+                </div>
+                <div className="tab-label text-white">City</div>
+              </div>
+            </Link>
+
+            {/* Grid */}
+            <Link href="/grid" onClick={onClose}>
+              <div className="cx-tab cursor-pointer">
+                <div className="tab-icon">
+                  <span className="material-icons" style={{ fontSize: '48px', color: 'white' }}>grid_on</span>
+                </div>
+                <div className="tab-label text-white">Grid</div>
+              </div>
+            </Link>
+
+            {/* Terminals */}
+            <Link href="/terminals" onClick={onClose}>
+              <div className="cx-tab cursor-pointer">
+                <div className="tab-icon">
+                  <span className="material-icons" style={{ fontSize: '48px', color: 'white' }}>terminal</span>
+                </div>
+                <div className="tab-label text-white">Terminals</div>
+              </div>
+            </Link>
+          </div>
+
+          {/* Row 5: Crafting, Factions, Precepts (Placeholders) */}
           <div className="cx-tabs">
             {/* Crafting */}
             <div className="cx-tab opacity-50">
