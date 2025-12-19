@@ -126,7 +126,7 @@ export default function GigsPage({ searchParams }: { searchParams?: { sort?: str
             {gigs.length === 0 && <div className="text-gray-400 p-4">No gigs available.</div>}
             {gigs.map((gig) => {
               // Parse requirements
-              const requirements = [];
+              const requirements: string[] = [];
               [gig.req_1, gig.req_2, gig.req_3].forEach((req) => {
                 if (!req) return;
                 const [type, id] = req.split('_');
@@ -218,7 +218,7 @@ export default function GigsPage({ searchParams }: { searchParams?: { sort?: str
                     <div className="space-y-3">
                       {items.map((gig) => {
                         // Parse requirements
-                        const requirements = [];
+                        const requirements: string[] = [];
                         [gig.req_1, gig.req_2, gig.req_3].forEach((req) => {
                           if (!req) return;
                           const [type, id] = req.split('_');
