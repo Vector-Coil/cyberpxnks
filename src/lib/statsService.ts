@@ -12,6 +12,7 @@ export interface UserAttributes {
   power: number;
   resilience: number;
   agility: number;
+  unallocated_points: number;
 }
 
 export interface ClassStats {
@@ -138,7 +139,7 @@ export class StatsService {
     // Step 1: Get user attributes and class base stats
     const [userRows] = await this.pool.execute(
       `SELECT 
-        u.cognition, u.insight, u.interface, u.power, u.resilience, u.agility,
+        u.cognition, u.insight, u.interface, u.power, u.resilience, u.agility, u.unallocated_points,
         c.class_clock_speed, c.class_cooling, c.class_signal_noise,
         c.class_latency, c.class_decryption, c.class_cache
       FROM users u
@@ -159,7 +160,8 @@ export class StatsService {
       interface: user.interface || 1,
       power: user.power || 1,
       resilience: user.resilience || 1,
-      agility: user.agility || 1
+      agility: user.agility || 1,
+      unallocated_points: user.unallocated_points || 0
     };
 
     const classStats: ClassStats = {
