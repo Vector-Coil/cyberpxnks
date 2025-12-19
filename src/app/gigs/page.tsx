@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { FrameHeader, CxCard, NavStrip } from '../../components/CxShared';
 import NavDrawer from '../../components/NavDrawer';
 import { useAuthenticatedUser } from '../../hooks/useAuthenticatedUser';
@@ -22,7 +23,7 @@ interface Gig {
   unlocked_at: string;
 }
 
-export default function GigsPage({ searchParams }: { searchParams?: { sort?: string } }) {
+export default function GigsPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +31,8 @@ export default function GigsPage({ searchParams }: { searchParams?: { sort?: str
   
   const { userFid, isLoading: userLoading } = useAuthenticatedUser();
   const navData = useNavData(userFid || 300187);
-  const sortMode = searchParams?.sort || 'newest';
+  const searchParams = useSearchParams();
+  const sortMode = searchParams.get('sort') || 'newest';
 
   useEffect(() => {
     if (userLoading || !userFid) return;
@@ -125,14 +127,10 @@ export default function GigsPage({ searchParams }: { searchParams?: { sort?: str
           <div className="space-y-2">
             {gigs.length === 0 && <div className="text-gray-400 p-4">No gigs available.</div>}
             {gigs.map((gig) => {
-              // Parse requirements
+              // Parse requirements - just display the raw value for now
               const requirements: string[] = [];
               [gig.req_1, gig.req_2, gig.req_3].forEach((req) => {
-                if (!req) return;
-                const [type, id] = req.split('_');
-                if (type === 'item') requirements.push(`Item #${id}`);
-                else if (type === 'contact') requirements.push(`Contact #${id}`);
-                else if (type === 'gig') requirements.push(`Gig #${id}`);
+                if (req && req.trim()) requirements.push(req);
               });
 
               // Check if gig is newly unlocked (within last 24 hours)
@@ -179,8 +177,8 @@ export default function GigsPage({ searchParams }: { searchParams?: { sort?: str
                           </div>
 
                           <a href={`/gigs/${gig.id}`} className="inline-block mt-3">
-                            <button className="btn-primary btn-sm">
-                              BEGIN GIG
+                            <button className="btn-primary">
+                              VIEW GIG
                             </button>
                           </a>
                         </div>
@@ -217,14 +215,10 @@ export default function GigsPage({ searchParams }: { searchParams?: { sort?: str
 
                     <div className="space-y-3">
                       {items.map((gig) => {
-                        // Parse requirements
+                        // Parse requirements - just display the raw value for now
                         const requirements: string[] = [];
                         [gig.req_1, gig.req_2, gig.req_3].forEach((req) => {
-                          if (!req) return;
-                          const [type, id] = req.split('_');
-                          if (type === 'item') requirements.push(`Item #${id}`);
-                          else if (type === 'contact') requirements.push(`Contact #${id}`);
-                          else if (type === 'gig') requirements.push(`Gig #${id}`);
+                          if (req && req.trim()) requirements.push(req);
                         });
 
                         // Check if gig is newly unlocked (within last 24 hours)
@@ -265,8 +259,8 @@ export default function GigsPage({ searchParams }: { searchParams?: { sort?: str
                                     </div>
 
                                     <a href={`/gigs/${gig.id}`} className="inline-block mt-3">
-                                      <button className="btn-primary btn-sm">
-                                        BEGIN GIG
+                                      <button className="btn-primary">
+                                        VIEW GIG
                                       </button>
                                     </a>
                                   </div>

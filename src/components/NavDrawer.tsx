@@ -213,7 +213,7 @@ const NavDrawer: React.FC<NavDrawerProps> = ({ isOpen, onClose, username, profil
             <Link href="/city" onClick={onClose}>
               <div className="cx-tab cursor-pointer">
                 <div className="tab-icon">
-                  <span className="material-icons" style={{ fontSize: '48px', color: 'white' }}>location_city</span>
+                  <img src="/icon_crest.png" alt="City" />
                 </div>
                 <div className="tab-label text-white">City</div>
               </div>
@@ -223,7 +223,7 @@ const NavDrawer: React.FC<NavDrawerProps> = ({ isOpen, onClose, username, profil
             <Link href="/grid" onClick={onClose}>
               <div className="cx-tab cursor-pointer">
                 <div className="tab-icon">
-                  <span className="material-icons" style={{ fontSize: '48px', color: 'white' }}>grid_on</span>
+                  <img src="/icon_crest.png" alt="Grid" />
                 </div>
                 <div className="tab-label text-white">Grid</div>
               </div>
@@ -233,7 +233,7 @@ const NavDrawer: React.FC<NavDrawerProps> = ({ isOpen, onClose, username, profil
             <Link href="/terminals" onClick={onClose}>
               <div className="cx-tab cursor-pointer">
                 <div className="tab-icon">
-                  <span className="material-icons" style={{ fontSize: '48px', color: 'white' }}>terminal</span>
+                  <img src="/icon_crest.png" alt="Terminals" />
                 </div>
                 <div className="tab-label text-white">Terminals</div>
               </div>
