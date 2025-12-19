@@ -91,9 +91,9 @@ export default async function ContactDetailPage({ params }: { params: any }) {
             let met = false;
 
             if (type === 'gig' && idNum) {
-              const [ginfoRows] = await pool.execute<any[]>('SELECT gig_code, gig_name FROM gigs WHERE id = ? LIMIT 1', [idNum]);
+              const [ginfoRows] = await pool.execute<any[]>('SELECT gig_code FROM gigs WHERE id = ? LIMIT 1', [idNum]);
               const ginfo = (ginfoRows as any[])[0] ?? null;
-              text = ginfo?.gig_code ?? ginfo?.gig_name ?? `Gig ${idNum}`;
+              text = ginfo?.gig_code ?? `Gig ${idNum}`;
 
               const [ghCheckRows] = await pool.execute<any[]>('SELECT status, last_completed_at FROM gig_history WHERE user_id = ? AND gig_id = ? LIMIT 1', [user.id, idNum]);
               const ghCheck = (ghCheckRows as any[])[0] ?? null;

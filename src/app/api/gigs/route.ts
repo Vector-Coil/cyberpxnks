@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       // Sort by contact - show gigs from unlocked contacts
       query = `
         SELECT 
-          g.id, g.gig_name as title, g.gig_desc as description,
+          g.id, g.gig_code as title, g.gig_desc as description,
           g.reward_item, g.reward_credits, g.contact,
           c.display_name as contact_name,
           c.image_url as contact_image_url,
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
       // Default - show all unlocked gigs for this user
       query = `
         SELECT 
-          g.id, g.gig_name as title, g.gig_desc as description,
+          g.id, g.gig_code as title, g.gig_desc as description,
           g.reward_item, g.reward_credits, g.contact,
           c.display_name as contact_name,
           c.image_url as contact_image_url,

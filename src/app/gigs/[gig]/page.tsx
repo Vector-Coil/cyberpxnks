@@ -40,7 +40,7 @@ export default async function GigDetailPage({ params }: { params: any }) {
 
     const id = gRow.id ?? gigId;
     const gig_code = gRow.gig_code ?? gRow.code ?? null;
-    const title = gRow.gig_name ?? gRow.title ?? gRow.name ?? `Gig ${id}`;
+    const title = gRow.gig_code ?? gRow.title ?? gRow.name ?? `Gig ${id}`;
     const image_url = gRow.image_url ?? gRow.img ?? gRow.image ?? null;
     const description = gRow.gig_desc ?? gRow.gigDesc ?? gRow.description ?? gRow.desc ?? '';
     const objective = gRow.objective ?? gRow.objective_text ?? '';
@@ -73,9 +73,9 @@ export default async function GigDetailPage({ params }: { params: any }) {
           let met = false;
 
           if (type === 'gig' && idNum) {
-            const [ginfoRows] = await pool.execute<any[]>('SELECT gig_code, gig_name FROM gigs WHERE id = ? LIMIT 1', [idNum]);
+            const [ginfoRows] = await pool.execute<any[]>('SELECT gig_code FROM gigs WHERE id = ? LIMIT 1', [idNum]);
             const ginfo = (ginfoRows as any[])[0] ?? null;
-            text = ginfo?.gig_code ?? ginfo?.gig_name ?? `Gig ${idNum}`;
+            text = ginfo?.gig_code ?? `Gig ${idNum}`;
 
             const [ghCheckRows] = await pool.execute<any[]>('SELECT status, last_completed_at FROM gig_history WHERE user_id = ? AND gig_id = ? LIMIT 1', [user.id, idNum]);
             const ghCheck2 = (ghCheckRows as any[])[0] ?? null;
