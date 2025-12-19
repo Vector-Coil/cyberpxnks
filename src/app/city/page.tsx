@@ -408,15 +408,16 @@ export default function CityPage() {
                     backgroundPosition: 'center'
                   } : undefined}
                 >
-                  <div className="banner-left">
-                    {zone.district_name && (
-                      <div className="eyebrow uppercase">{zone.district_name}</div>
-                    )}
-                    <div className="banner-heading-2">{zone.name}</div>
-                  </div>
-                  
-                  <div className="banner-right">
-                    <span className="pill-cloud-gray uppercase">{zone.zone_type_name || zone.zone_type}</span>
+                  <div className="banner-left flex flex-col gap-2">
+                    <div className="flex items-start gap-2">
+                      {zone.district_name && (
+                        <span className="px-2 py-1 bg-fuschia text-white text-xs font-bold uppercase rounded flex-shrink-0">
+                          {zone.district_name}
+                        </span>
+                      )}
+                      <span className="pill-cloud-gray uppercase flex-shrink-0">{zone.zone_type_name || zone.zone_type}</span>
+                    </div>
+                    <div className="banner-heading-3">{zone.name}</div>
                   </div>
                 </div>
               </a>
