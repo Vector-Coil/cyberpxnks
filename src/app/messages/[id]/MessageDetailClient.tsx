@@ -5,7 +5,7 @@ import { CxCard, NavStrip } from '../../../components/CxShared';
 import NavDrawer from '../../../components/NavDrawer';
 import CompactMeterStrip from '../../../components/CompactMeterStrip';
 import { getMeterData } from '../../../lib/meterUtils';
-import { useStatsSWR } from '../../../hooks/useStatsSWR';
+import { useStats } from '../../../hooks/useStatsSWR';
 
 interface MessageDetailClientProps {
   message: any;
@@ -14,7 +14,7 @@ interface MessageDetailClientProps {
 
 export default function MessageDetailClient({ message, navData }: MessageDetailClientProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const { data: userStats } = useStatsSWR(300187);
+  const { stats: userStats } = useStats(300187);
 
   return (
     <>
@@ -34,7 +34,7 @@ export default function MessageDetailClient({ message, navData }: MessageDetailC
             onMenuClick={() => setIsDrawerOpen(true)}
           />
         </div>
-        <CompactMeterStrip meters={getMeterData(userStats)} />
+        <CompactMeterStrip meters={getMeterData(userStats || null)} />
         <div className="pt-5 pb-2 px-6 flex flex-row gap-3">
           <a href="/messages" className="w-[25px] h-[25px] rounded-full overflow-hidden bg-gray-700 flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors">
             <span className="material-symbols-outlined text-white text-xl">chevron_left</span>

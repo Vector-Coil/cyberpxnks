@@ -8,7 +8,7 @@ import CompactMeterStrip from '../../components/CompactMeterStrip';
 import { useNavData } from '../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../hooks/useAuthenticatedUser';
 import { getMeterData } from '../../lib/meterUtils';
-import { useStatsSWR } from '../../hooks/useStatsSWR';
+import { useStats } from '../../hooks/useStatsSWR';
 
 interface Message {
   id: number;
@@ -29,7 +29,7 @@ export default function MessagesPage() {
   
   const { userFid, isLoading: userLoading } = useAuthenticatedUser();
   const navData = useNavData(userFid || 300187);
-  const { data: userStats } = useStatsSWR(userFid || 300187);
+  const { stats: userStats } = useStats(userFid || 300187);
   const searchParams = useSearchParams();
   const sortMode = searchParams.get('sort') || 'newest';
   const contactFilter = searchParams.get('contact_id');
