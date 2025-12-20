@@ -15,9 +15,13 @@ interface Gig {
   contact: number;
   contact_name?: string;
   contact_image_url?: string;
+  image_url?: string;
   req_1?: string;
   req_2?: string;
   req_3?: string;
+  req_1_name?: string;
+  req_2_name?: string;
+  req_3_name?: string;
   status: string;
   last_completed_at?: string;
   completed_count: number;
@@ -128,11 +132,11 @@ export default function GigsPage() {
           <div className="space-y-2">
             {gigs.length === 0 && <div className="text-gray-400 p-4">No gigs available.</div>}
             {gigs.map((gig) => {
-              // Parse requirements - just display the raw value for now
+              // Get resolved requirement names from API
               const requirements: string[] = [];
-              [gig.req_1, gig.req_2, gig.req_3].forEach((req) => {
-                if (req && req.trim()) requirements.push(req);
-              });
+              if (gig.req_1_name) requirements.push(gig.req_1_name);
+              if (gig.req_2_name) requirements.push(gig.req_2_name);
+              if (gig.req_3_name) requirements.push(gig.req_3_name);
 
               // Check if gig is newly unlocked (within last 24 hours)
               const hoursSinceUnlock = (new Date().getTime() - new Date(gig.unlocked_at).getTime()) / (1000 * 60 * 60);
@@ -149,14 +153,12 @@ export default function GigsPage() {
                     <div className="flex flex-col gap-4">
                       <div className="flex flex-row items-start gap-4">
                         <div className="w-20 h-20 bg-gray-700 rounded overflow-hidden flex-shrink-0">
-                          {gig.contact_image_url ? (
-                            <img src={gig.contact_image_url} alt={gig.contact_name || 'Contact'} className="w-full h-full object-cover" />
-                          ) : gig.contact_name ? (
-                            <div className="w-full h-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-2xl">
-                              {gig.contact_name.charAt(0)}
-                            </div>
+                          {gig.image_url ? (
+                            <img src={gig.image_url} alt={gig.title} className="w-full h-full object-cover" />
                           ) : (
-                            <div className="w-full h-full bg-gray-600" />
+                            <div className="w-full h-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-2xl">
+                              {gig.title.charAt(0)}
+                            </div>
                           )}
                         </div>
 
@@ -211,18 +213,22 @@ export default function GigsPage() {
                   <div key={`group-${contactName}`}>
                     <div className="flex items-center gap-2 mb-2 mt-2">
                       <div className="w-6 h-6 rounded overflow-hidden bg-gradient-to-br from-cyan-500 to-blue-600 flex-shrink-0 flex items-center justify-center text-white font-bold text-sm">
-                        {contactName.charAt(0)}
+                        {items[0]?.contact_image_url ? (
+                          <img src={items[0].contact_image_url} alt={contactName} className="w-full h-full object-cover" />
+                        ) : (
+                          contactName.charAt(0)
+                        )}
                       </div>
                       <div className="meta-heading text-sm">{contactName}</div>
                     </div>
 
                     <div className="space-y-3">
                       {items.map((gig) => {
-                        // Parse requirements - just display the raw value for now
+                        // Get resolved requirement names from API
                         const requirements: string[] = [];
-                        [gig.req_1, gig.req_2, gig.req_3].forEach((req) => {
-                          if (req && req.trim()) requirements.push(req);
-                        });
+                        if (gig.req_1_name) requirements.push(gig.req_1_name);
+                        if (gig.req_2_name) requirements.push(gig.req_2_name);
+                        if (gig.req_3_name) requirements.push(gig.req_3_name);
 
                         // Check if gig is newly unlocked (within last 24 hours)
                         const hoursSinceUnlock = (new Date().getTime() - new Date(gig.unlocked_at).getTime()) / (1000 * 60 * 60);
@@ -239,11 +245,11 @@ export default function GigsPage() {
                               <div className="flex flex-col gap-4">
                                 <div className="flex flex-row items-start gap-4">
                                   <div className="w-20 h-20 bg-gray-700 rounded overflow-hidden flex-shrink-0">
-                                    {gig.contact_image_url ? (
-                                      <img src={gig.contact_image_url} alt={contactName} className="w-full h-full object-cover" />
+                                    {gig.image_url ? (
+                                      <img src={gig.image_url} alt={gig.title} className="w-full h-full object-cover" />
                                     ) : (
                                       <div className="w-full h-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-2xl">
-                                        {contactName.charAt(0)}
+                                        {gig.title.charAt(0)}
                                       </div>
                                     )}
                                   </div>

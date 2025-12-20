@@ -1,6 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../lib/db';
 
+// Helper function to resolve requirement names
+async function resolveRequirementName(req: string, pool: any): Promise<string> {
+  if (!req || !req.trim()) return '';
+  
+  const parts = req.split('_');
+  if (parts.length !== 2) return req;
+  
+  const type = parts[0];
+  const idNum = parseInt(parts[1], 10);
+  
+  try {
+    if (type === 'gig' && idNum) {
+      const [rows] = await pool.execute<any[]>('SELECT gig_code FROM gigs WHERE id = ? LIMIT 1', [idNum]);
+      const gig = (rows as any[])[0];
+      return gig?.gig_code ? `GIG: ${gig.gig_code}` : req;
+    } else if (type === 'contact' && idNum) {
+      const [rows] = await pool.execute<any[]>('SELECT display_name FROM contacts WHERE id = ? LIMIT 1', [idNum]);
+      const contact = (rows as any[])[0];
+      return contact?.display_name || req;
+    } else if (type === 'item' && idNum) {
+      const [rows] = await pool.execute<any[]>('SELECT name FROM items WHERE id = ? LIMIT 1', [idNum]);
+      const item = (rows as any[])[0];
+      return item?.name || req;
+    }
+  } catch (e) {
+    console.error('Error resolving requirement:', e);
+  }
+  
+  return req;
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const fid = searchParams.get('fid');
@@ -36,6 +67,7 @@ export async function GET(request: NextRequest) {
           g.reward_item, g.reward_credits, g.contact,
           c.display_name as contact_name,
           c.image_url as contact_image_url,
+          g.image_url,
           gr.req_1, gr.req_2, gr.req_3,
           gh.status,
           gh.last_completed_at,
@@ -57,6 +89,7 @@ export async function GET(request: NextRequest) {
           g.reward_item, g.reward_credits, g.contact,
           c.display_name as contact_name,
           c.image_url as contact_image_url,
+          g.image_url,
           gr.req_1, gr.req_2, gr.req_3,
           gh.status,
           gh.last_completed_at,
@@ -75,8 +108,24 @@ export async function GET(request: NextRequest) {
 
     const [rows] = await pool.execute(query, params);
 
+    // Resolve requirement names for all gigs
+    const gigsWithResolvedReqs = await Promise.all(
+      (rows as any[]).map(async (gig) => {
+        const req_1_name = gig.req_1 ? await resolveRequirementName(gig.req_1, pool) : null;
+        const req_2_name = gig.req_2 ? await resolveRequirementName(gig.req_2, pool) : null;
+        const req_3_name = gig.req_3 ? await resolveRequirementName(gig.req_3, pool) : null;
+        
+        return {
+          ...gig,
+          req_1_name,
+          req_2_name,
+          req_3_name
+        };
+      })
+    );
+
     return NextResponse.json({ 
-      gigs: rows,
+      gigs: gigsWithResolvedReqs,
       sort 
     });
   } catch (error) {
