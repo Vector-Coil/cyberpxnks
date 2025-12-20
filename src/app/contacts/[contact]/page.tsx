@@ -56,10 +56,9 @@ export default async function ContactDetailPage({ params }: { params: any }) {
         console.debug('contact page - gig row:', { gigId, gRow });
       }
 
-  // Use the project's actual schema: gig_name, gig_desc, image_url
+  // Use the project's actual schema: gig_code, gig_desc, image_url
   const id = gRow.id ?? gigId;
   const gig_code = gRow.gig_code ?? gRow.code ?? null;
-  const title = gRow.gig_name ?? gRow.title ?? gRow.name ?? `Gig ${id}`;
   const image_url = gRow.image_url ?? gRow.img ?? gRow.image ?? null;
   const description = gRow.gig_desc ?? gRow.gigDesc ?? gRow.description ?? gRow.desc ?? '';
       const unlocked_at = row.unlocked_at ?? null;
@@ -120,7 +119,7 @@ export default async function ContactDetailPage({ params }: { params: any }) {
         console.debug('gig requirements lookup failed', e?.stack ?? e);
       }
 
-      gigs.push({ id, title, image_url, description, unlocked_at, status, gig_code, requirements });
+      gigs.push({ id, gig_code, image_url, description, unlocked_at, status, requirements });
     }
 
     return <ContactDetailClient contact={contact} gigs={gigs} navData={navData} />;

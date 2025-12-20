@@ -67,15 +67,13 @@ export default function ContactDetailClient({ contact, gigs, navData }: ContactD
                         <div className="flex flex-row items-start gap-4">
                             
                             <div className="w-20 h-20 bg-gray-700 rounded overflow-hidden flex-shrink-0">
-                            {g.image_url ? <img src={g.image_url} alt={g.title} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-600" />}
+                            {g.image_url ? <img src={g.image_url} alt={g.gig_code} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-600" />}
                             </div>
 
                             <div className="flex-1">
 
-                                <div className="meta-eyebrow">{g.gig_code}</div>
-
                                 <div className="flex items-center justify-between">
-                                    <div className="card-title">{g.title}</div>
+                                    <div className="card-title uppercase">{g.gig_code}</div>
                                 </div>
 
                             </div>
@@ -104,7 +102,7 @@ export default function ContactDetailClient({ contact, gigs, navData }: ContactD
                                 {/* Button state depends on gig status. Completed or non-UNLOCKED gigs show disabled style */}
                                 {(() => {
                                 const statusNorm = (g.status ?? '').toString().toUpperCase();
-                                let btnLabel = 'TAKE GIG';
+                                let btnLabel = 'VIEW GIG';
                                 let isDisabled = false;
                                 let btnClass = 'btn-cx btn-cx-primary btn-cx-full';
 
