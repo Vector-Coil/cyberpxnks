@@ -29,8 +29,9 @@ export default async function MessageDetailPage({ params }: { params: any }) {
       return <div className="p-6 text-red-400">User not found</div>;
     }
 
-    // Fetch message with contact info
-    const [msgRows] = await pool.execute(
+    // Fetch message with contact info (check both messages and messages_junk)
+    // First try regular messages
+    let [msgRows] = await pool.execute(
       `SELECT 
         m.id,
         m.msg_code,
@@ -44,16 +45,44 @@ export default async function MessageDetailPage({ params }: { params: any }) {
         c.image_url AS contact_image_url,
         mh.status,
         mh.unlocked_at,
-        mh.read_at
+        mh.read_at,
+        'message' AS msg_type
       FROM msg_history mh
-      JOIN messages m ON mh.msg_id = m.id
+      JOIN messages m ON mh.msg_id = m.id AND mh.msg_type = 'message'
       LEFT JOIN contacts c ON m.contact = c.id
       WHERE mh.user_id = ? AND m.id = ?
       LIMIT 1`,
       [user.id, messageId]
     );
 
-    const message = (msgRows as any)[0];
+    let message = (msgRows as any)[0];
+
+    // If not found, try junk messages
+    if (!message) {
+      [msgRows] = await pool.execute(
+        `SELECT 
+          mj.id,
+          mj.msg_code,
+          mj.msg_title AS subject,
+          mj.msg_body AS body,
+          NULL AS contact_id,
+          mj.image_url AS message_image_url,
+          mj.btn_1,
+          mj.btn_2,
+          mj.sent_from AS contact_name,
+          NULL AS contact_image_url,
+          mh.status,
+          mh.unlocked_at,
+          mh.read_at,
+          'junk' AS msg_type
+        FROM msg_history mh
+        JOIN messages_junk mj ON mh.msg_id = mj.id AND mh.msg_type = 'junk'
+        WHERE mh.user_id = ? AND mj.id = ?
+        LIMIT 1`,
+        [user.id, messageId]
+      );
+      message = (msgRows as any)[0];
+    }
 
     if (!message) {
       redirect('/messages');

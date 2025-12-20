@@ -7,6 +7,7 @@ import { validateFid, requireParams } from '~/lib/api/errors';
 import { getUserIdByFid } from '~/lib/api/userUtils';
 import { logger } from '~/lib/logger';
 import { handleApiError } from '~/lib/api/errors';
+import { triggerJunkMessageWithProbability } from '../../../../lib/messageScheduler';
 
 export async function POST(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -83,6 +84,9 @@ export async function POST(request: NextRequest) {
           discoveredZone.id,
           `Discovered ${discoveredZone.name}`
         );
+
+        // Trigger junk message with 1-in-20 probability
+        await triggerJunkMessageWithProbability(userId, 0.05, 'ZONE_DISCOVERY');
       }
     } else if (rewardType === 'encounter') {
       // Get random encounter for city context (zone_id = 1 for generic city encounters)
