@@ -13,15 +13,15 @@ async function resolveRequirementName(req: string, pool: any): Promise<string> {
   
   try {
     if (type === 'gig' && idNum) {
-      const [rows] = await pool.execute<any[]>('SELECT gig_code FROM gigs WHERE id = ? LIMIT 1', [idNum]);
+      const [rows] = await pool.execute('SELECT gig_code FROM gigs WHERE id = ? LIMIT 1', [idNum]);
       const gig = (rows as any[])[0];
       return gig?.gig_code ? `GIG: ${gig.gig_code}` : req;
     } else if (type === 'contact' && idNum) {
-      const [rows] = await pool.execute<any[]>('SELECT display_name FROM contacts WHERE id = ? LIMIT 1', [idNum]);
+      const [rows] = await pool.execute('SELECT display_name FROM contacts WHERE id = ? LIMIT 1', [idNum]);
       const contact = (rows as any[])[0];
       return contact?.display_name || req;
     } else if (type === 'item' && idNum) {
-      const [rows] = await pool.execute<any[]>('SELECT name FROM items WHERE id = ? LIMIT 1', [idNum]);
+      const [rows] = await pool.execute('SELECT name FROM items WHERE id = ? LIMIT 1', [idNum]);
       const item = (rows as any[])[0];
       return item?.name || req;
     }
