@@ -40,6 +40,22 @@ export default async function ContactDetailPage({ params }: { params: any }) {
       return (<div className="p-6 text-gray-300">Contact not found.</div>);
     }
 
+    // Fetch message counts for this contact
+    const [msgCountRows] = await pool.execute<any[]>(
+      `SELECT 
+        COUNT(*) AS total_messages,
+        SUM(CASE WHEN mh.status = 'UNREAD' THEN 1 ELSE 0 END) AS unread_messages
+      FROM msg_history mh
+      JOIN messages m ON mh.msg_id = m.id
+      WHERE mh.user_id = ? AND m.contact = ?`,
+      [user.id, contactId]
+    );
+    const msgCount = (msgCountRows as any)[0];
+    const messageInfo = {
+      total: msgCount?.total_messages || 0,
+      unread: msgCount?.unread_messages || 0
+    };
+
     // Fetch gig_history rows for this user and contact without selecting unknown gig columns directly.
     const [ghRows] = await pool.execute<any[]>('SELECT gh.gig_id AS gig_id, gh.unlocked_at AS unlocked_at, gh.status AS status FROM gig_history gh JOIN gigs g ON gh.gig_id = g.id WHERE gh.user_id = ? AND g.contact = ? ORDER BY gh.unlocked_at DESC', [user.id, contactId]);
 
@@ -122,7 +138,7 @@ export default async function ContactDetailPage({ params }: { params: any }) {
       gigs.push({ id, gig_code, image_url, description, unlocked_at, status, requirements });
     }
 
-    return <ContactDetailClient contact={contact} gigs={gigs} navData={navData} />;
+    return <ContactDetailClient contact={contact} gigs={gigs} navData={navData} messageInfo={messageInfo} />;
   } catch (err: any) {
     // Log full error server-side for debugging
     console.error('Contact detail error', err?.stack || err);

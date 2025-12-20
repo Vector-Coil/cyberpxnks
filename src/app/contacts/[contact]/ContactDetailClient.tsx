@@ -7,9 +7,10 @@ interface ContactDetailClientProps {
   contact: any;
   gigs: any[];
   navData: any;
+  messageInfo: { total: number; unread: number };
 }
 
-export default function ContactDetailClient({ contact, gigs, navData }: ContactDetailClientProps) {
+export default function ContactDetailClient({ contact, gigs, navData, messageInfo }: ContactDetailClientProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   return (
@@ -51,6 +52,22 @@ export default function ContactDetailClient({ contact, gigs, navData }: ContactD
               {contact.class_name && <div className="mt-2"><span className="uppercase pill-cloud-gray">{contact.class_name}</span></div>}
 
               <div className="mt-2 text-gray-300">{contact.intro || 'No intro available.'}</div>
+              
+              {/* Messages section */}
+              <div className="mt-3">
+                {messageInfo.total > 0 ? (
+                  <a href={`/messages?contact_id=${contact.id}`} className="inline-block">
+                    <button className="btn-cx btn-cx-secondary text-xs flex items-center gap-2">
+                      VIEW MESSAGES
+                      {messageInfo.unread > 0 && (
+                        <span className="pill pill-alert text-xs">{messageInfo.unread}</span>
+                      )}
+                    </button>
+                  </a>
+                ) : (
+                  <div className="text-sm text-gray-500">No Messages</div>
+                )}
+              </div>
             </div>
           </div>
 
