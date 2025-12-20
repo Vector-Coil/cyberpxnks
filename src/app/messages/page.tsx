@@ -134,15 +134,15 @@ export default function MessagesPage() {
                     <div className="flex gap-4">
                       <div className="w-16 h-16 bg-gray-700 rounded overflow-hidden flex-shrink-0">
                         {msg.contact_image_url ? (
-                          <img src={msg.contact_image_url} alt={msg.contact_name} className="w-full h-full object-cover" />
+                          <img src={msg.contact_image_url} alt={msg.contact_name || 'Message'} className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-xl">
-                            {msg.contact_name.charAt(0)}
+                            {(msg.contact_name || 'M').charAt(0)}
                           </div>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="meta-eyebrow">{msg.contact_name}</div>
+                        <div className="meta-eyebrow">{msg.contact_name || 'System Message'}</div>
                         <div className="card-title truncate">{msg.subject}</div>
                         <div className="text-xs text-gray-500 mt-1">
                           {new Date(msg.unlocked_at).toLocaleDateString()} {new Date(msg.unlocked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -175,10 +175,10 @@ export default function MessagesPage() {
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-8 h-8 rounded overflow-hidden bg-gradient-to-br from-cyan-500 to-blue-600 flex-shrink-0">
                           {firstMsg.contact_image_url ? (
-                            <img src={firstMsg.contact_image_url} alt={firstMsg.contact_name} className="w-full h-full object-cover" />
+                            <img src={firstMsg.contact_image_url} alt={firstMsg.contact_name || 'Contact'} className="w-full h-full object-cover" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-white font-bold text-sm">
-                              {firstMsg.contact_name.charAt(0)}
+                              {(firstMsg.contact_name || 'C').charAt(0)}
                             </div>
                           )}
                         </div>
