@@ -808,7 +808,7 @@ export default function HardwarePage() {
                     return (
                       <div key={`empty-${slotIndex}`} className="aspect-square rounded-lg overflow-hidden bg-charcoal-75 border border-charcoal">
                         <div className="w-full h-full flex flex-col items-center justify-center p-4">
-                          <img src="/images/soft_new.png" alt="Empty slot" className="w-16 h-16 opacity-30 mb-2" />
+                          <img src="https://vectorcoil.com/cx/images/soft_new.png" alt="Empty slot" className="w-16 h-16 opacity-30 mb-2" />
                           <div className="text-xs text-gray-600 text-center">Empty Slot</div>
                         </div>
                       </div>

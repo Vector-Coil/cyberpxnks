@@ -147,28 +147,28 @@ export async function getUserStatsByFid(fid: number): Promise<UserStatsData | nu
 export function getInitialFrame(): { image_url: string, text: string } {
     // This is the mock data for Frame 1
     return {
-        image_url: '/images/frame1.png', // Ensure this image path is correct
+        image_url: 'https://vectorcoil.com/cx/images/frame1.png', // Ensure this image path is correct
         text: 'Welcome to Night City, Cyberpunk. Begin your journey.',
     };
 }
 
 export function getFrame2Data(): { image_url: string, text: string } {
     return {
-        image_url: '/images/frame2.png',
+        image_url: 'https://vectorcoil.com/cx/images/frame2.png',
         text: 'Frame 2: Understanding the Cyberpxnks faction system.',
     };
 }
 
 export function getFrame3Data(): { image_url: string, text: string } {
     return {
-        image_url: '/images/frame3.png',
+        image_url: 'https://vectorcoil.com/cx/images/frame3.png',
         text: 'Frame 3: The dangers of the Outskirts and why you are here.',
     };
 }
 
 export function getFrame4Data(): { image_url: string, text: string } {
     return {
-        image_url: '/images/frame4.png',
+        image_url: 'https://vectorcoil.com/cx/images/frame4.png',
         text: 'Frame 4: Final checks before choosing your specialization.',
     };
 }
