@@ -43,34 +43,72 @@ export default function MessageDetailClient({ message, navData }: MessageDetailC
         </div>
 
         <div className="frame-body">
-          {/* Contact info */}
-          <div className="flex items-center gap-3 mb-4">
-            <Link href={`/contacts/${message.contact_id}`}>
-              <div className="w-16 h-16 bg-gray-700 rounded overflow-hidden flex-shrink-0 cursor-pointer hover:opacity-80">
-                {message.contact_image_url ? (
-                  <img src={message.contact_image_url} alt={message.contact_name} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-2xl">
-                    {message.contact_name.charAt(0)}
-                  </div>
-                )}
-              </div>
-            </Link>
-            <div>
-              <div className="meta-eyebrow">FROM</div>
-              <Link href={`/contacts/${message.contact_id}`} className="card-title hover:text-bright-blue">
-                {message.contact_name}
+          {/* Contact info or sent from */}
+          {message.contact_id ? (
+            <div className="flex items-center gap-3 mb-4">
+              <Link href={`/contacts/${message.contact_id}`}>
+                <div className="w-16 h-16 bg-gray-700 rounded overflow-hidden flex-shrink-0 cursor-pointer hover:opacity-80">
+                  {message.contact_image_url ? (
+                    <img src={message.contact_image_url} alt={message.contact_name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-2xl">
+                      {message.contact_name.charAt(0)}
+                    </div>
+                  )}
+                </div>
               </Link>
-              <div className="text-xs text-gray-500 mt-1">
-                {new Date(message.received_at).toLocaleDateString()} {new Date(message.received_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              <div>
+                <div className="meta-eyebrow">FROM</div>
+                <Link href={`/contacts/${message.contact_id}`} className="card-title hover:text-bright-blue">
+                  {message.contact_name}
+                </Link>
+                <div className="text-xs text-gray-500 mt-1">
+                  {new Date(message.unlocked_at).toLocaleDateString()} {new Date(message.unlocked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-16 h-16 bg-gray-700 rounded overflow-hidden flex-shrink-0 flex items-center justify-center">
+                <span className="material-symbols-outlined text-gray-400 text-3xl">mail</span>
+              </div>
+              <div>
+                <div className="meta-eyebrow">SYSTEM MESSAGE</div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {new Date(message.unlocked_at).toLocaleDateString()} {new Date(message.unlocked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Message content */}
           <CxCard>
             <div className="card-title mb-4">{message.subject}</div>
+            
+            {/* Message image if exists */}
+            {message.message_image_url && (
+              <div className="mb-4">
+                <img src={message.message_image_url} alt={message.subject} className="w-full rounded" />
+              </div>
+            )}
+            
             <div className="text-gray-300 whitespace-pre-wrap">{message.body}</div>
+            
+            {/* Conditional buttons */}
+            {(message.btn_1 || message.btn_2) && (
+              <div className="flex gap-2 mt-4">
+                {message.btn_1 && (
+                  <button className="btn-cx btn-cx-primary">
+                    {message.btn_1}
+                  </button>
+                )}
+                {message.btn_2 && (
+                  <button className="btn-cx btn-cx-secondary">
+                    {message.btn_2}
+                  </button>
+                )}
+              </div>
+            )}
           </CxCard>
 
           {/* Actions */}
@@ -80,11 +118,13 @@ export default function MessageDetailClient({ message, navData }: MessageDetailC
                 BACK TO MESSAGES
               </button>
             </Link>
-            <Link href={`/messages?contact_id=${message.contact_id}`}>
-              <button className="btn-cx btn-cx-secondary">
-                ALL FROM {message.contact_name.toUpperCase()}
-              </button>
-            </Link>
+            {message.contact_id && (
+              <Link href={`/messages?contact_id=${message.contact_id}`}>
+                <button className="btn-cx btn-cx-secondary">
+                  ALL FROM {message.contact_name.toUpperCase()}
+                </button>
+              </Link>
+            )}
           </div>
         </div>
       </div>

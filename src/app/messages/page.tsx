@@ -12,13 +12,18 @@ import { useStats } from '../../hooks/useStatsSWR';
 
 interface Message {
   id: number;
+  msg_code?: string;
   subject: string;
   body: string;
-  contact_id: number;
-  contact_name: string;
+  contact_id?: number;
+  contact_name?: string;
   contact_image_url?: string;
+  message_image_url?: string;
+  btn_1?: string;
+  btn_2?: string;
   status: 'READ' | 'UNREAD';
-  received_at: string;
+  unlocked_at: string;
+  read_at?: string;
 }
 
 export default function MessagesPage() {
@@ -140,7 +145,7 @@ export default function MessagesPage() {
                         <div className="meta-eyebrow">{msg.contact_name}</div>
                         <div className="card-title truncate">{msg.subject}</div>
                         <div className="text-xs text-gray-500 mt-1">
-                          {new Date(msg.received_at).toLocaleDateString()} {new Date(msg.received_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {new Date(msg.unlocked_at).toLocaleDateString()} {new Date(msg.unlocked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </div>
                       </div>
                     </div>
@@ -191,7 +196,7 @@ export default function MessagesPage() {
                               )}
                               <div className="card-title">{msg.subject}</div>
                               <div className="text-xs text-gray-500 mt-1">
-                                {new Date(msg.received_at).toLocaleDateString()} {new Date(msg.received_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {new Date(msg.unlocked_at).toLocaleDateString()} {new Date(msg.unlocked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </div>
                             </CxCard>
                           </Link>

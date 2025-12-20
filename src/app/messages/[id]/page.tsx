@@ -33,16 +33,21 @@ export default async function MessageDetailPage({ params }: { params: any }) {
     const [msgRows] = await pool.execute(
       `SELECT 
         m.id,
-        m.subject,
-        m.body,
+        m.msg_code,
+        m.msg_title AS subject,
+        m.msg_body AS body,
         m.contact AS contact_id,
+        m.image_url AS message_image_url,
+        m.btn_1,
+        m.btn_2,
         c.display_name AS contact_name,
         c.image_url AS contact_image_url,
         mh.status,
-        mh.received_at
+        mh.unlocked_at,
+        mh.read_at
       FROM msg_history mh
       JOIN messages m ON mh.msg_id = m.id
-      JOIN contacts c ON m.contact = c.id
+      LEFT JOIN contacts c ON m.contact = c.id
       WHERE mh.user_id = ? AND m.id = ?
       LIMIT 1`,
       [user.id, messageId]
@@ -57,7 +62,7 @@ export default async function MessageDetailPage({ params }: { params: any }) {
     // Mark as read if unread
     if (message.status === 'UNREAD') {
       await pool.execute(
-        'UPDATE msg_history SET status = ? WHERE user_id = ? AND msg_id = ?',
+        'UPDATE msg_history SET status = ?, read_at = NOW() WHERE user_id = ? AND msg_id = ?',
         ['READ', user.id, messageId]
       );
       message.status = 'READ';
