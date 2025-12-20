@@ -6,6 +6,7 @@ import NavDrawer from '../../../components/NavDrawer';
 import CompactMeterStrip from '../../../components/CompactMeterStrip';
 import { getMeterData } from '../../../lib/meterUtils';
 import { useStats } from '../../../hooks/useStatsSWR';
+import { getRelativeTime } from '../../../lib/timeUtils';
 
 interface MessageDetailClientProps {
   message: any;
@@ -63,7 +64,7 @@ export default function MessageDetailClient({ message, navData }: MessageDetailC
                   {message.contact_name}
                 </Link>
                 <div className="text-xs text-gray-500 mt-1">
-                  {new Date(message.unlocked_at).toLocaleDateString()} {new Date(message.unlocked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {getRelativeTime(message.unlocked_at)}
                 </div>
               </div>
             </div>
@@ -75,7 +76,7 @@ export default function MessageDetailClient({ message, navData }: MessageDetailC
               <div>
                 <div className="meta-eyebrow">SYSTEM MESSAGE</div>
                 <div className="text-xs text-gray-500 mt-1">
-                  {new Date(message.unlocked_at).toLocaleDateString()} {new Date(message.unlocked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {getRelativeTime(message.unlocked_at)}
                 </div>
               </div>
             </div>

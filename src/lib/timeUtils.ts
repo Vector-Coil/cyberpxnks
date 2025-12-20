@@ -3,6 +3,35 @@
  */
 
 /**
+ * Convert a timestamp to a relative time string like "5 minutes ago", "2 days ago", etc.
+ */
+export function getRelativeTime(timestamp: string | Date): string {
+  const now = new Date().getTime();
+  const then = new Date(timestamp).getTime();
+  const diffMs = now - then;
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  const diffMonths = Math.floor(diffDays / 30);
+  const diffYears = Math.floor(diffDays / 365);
+
+  if (diffSeconds < 60) {
+    return diffSeconds === 1 ? '1 second ago' : `${diffSeconds} seconds ago`;
+  } else if (diffMinutes < 60) {
+    return diffMinutes === 1 ? '1 minute ago' : `${diffMinutes} minutes ago`;
+  } else if (diffHours < 24) {
+    return diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
+  } else if (diffDays < 30) {
+    return diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+  } else if (diffMonths < 12) {
+    return diffMonths === 1 ? '1 month ago' : `${diffMonths} months ago`;
+  } else {
+    return diffYears === 1 ? '1 year ago' : `${diffYears} years ago`;
+  }
+}
+
+/**
  * Format milliseconds into HH:MM:SS countdown string
  * @param endTime - End timestamp or Date object
  * @returns Formatted time string like "01:23:45 to completion"

@@ -9,6 +9,7 @@ import { useNavData } from '../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../hooks/useAuthenticatedUser';
 import { getMeterData } from '../../lib/meterUtils';
 import { useStats } from '../../hooks/useStatsSWR';
+import { getRelativeTime } from '../../lib/timeUtils';
 
 interface Message {
   id: number;
@@ -145,7 +146,7 @@ export default function MessagesPage() {
                         <div className="meta-eyebrow">{msg.contact_name || 'System Message'}</div>
                         <div className="card-title truncate">{msg.subject}</div>
                         <div className="text-xs text-gray-500 mt-1">
-                          {new Date(msg.unlocked_at).toLocaleDateString()} {new Date(msg.unlocked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          {getRelativeTime(msg.unlocked_at)}
                         </div>
                       </div>
                     </div>
@@ -196,7 +197,7 @@ export default function MessagesPage() {
                               )}
                               <div className="card-title">{msg.subject}</div>
                               <div className="text-xs text-gray-500 mt-1">
-                                {new Date(msg.unlocked_at).toLocaleDateString()} {new Date(msg.unlocked_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {getRelativeTime(msg.unlocked_at)}
                               </div>
                             </CxCard>
                           </Link>
