@@ -43,7 +43,6 @@ export default async function GigDetailPage({ params }: { params: any }) {
     const title = gRow.gig_code ?? gRow.title ?? gRow.name ?? `Gig ${id}`;
     const image_url = gRow.image_url ?? gRow.img ?? gRow.image ?? null;
     const description = gRow.gig_desc ?? gRow.gigDesc ?? gRow.description ?? gRow.desc ?? '';
-    const objective = gRow.objective ?? gRow.objective_text ?? '';
     const contact_id = gRow.contact ?? null;
     const unlocked_at = ghRow.unlocked_at ?? null;
     const status = ghRow.status ?? null;
@@ -187,7 +186,7 @@ export default async function GigDetailPage({ params }: { params: any }) {
           <div className="mb-6">
             <div className="w-full mb-4 overflow-hidden rounded">
               {image_url ? (
-                <img src={image_url} alt={title} className="w-full h-auto object-cover" />
+                <img src={image_url} alt={gig_code} className="w-full h-auto object-cover" />
               ) : (
                 <div className="w-full h-64 bg-gray-600" />
               )}
@@ -195,18 +194,12 @@ export default async function GigDetailPage({ params }: { params: any }) {
 
             <div className="flex flex-col">
 
-              <div className="text-center mb-0">
-                {gig_code && (
-                  <span className="text-l font-bold uppercase text-white inline-block">{gig_code}</span>
-                )}
+              <div className="text-xl font-bold uppercase text-white mt-2 text-center">
+                {gig_code}
                 {isNew && (
                   <span className="inline-block ml-2 bg-bright-green text-black text-xs font-semibold px-2 py-0.5 rounded-full shadow-xl animate-pulse">NEW</span>
                 )}
               </div>
-
-
-
-              <div className="text-xl font-bold uppercase text-white mt-2 text-center">{title}</div>
 
 
 
@@ -225,13 +218,8 @@ export default async function GigDetailPage({ params }: { params: any }) {
                 )}
               </div>
 
-              <div className="mb-1">
-                <span className="meta-heading">Objective:</span>{' '}
-                <span className="text-gray-300">{objective || 'None'}</span>
-              </div>
-
               <div className="mb-3">
-                <span className="meta-heading">Contact:</span> 
+                <span className="meta-heading">Contact:</span>{' '}
                 <a href={`/contacts/${contact_id}`}>{contact_name}</a>
               </div>
 
