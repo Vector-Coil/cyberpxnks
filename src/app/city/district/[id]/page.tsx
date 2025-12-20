@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { NavStrip, CxCard } from '../../../../components/CxShared';
+import NavDrawer from '../../../../components/NavDrawer';
 import { useNavData } from '../../../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../../../hooks/useAuthenticatedUser';
 
@@ -35,6 +36,7 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
   const [districtId, setDistrictId] = useState<number | null>(null);
   const { userFid, isLoading: isAuthLoading } = useAuthenticatedUser();
   const navData = useNavData(userFid || 0);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const [district, setDistrict] = useState<District | null>(null);
   const [zones, setZones] = useState<Zone[]>([]);
@@ -77,47 +79,76 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
 
   if (loading) {
     return (
-      <div className="frame-container frame-city">
-        <div className="frame-body pt-6 pb-2 px-6">
-          <NavStrip 
-            username={navData.username}
-            userProfileImage={navData.profileImage}
-            cxBalance={navData.cxBalance}
-          />
+      <>
+        <NavDrawer 
+          isOpen={isDrawerOpen}
+          onClose={() => setIsDrawerOpen(false)}
+          username={navData.username}
+          profileImage={navData.profileImage}
+          cxBalance={navData.cxBalance}
+        />
+        <div className="frame-container frame-city">
+          <div className="frame-body pt-6 pb-2 px-6">
+            <NavStrip 
+              username={navData.username}
+              userProfileImage={navData.profileImage}
+              cxBalance={navData.cxBalance}
+              onMenuClick={() => setIsDrawerOpen(true)}
+            />
+          </div>
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin w-12 h-12 border-4 border-gray-600 border-t-fuschia rounded-full"></div>
+          </div>
         </div>
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin w-12 h-12 border-4 border-gray-600 border-t-fuschia rounded-full"></div>
-        </div>
-      </div>
+      </>
     );
   }
 
   if (!district) {
     return (
+      <>
+        <NavDrawer 
+          isOpen={isDrawerOpen}
+          onClose={() => setIsDrawerOpen(false)}
+          username={navData.username}
+          profileImage={navData.profileImage}
+          cxBalance={navData.cxBalance}
+        />
+        <div className="frame-container frame-city">
+          <div className="frame-body pt-6 pb-2 px-6">
+            <NavStrip 
+              username={navData.username}
+              userProfileImage={navData.profileImage}
+              cxBalance={navData.cxBalance}
+              onMenuClick={() => setIsDrawerOpen(true)}
+            />
+          </div>
+          <div className="text-center text-gray-400 py-12">
+            District not found
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <NavDrawer 
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        username={navData.username}
+        profileImage={navData.profileImage}
+        cxBalance={navData.cxBalance}
+      />
       <div className="frame-container frame-city">
         <div className="frame-body pt-6 pb-2 px-6">
           <NavStrip 
             username={navData.username}
             userProfileImage={navData.profileImage}
             cxBalance={navData.cxBalance}
+            onMenuClick={() => setIsDrawerOpen(true)}
           />
         </div>
-        <div className="text-center text-gray-400 py-12">
-          District not found
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="frame-container frame-city">
-      <div className="frame-body pt-6 pb-2 px-6">
-        <NavStrip 
-          username={navData.username}
-          userProfileImage={navData.profileImage}
-          cxBalance={navData.cxBalance}
-        />
-      </div>
 
       <div className="pt-5 pb-2 px-6 flex flex-row gap-1 items-center">
         <button 
@@ -209,5 +240,6 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
         </CxCard>
       </div>
     </div>
+    </>
   );
 }

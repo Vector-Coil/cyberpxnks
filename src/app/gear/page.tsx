@@ -138,10 +138,10 @@ export default function GearPage() {
 
       <div className="frame-body pt-0">
         {/* Tabs */}
-        <div className="mb-4 flex gap-2">
+        <div className="mb-4 flex flex-wrap gap-2">
           <button
             onClick={() => setActiveTab('all')}
-            className={`flex-1 py-3 px-4 rounded-lg font-bold uppercase text-sm transition-colors ${
+            className={`flex-1 min-w-[80px] py-2 px-3 rounded-lg font-bold uppercase text-xs transition-colors ${
               activeTab === 'all' 
                 ? 'bg-fuschia text-white' 
                 : 'bg-charcoal text-gray-400 hover:bg-charcoal-75'
@@ -151,7 +151,7 @@ export default function GearPage() {
           </button>
           <button
             onClick={() => setActiveTab('hardware')}
-            className={`flex-1 py-3 px-4 rounded-lg font-bold uppercase text-sm transition-colors ${
+            className={`flex-1 min-w-[80px] py-2 px-3 rounded-lg font-bold uppercase text-xs transition-colors ${
               activeTab === 'hardware' 
                 ? 'bg-fuschia text-white' 
                 : 'bg-charcoal text-gray-400 hover:bg-charcoal-75'
@@ -161,7 +161,7 @@ export default function GearPage() {
           </button>
           <button
             onClick={() => setActiveTab('arsenal')}
-            className={`flex-1 py-3 px-4 rounded-lg font-bold uppercase text-sm transition-colors ${
+            className={`flex-1 min-w-[80px] py-2 px-3 rounded-lg font-bold uppercase text-xs transition-colors ${
               activeTab === 'arsenal' 
                 ? 'bg-fuschia text-white' 
                 : 'bg-charcoal text-gray-400 hover:bg-charcoal-75'
@@ -171,7 +171,7 @@ export default function GearPage() {
           </button>
           <button
             onClick={() => setActiveTab('software')}
-            className={`flex-1 py-3 px-4 rounded-lg font-bold uppercase text-sm transition-colors ${
+            className={`flex-1 min-w-[80px] py-2 px-3 rounded-lg font-bold uppercase text-xs transition-colors ${
               activeTab === 'software' 
                 ? 'bg-fuschia text-white' 
                 : 'bg-charcoal text-gray-400 hover:bg-charcoal-75'
@@ -181,7 +181,7 @@ export default function GearPage() {
           </button>
           <button
             onClick={() => setActiveTab('data')}
-            className={`flex-1 py-3 px-4 rounded-lg font-bold uppercase text-sm transition-colors ${
+            className={`flex-1 min-w-[80px] py-2 px-3 rounded-lg font-bold uppercase text-xs transition-colors ${
               activeTab === 'data' 
                 ? 'bg-fuschia text-white' 
                 : 'bg-charcoal text-gray-400 hover:bg-charcoal-75'

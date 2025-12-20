@@ -180,7 +180,7 @@ export default function GigsPage() {
                           </div>
 
                           <a href={`/gigs/${gig.id}`} className="inline-block mt-3">
-                            <button className="btn-cx-primary">
+                            <button className="btn-cx btn-cx-primary">
                               VIEW GIG
                             </button>
                           </a>
@@ -266,7 +266,7 @@ export default function GigsPage() {
                                     </div>
 
                                     <a href={`/gigs/${gig.id}`} className="inline-block mt-3">
-                                      <button className="btn-cx-primary">
+                                      <button className="btn-cx btn-cx-primary">
                                         VIEW GIG
                                       </button>
                                     </a>
