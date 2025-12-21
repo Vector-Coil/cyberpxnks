@@ -262,104 +262,106 @@ export default function CityPage() {
 
       <div className="frame-body">
 
-        {/* Explore Card */}
-        <CxCard className="mb-6">
-          {!showResults && !activeExplore && (
-            <div className="flex flex-col justify-between gap-1">
-              <div className="card-title">Explore</div>
-              <div className="modal-body-data">Go out into the city and discover new zones.</div>
-              <button 
-                className={`btn-cx btn-cx-primary ${!canExplore ? 'opacity-50 cursor-not-allowed' : ''}`}
-                onClick={handleExploreClick}
-                disabled={!canExplore}
-              >
-                EXPLORE
-              </button>
-            </div>
-          )}
+        {/* City Map with Overlaid Explore Card */}
+        <div className="relative mb-6">
+          {/* City Map */}
+          <div className="city-map" style={{
+            backgroundImage: 'url(https://vectorcoil.com/cx/images/city-map/City_-_Downsize.png)'
+          }}>
+          </div>
 
-          {activeExplore && !showResults && (
-            <div className="flex flex-col justify-between gap-1">
-              <div className="card-title mb-3">Explore</div>
-              <button 
-                className={`btn-cx btn-cx-pause btn-cx-full mb-2 ${!isComplete || isLoadingResults ? 'cursor-default opacity-75' : ''}`}
-                onClick={handleViewResults}
-                disabled={!isComplete || isLoadingResults}
-              >
-                {isLoadingResults ? 'LOADING RESULTS...' : isComplete ? 'VIEW RESULTS' : 'EXPLORING IN PROGRESS'}
-              </button>
-              <div className="text-white text-center text-xs">{timeRemaining}</div>
-            </div>
-          )}
+          {/* Explore Card Overlay */}
+          <div className="absolute top-5 left-5 right-5">
+            <CxCard>
+              {!showResults && !activeExplore && (
+                <div className="flex flex-col justify-between gap-1">
+                  <button 
+                    className={`btn-cx btn-cx-primary ${!canExplore ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={handleExploreClick}
+                    disabled={!canExplore}
+                  >
+                    EXPLORE
+                  </button>
+                  <div className="modal-body-data text-center">Go out into the city and discover new zones.</div>
+                </div>
+              )}
 
-          {showResults && exploreResults && (
-            <div>
-              <div className="card-title mb-3">Explore</div>
-              <div className="modal-base mb-2">
-                <div className="modal-title mb-2">EXPLORE RESULTS</div>
-                <div className="modal-body-data space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-300">Gained XP</span>
-                    <span className="pill-cloud-gray">{exploreResults.xpGained} XP</span>
+              {activeExplore && !showResults && (
+                <div className="flex flex-col justify-between gap-1">
+                  <button 
+                    className={`btn-cx btn-cx-pause btn-cx-full mb-2 ${!isComplete || isLoadingResults ? 'cursor-default opacity-75' : ''}`}
+                    onClick={handleViewResults}
+                    disabled={!isComplete || isLoadingResults}
+                  >
+                    {isLoadingResults ? 'LOADING RESULTS...' : isComplete ? 'VIEW RESULTS' : 'EXPLORING IN PROGRESS'}
+                  </button>
+                  <div className="text-white text-center text-xs">{timeRemaining}</div>
+                </div>
+              )}
+
+              {showResults && exploreResults && (
+                <div>
+                  <div className="modal-base mb-2">
+                    <div className="modal-title mb-2">EXPLORE RESULTS</div>
+                    <div className="modal-body-data space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-gray-300">Gained XP</span>
+                        <span className="pill-cloud-gray">{exploreResults.xpGained} XP</span>
+                      </div>
+                      {exploreResults.discoveredZone && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-300">Discovered Zone</span>
+                          <span className="text-green-400 font-semibold">{exploreResults.discoveredZone.name}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  {exploreResults.discoveredZone && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-300">Discovered Zone</span>
-                      <span className="text-green-400 font-semibold">{exploreResults.discoveredZone.name}</span>
+                  
+                  {exploreResults.encounter && (
+                    <div className="modal-base mb-2 border-2 border-yellow-500/50">
+                      <div className="modal-title mb-2 text-yellow-400">⚠ ENCOUNTER DETECTED</div>
+                      <div className="modal-body-data space-y-2">
+                        <div className="text-gray-300 text-sm">
+                          You've encountered <span className="text-white font-semibold">{exploreResults.encounter.name}</span>, 
+                          a <span className="text-cyan-400">{exploreResults.encounter.type}</span> with {' '}
+                          <span className={`font-semibold ${
+                            exploreResults.encounter.sentiment === 'attack' ? 'text-red-500' :
+                            exploreResults.encounter.sentiment === 'hostile' ? 'text-orange-500' :
+                            exploreResults.encounter.sentiment === 'neutral' ? 'text-yellow-400' :
+                            'text-green-400'
+                          }`}>{exploreResults.encounter.sentiment}</span> intentions.
+                        </div>
+                      </div>
                     </div>
                   )}
-                </div>
-              </div>
-              
-              {exploreResults.encounter && (
-                <div className="modal-base mb-2 border-2 border-yellow-500/50">
-                  <div className="modal-title mb-2 text-yellow-400">⚠ ENCOUNTER DETECTED</div>
-                  <div className="modal-body-data space-y-2">
-                    <div className="text-gray-300 text-sm">
-                      You've encountered <span className="text-white font-semibold">{exploreResults.encounter.name}</span>, 
-                      a <span className="text-cyan-400">{exploreResults.encounter.type}</span> with {' '}
-                      <span className={`font-semibold ${
-                        exploreResults.encounter.sentiment === 'attack' ? 'text-red-500' :
-                        exploreResults.encounter.sentiment === 'hostile' ? 'text-orange-500' :
-                        exploreResults.encounter.sentiment === 'neutral' ? 'text-yellow-400' :
-                        'text-green-400'
-                      }`}>{exploreResults.encounter.sentiment}</span> intentions.
+
+                  {exploreResults.encounter ? (
+                    <div className="space-y-2">
+                      <button 
+                        className="btn-cx btn-cx-primary btn-cx-full"
+                        onClick={() => window.location.href = `/encounters/${exploreResults.encounter.id}`}
+                      >
+                        OPEN ENCOUNTER
+                      </button>
+                      <button 
+                        className="btn-cx btn-cx-secondary btn-cx-full"
+                        onClick={handleBackFromResults}
+                      >
+                        RUN AWAY (DISMISS)
+                      </button>
                     </div>
-                  </div>
+                  ) : (
+                    <button 
+                      className="btn-cx btn-cx-secondary btn-cx-full"
+                      onClick={handleBackFromResults}
+                    >
+                      DISMISS
+                    </button>
+                  )}
                 </div>
               )}
-
-              {exploreResults.encounter ? (
-                <div className="space-y-2">
-                  <button 
-                    className="btn-cx btn-cx-primary btn-cx-full"
-                    onClick={() => window.location.href = `/encounters/${exploreResults.encounter.id}`}
-                  >
-                    OPEN ENCOUNTER
-                  </button>
-                  <button 
-                    className="btn-cx btn-cx-secondary btn-cx-full"
-                    onClick={handleBackFromResults}
-                  >
-                    RUN AWAY (DISMISS)
-                  </button>
-                </div>
-              ) : (
-                <button 
-                  className="btn-cx btn-cx-secondary btn-cx-full"
-                  onClick={handleBackFromResults}
-                >
-                  DISMISS
-                </button>
-              )}
-            </div>
-          )}
-        </CxCard>
-
-        {/* City Map */}
-        <div className="mb-6 city-map" style={{
-          backgroundImage: 'url(https://vectorcoil.com/cx/images/city-map/City_-_Downsize.png)'
-        }}>
+            </CxCard>
+          </div>
         </div>
 
         {/* Districts Section */}

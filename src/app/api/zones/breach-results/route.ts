@@ -61,16 +61,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Breach not yet complete' }, { status: 400 });
     }
 
-    // Award random XP (50-75 in increments of 5)
+    // Award random XP (30-50 in increments of 5)
     // Note: Thermal/neural load increases are handled automatically by the regeneration system during breach
-    const xpOptions = [50, 55, 60, 65, 70, 75];
-    const xpGained = xpOptions[Math.floor(Math.random() * xpOptions.length)];
-
-    // Update user XP
-    await pool.execute(
-      'UPDATE users SET xp = xp + ? WHERE id = ?',
-      [xpGained, userId]
-    );
+    const xpOptions = [30, 35, 40, 45, 50];
+    const baseXp = xpOptions[Math.floor(Math.random() * xpOptions.length)];
+    
+    // TODO: Add +10 XP bonus on data/item discovery (when discovery system implemented)
+    const discoveryBonus = 0;
 
     // Get user's street cred for encounter filtering
     const [userDataRows] = await pool.execute<RowDataPacket[]>(
@@ -106,8 +103,18 @@ export async function POST(request: NextRequest) {
       [userId]
     );
 
+    // Apply total XP (base + discovery bonus)
+    const totalXp = baseXp + discoveryBonus;
+    await pool.execute(
+      'UPDATE users SET xp = xp + ? WHERE id = ?',
+      [totalXp, userId]
+    );
+
     // Build gains text
-    let gainsText = `+${xpGained} XP`;
+    let gainsText = `+${totalXp} XP`;
+    if (discoveryBonus > 0) {
+      gainsText += ' (+10 discovery bonus)';
+    }
     if (encounter) {
       gainsText += `, Encountered ${encounter.name}`;
     }
@@ -117,7 +124,7 @@ export async function POST(request: NextRequest) {
       `UPDATE user_zone_history 
        SET result_status = 'completed', xp_data = ?, gains_data = ?
        WHERE id = ?`,
-      [xpGained, gainsText, historyId]
+      [totalXp, gainsText, historyId]
     );
 
     // Get POI details for logging
@@ -163,7 +170,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      xpGained,
+      xpGained: totalXp,
       rewardType,
       encounter: encounter ? {
         id: encounter.id,

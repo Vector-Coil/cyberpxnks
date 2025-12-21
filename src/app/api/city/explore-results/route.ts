@@ -28,11 +28,9 @@ export async function POST(request: NextRequest) {
     );
     const userStreetCred = userDataRows[0]?.street_cred || 0;
 
-    // Award base XP
-    await dbPool.query(
-      'UPDATE users SET xp = xp + 75 WHERE id = ?',
-      [userId]
-    );
+    // Award base XP (random 20-40)
+    const baseXpOptions = [20, 25, 30, 35, 40];
+    const baseXp = baseXpOptions[Math.floor(Math.random() * baseXpOptions.length)];
 
     // Get user's discovery progress for dynamic probability
     const [discoveryStats] = await dbPool.query<RowDataPacket[]>(
@@ -70,8 +68,7 @@ export async function POST(request: NextRequest) {
     });
     
     let discoveredZone = null;
-    let encounter = null;
-
+    let encounter = null;    let discoveryBonus = 0;
     if (rewardType === 'discovery') {
       // Get undiscovered zones from active districts
       const [undiscoveredZonesRows] = await dbPool.query<RowDataPacket[]>(

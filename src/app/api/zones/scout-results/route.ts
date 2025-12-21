@@ -33,13 +33,9 @@ export async function POST(request: NextRequest) {
     );
     const userStreetCred = userDataRows[0]?.street_cred || 0;
 
-    const xpGained = 50;
-
-    // Update user XP
-    await pool.execute(
-      'UPDATE users SET xp = xp + ? WHERE id = ?',
-      [xpGained, userId]
-    );
+    // Award base XP for completing scout (random 10-30)
+    const baseXpOptions = [10, 15, 20, 25, 30];
+    const baseXp = baseXpOptions[Math.floor(Math.random() * baseXpOptions.length)];
 
     // Get arsenal discovery_poi bonus from equipped arsenal items
     const [arsenalBonus] = await pool.execute<RowDataPacket[]>(
@@ -56,6 +52,7 @@ export async function POST(request: NextRequest) {
     
     let encounter = null;
     let unlockedPOI = null;
+    let discoveryBonus = 0;
 
     if (rewardType === 'discovery') {
       // Try to unlock a POI (terminal or shop) in this zone
@@ -75,6 +72,9 @@ export async function POST(request: NextRequest) {
 
       if (undiscoveredPOIRows.length > 0) {
         unlockedPOI = undiscoveredPOIRows[0];
+
+        // +10 XP bonus for POI discovery
+        discoveryBonus = 10;
 
         // Create POI unlock entry in user_zone_history
         await pool.execute(
@@ -114,10 +114,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Apply total XP (base + discovery bonus)
+    const totalXp = baseXp + discoveryBonus;
+    await pool.execute(
+      'UPDATE users SET xp = xp + ? WHERE id = ?',
+      [totalXp, userId]
+    );
+
     // Build gains text
-    let gainsText = `+${xpGained} XP`;
+    let gainsText = `+${totalXp} XP`;
     if (unlockedPOI) {
-      gainsText += `, Unlocked ${unlockedPOI.name}`;
+      gainsText += ` (+10 discovery bonus), Unlocked ${unlockedPOI.name}`;
     } else if (encounter) {
       gainsText += `, Encountered ${encounter.name}`;
     }
@@ -129,7 +136,7 @@ export async function POST(request: NextRequest) {
            xp_data = ?,
            gains_data = ?
        WHERE id = ? AND user_id = ?`,
-      [xpGained, gainsText, historyId, userId]
+      [totalXp, gainsText, historyId, userId]
     );
 
     // Log scout completion activity
@@ -137,9 +144,9 @@ export async function POST(request: NextRequest) {
       userId,
       'action',
       'scout_completed',
-      xpGained,
+      totalXp,
       zoneId,
-      `Completed scouting zone ${zoneId}, gained ${xpGained} XP`
+      `Completed scouting zone ${zoneId}, gained ${totalXp} XP`
     );
 
     // Restore bandwidth using StatsService
@@ -164,7 +171,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       rewardType,
-      xpGained,
+      xpGained: totalXp,
       gainsText,
       unlockedPOI: unlockedPOI ? {
         id: unlockedPOI.id,

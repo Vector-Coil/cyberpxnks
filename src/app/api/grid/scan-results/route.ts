@@ -31,21 +31,20 @@ export async function POST(request: NextRequest) {
     );
     const userStreetCred = userDataRows[0]?.street_cred || 0;
 
-    // Award base XP for completing scan
-    const xpGained = 50;
-    await dbPool.query(
-      'UPDATE users SET xp = xp + ? WHERE id = ?',
-      [xpGained, userId]
-    );
+    // Award base XP for completing scan (random 10-30)
+    const baseXpOptions = [10, 15, 20, 25, 30];
+    const baseXp = baseXpOptions[Math.floor(Math.random() * baseXpOptions.length)];
 
     // Roll for reward type
     const rewardType = rollEncounterReward();
     
     let discoveredSubnet: DiscoveredSubnet | null = null;
     let encounter: any = null;
+    let discoveryBonus = 0;
 
     if (rewardType === 'discovery') {
       // TODO: Add subnet/protocol discovery logic here when ready
+      // When implemented: discoveryBonus = 10;
     } else if (rewardType === 'encounter') {
       // Get random encounter for grid context (zone_id = 2 for generic grid encounters)
       encounter = await getRandomEncounter(dbPool, 2, 'grid', userStreetCred);
@@ -63,8 +62,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Apply total XP (base + discovery bonus)
+    const totalXp = baseXp + discoveryBonus;
+    await dbPool.query(
+      'UPDATE users SET xp = xp + ? WHERE id = ?',
+      [totalXp, userId]
+    );
+
     // Build gains text
-    let gainsText = `+${xpGained} XP`;
+    let gainsText = `+${totalXp} XP`;
+    if (discoveryBonus > 0) {
+      gainsText += ' (+10 discovery bonus)';
+    }
     if (encounter) {
       gainsText += `, Encountered ${encounter.name}`;
     }
