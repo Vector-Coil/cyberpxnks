@@ -86,6 +86,20 @@ interface HardwareItem {
   upgrade_material_name?: string;
   upgrade_material_image?: string;
   upgrade_material_count?: number;
+  // Arsenal modifiers
+  tactical?: number;
+  smart_tech?: number;
+  offense?: number;
+  defense?: number;
+  evasion?: number;
+  stealth?: number;
+  consciousness?: number;
+  stamina?: number;
+  charge?: number;
+  neural?: number;
+  thermal?: number;
+  discovery_zone?: number;
+  discovery_item?: number;
 }
 
 export default function HardwarePage() {
@@ -1212,9 +1226,118 @@ export default function HardwarePage() {
                     {previewItem.description && (
                       <div className="text-gray-400 text-[11px] mt-2">{previewItem.description}</div>
                     )}
-                    <div className="mt-2 text-gray-500 text-[11px] italic">
-                      Arsenal effects coming soon...
-                    </div>
+                    
+                    {/* Display modifiers if any exist */}
+                    {(() => {
+                      const hasMods = (previewItem.tactical || 0) !== 0 || 
+                                      (previewItem.smart_tech || 0) !== 0 || 
+                                      (previewItem.offense || 0) !== 0 || 
+                                      (previewItem.defense || 0) !== 0 || 
+                                      (previewItem.evasion || 0) !== 0 || 
+                                      (previewItem.stealth || 0) !== 0 ||
+                                      (previewItem.consciousness || 0) !== 0 ||
+                                      (previewItem.stamina || 0) !== 0 ||
+                                      (previewItem.charge || 0) !== 0 ||
+                                      (previewItem.neural || 0) !== 0 ||
+                                      (previewItem.thermal || 0) !== 0 ||
+                                      (previewItem.discovery_zone || 0) !== 0 ||
+                                      (previewItem.discovery_item || 0) !== 0;
+                      
+                      if (!hasMods) {
+                        return (
+                          <div className="mt-2 text-gray-500 text-[11px] italic">
+                            No stat modifiers
+                          </div>
+                        );
+                      }
+                      
+                      return (
+                        <div className="mt-3 space-y-1">
+                          <div className="text-[10px] uppercase text-gray-500 font-bold mb-1">Bonuses:</div>
+                          {/* Combat Stats */}
+                          {(previewItem.tactical || 0) !== 0 && (
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-gray-400">Tactical</span>
+                              <span className="text-bright-blue">+{previewItem.tactical}</span>
+                            </div>
+                          )}
+                          {(previewItem.smart_tech || 0) !== 0 && (
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-gray-400">Smart Tech</span>
+                              <span className="text-bright-blue">+{previewItem.smart_tech}</span>
+                            </div>
+                          )}
+                          {(previewItem.offense || 0) !== 0 && (
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-gray-400">Offense</span>
+                              <span className="text-bright-blue">+{previewItem.offense}</span>
+                            </div>
+                          )}
+                          {(previewItem.defense || 0) !== 0 && (
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-gray-400">Defense</span>
+                              <span className="text-bright-blue">+{previewItem.defense}</span>
+                            </div>
+                          )}
+                          {(previewItem.evasion || 0) !== 0 && (
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-gray-400">Evasion</span>
+                              <span className="text-bright-blue">+{previewItem.evasion}</span>
+                            </div>
+                          )}
+                          {(previewItem.stealth || 0) !== 0 && (
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-gray-400">Stealth</span>
+                              <span className="text-bright-blue">+{previewItem.stealth}</span>
+                            </div>
+                          )}
+                          {/* Metered Stats */}
+                          {(previewItem.consciousness || 0) !== 0 && (
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-gray-400">Max Consciousness</span>
+                              <span className="text-green-400">+{previewItem.consciousness}</span>
+                            </div>
+                          )}
+                          {(previewItem.stamina || 0) !== 0 && (
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-gray-400">Max Stamina</span>
+                              <span className="text-green-400">+{previewItem.stamina}</span>
+                            </div>
+                          )}
+                          {(previewItem.charge || 0) !== 0 && (
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-gray-400">Max Charge</span>
+                              <span className="text-green-400">+{previewItem.charge}</span>
+                            </div>
+                          )}
+                          {(previewItem.neural || 0) !== 0 && (
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-gray-400">Max Neural</span>
+                              <span className="text-green-400">+{previewItem.neural}</span>
+                            </div>
+                          )}
+                          {(previewItem.thermal || 0) !== 0 && (
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-gray-400">Max Thermal</span>
+                              <span className="text-green-400">+{previewItem.thermal}</span>
+                            </div>
+                          )}
+                          {/* Discovery Bonuses */}
+                          {(previewItem.discovery_zone || 0) !== 0 && (
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-gray-400">Zone Discovery</span>
+                              <span className="text-yellow-400">+{previewItem.discovery_zone}%</span>
+                            </div>
+                          )}
+                          {(previewItem.discovery_item || 0) !== 0 && (
+                            <div className="flex justify-between text-[11px]">
+                              <span className="text-gray-400">Item Discovery</span>
+                              <span className="text-yellow-400">+{previewItem.discovery_item}%</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               );

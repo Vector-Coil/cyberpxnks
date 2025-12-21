@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       orderBy = 'i.item_type ASC, i.name ASC';
     }
 
-    // Fetch inventory with equipped status
+    // Fetch inventory with equipped status and arsenal modifiers
     // For stackable items, sum quantities and group by item_id
     // For non-stackable items, return individual rows
     const [inventoryRows] = await pool.execute<any[]>(
@@ -42,14 +42,31 @@ export async function GET(request: NextRequest) {
         SUM(ui.quantity) as quantity,
         MIN(ui.acquired_at) as acquired_at,
         MAX(CASE WHEN ul.item_id IS NOT NULL THEN 1 ELSE 0 END) as is_equipped,
-        MAX(ui.upgrade) as upgrade
+        MAX(ui.upgrade) as upgrade,
+        am.tactical,
+        am.smart_tech,
+        am.offense,
+        am.defense,
+        am.evasion,
+        am.stealth,
+        am.consciousness,
+        am.stamina,
+        am.charge,
+        am.neural,
+        am.thermal,
+        am.discovery_zone,
+        am.discovery_item
       FROM user_inventory ui
       INNER JOIN items i ON ui.item_id = i.id
       LEFT JOIN user_loadout ul ON ul.user_id = ui.user_id AND ul.item_id = i.id
+      LEFT JOIN arsenal_modifiers am ON i.id = am.item_id
       WHERE ui.user_id = ?
       GROUP BY i.id, i.name, i.item_type, i.description, i.credits_cost, 
                i.is_stackable, i.is_equippable, i.is_consumable, 
-               i.required_level, i.model, i.tier, i.image_url
+               i.required_level, i.model, i.tier, i.image_url,
+               am.tactical, am.smart_tech, am.offense, am.defense, am.evasion, am.stealth,
+               am.consciousness, am.stamina, am.charge, am.neural, am.thermal,
+               am.discovery_zone, am.discovery_item
       ORDER BY ${orderBy}`,
       [userId]
     );

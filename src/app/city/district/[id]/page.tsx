@@ -151,7 +151,7 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
           />
         </div>
 
-      <div className="pt-5 pb-2 px-6 flex flex-row gap-1 items-center">
+      <div className="pt-5 pb-2 px-6 flex flex-row gap-3 items-center">
         <button 
           onClick={handleBackToCity}
           className="w-[25px] h-[25px] rounded-full overflow-hidden bg-gray-700 flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors"

@@ -304,7 +304,33 @@ export class StatsService {
       }
     }
 
-    // Step 4: Calculate tech stats (base + hardware + slimsoft)
+    // Step 4: Get arsenal modifiers for metered stats and discovery bonuses
+    const [arsenalRows] = await this.pool.execute(
+      `SELECT 
+        COALESCE(SUM(am.consciousness), 0) as arsenal_consciousness,
+        COALESCE(SUM(am.stamina), 0) as arsenal_stamina,
+        COALESCE(SUM(am.charge), 0) as arsenal_charge,
+        COALESCE(SUM(am.neural), 0) as arsenal_neural,
+        COALESCE(SUM(am.thermal), 0) as arsenal_thermal,
+        COALESCE(SUM(am.discovery_zone), 0) as arsenal_discovery_zone,
+        COALESCE(SUM(am.discovery_item), 0) as arsenal_discovery_item
+      FROM user_loadout ul
+      INNER JOIN arsenal_modifiers am ON ul.item_id = am.item_id
+      WHERE ul.user_id = ? AND ul.slot_type = 'arsenal'`,
+      [this.userId]
+    );
+    
+    const arsenalMods = (arsenalRows as any[])[0] || {
+      arsenal_consciousness: 0,
+      arsenal_stamina: 0,
+      arsenal_charge: 0,
+      arsenal_neural: 0,
+      arsenal_thermal: 0,
+      arsenal_discovery_zone: 0,
+      arsenal_discovery_item: 0
+    };
+
+    // Step 5: Calculate tech stats (base + hardware + slimsoft)
     // Ensure numeric addition by explicitly converting to numbers
     const tech: TechStats = {
       clock_speed: Number(baseStats.clock_speed) + Number(hardware.processor),
@@ -315,7 +341,7 @@ export class StatsService {
       cache: Number(baseStats.cache) + Number(hardware.memory)
     };
 
-    // Step 5: Calculate max values using formulas
+    // Step 6: Calculate max values using formulas + arsenal bonuses
     // Ensure numeric addition by explicitly converting to numbers
     const bandwidth = Math.floor(
       ((Number(hardware.processor) + Number(hardware.memory)) * 
@@ -324,15 +350,15 @@ export class StatsService {
     );
 
     const max: MaxStats = {
-      consciousness: Number(attributes.cognition) * Number(attributes.resilience),
-      stamina: Number(attributes.power) * Number(attributes.resilience),
-      charge: Number(tech.clock_speed) + Number(hardware.cell_capacity),
-      thermal: Number(tech.clock_speed) + Number(tech.cooling), // tech.cooling already includes hardware.heat_sink
-      neural: Number(attributes.cognition) + Number(attributes.resilience) + bandwidth, // Mental capacity based on cognition, resilience, and data processing capability
+      consciousness: Number(attributes.cognition) * Number(attributes.resilience) + Number(arsenalMods.arsenal_consciousness),
+      stamina: Number(attributes.power) * Number(attributes.resilience) + Number(arsenalMods.arsenal_stamina),
+      charge: Number(tech.clock_speed) + Number(hardware.cell_capacity) + Number(arsenalMods.arsenal_charge),
+      thermal: Number(tech.clock_speed) + Number(tech.cooling) + Number(arsenalMods.arsenal_thermal), // tech.cooling already includes hardware.heat_sink
+      neural: Number(attributes.cognition) + Number(attributes.resilience) + bandwidth + Number(arsenalMods.arsenal_neural), // Mental capacity based on cognition, resilience, and data processing capability
       bandwidth: bandwidth
     };
 
-    // Step 6: Calculate combat stats (base + mod, similar to tech stats)
+    // Step 7: Calculate combat stats (base + mod, similar to tech stats)
     const combat: CombatStats = {
       tactical: (stats.base_tac || 0) + (stats.mod_tac || 0),
       smart_tech: (stats.base_smt || 0) + (stats.mod_smt || 0),
