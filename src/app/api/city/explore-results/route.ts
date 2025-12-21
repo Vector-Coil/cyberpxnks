@@ -68,7 +68,9 @@ export async function POST(request: NextRequest) {
     });
     
     let discoveredZone = null;
-    let encounter = null;    let discoveryBonus = 0;
+    let encounter = null;
+    let discoveryBonus = 0;
+
     if (rewardType === 'discovery') {
       // Get undiscovered zones from active districts
       const [undiscoveredZonesRows] = await dbPool.query<RowDataPacket[]>(
@@ -111,6 +113,9 @@ export async function POST(request: NextRequest) {
           'UPDATE user_zone_history SET discovered = ? WHERE id = ?',
           [discoveredZone.id, historyId]
         );
+
+        // +10 XP bonus for discovery
+        discoveryBonus = 10;
 
         // Create an initial entry for the discovered zone
         await dbPool.query(
@@ -161,13 +166,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Apply total XP (base + discovery bonus)
+    const totalXp = baseXp + discoveryBonus;
+    await dbPool.query(
+      'UPDATE users SET xp = xp + ? WHERE id = ?',
+      [totalXp, userId]
+    );
+
     // Build gains text
-    let gainsText = '+75 XP';
+    let gainsText = `+${totalXp} XP`;
     if (discoveredZone) {
       const poiInfo = discoveredZone.poi_count > 0 
         ? ` (${discoveredZone.poi_count} POI${discoveredZone.poi_count !== 1 ? 's' : ''})`
         : '';
-      gainsText += `, 🗺️ Discovered ${discoveredZone.name}${poiInfo}`;
+      gainsText += ` (+10 discovery bonus), 🗺️ Discovered ${discoveredZone.name}${poiInfo}`;
     } else if (encounter) {
       gainsText += `, Encountered ${encounter.name}`;
     }
