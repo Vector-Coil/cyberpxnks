@@ -57,7 +57,7 @@ export async function GET(
         z.name as zone_name
        FROM points_of_interest poi
        LEFT JOIN zones z ON poi.zone_id = z.id
-       WHERE poi.id = ? AND poi.poi_type = 'shop'
+       WHERE poi.id = ?
        LIMIT 1`,
       [shopId]
     );
@@ -66,6 +66,11 @@ export async function GET(
 
     if (!shop) {
       return NextResponse.json({ error: 'Shop not found' }, { status: 404 });
+    }
+
+    // Verify it's a shop (or allow admin shop ID 4)
+    if (shop.poi_type !== 'shop' && shopId !== 4) {
+      return NextResponse.json({ error: 'Not a shop' }, { status: 400 });
     }
 
     // Determine shop type based on location
