@@ -105,9 +105,9 @@ export async function POST(request: NextRequest) {
       userId,
       'action',
       'overnet_scan_completed',
-      xpGained,
+      totalXp,
       null,
-      `Completed Overnet Scan, gained ${xpGained} XP`
+      `Completed Overnet Scan, gained ${totalXp} XP`
     );
 
     // Get updated stats using StatsService to get both current and max values
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       rewardType,
-      xpGained,
+      xpGained: totalXp,
       gainsText,
       discoveredSubnet,
       encounter: encounter ? {

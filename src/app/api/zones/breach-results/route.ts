@@ -144,9 +144,9 @@ export async function POST(request: NextRequest) {
       userId,
       'action',
       'breach_completed',
-      xpGained,
+      totalXp,
       poiId || null,
-      `Completed breach of ${poiName}, gained ${xpGained} XP`
+      `Completed breach of ${poiName}, gained ${totalXp} XP`
     );
 
     // Check for level up

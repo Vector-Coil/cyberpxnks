@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      xpGained: 75,
+      xpGained: totalXp,
       rewardType,
       discoveredZone: discoveredZone ? {
         id: discoveredZone.id,
