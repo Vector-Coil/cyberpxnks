@@ -18,6 +18,8 @@ interface Zone {
   district_name?: string;
   description?: string;
   image_url?: string;
+  shop_count?: number;
+  terminal_count?: number;
 }
 
 interface District {
@@ -417,7 +419,26 @@ export default function CityPage() {
                       )}
                       <span className="pill-cloud-gray uppercase flex-shrink-0">{zone.zone_type_name || zone.zone_type}</span>
                     </div>
-                    <div className="text-white font-bold uppercase text-lg">{zone.name}</div>
+                    <div className="flex items-end justify-between gap-2">
+                      <div className="text-white font-bold uppercase text-lg">{zone.name}</div>
+                      {/* POI Indicators */}
+                      {((zone.terminal_count || 0) > 0 || (zone.shop_count || 0) > 0) && (
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {(zone.terminal_count || 0) > 0 && (
+                            <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-black/60 rounded text-xs">
+                              <span className="material-symbols-outlined text-cyan-400" style={{ fontSize: '14px' }}>terminal</span>
+                              <span className="text-cyan-400 font-semibold">{zone.terminal_count}</span>
+                            </div>
+                          )}
+                          {(zone.shop_count || 0) > 0 && (
+                            <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-black/60 rounded text-xs">
+                              <span className="material-symbols-outlined text-green-400" style={{ fontSize: '14px' }}>storefront</span>
+                              <span className="text-green-400 font-semibold">{zone.shop_count}</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </a>

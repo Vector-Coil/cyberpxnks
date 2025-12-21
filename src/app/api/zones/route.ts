@@ -12,14 +12,20 @@ export async function GET(request: NextRequest) {
     const pool = await getDbPool();
     const userId = await getUserIdByFid(pool, fid);
 
-    // Fetch discovered zones for this user
+    // Fetch discovered zones for this user with POI counts
     const [zoneRows] = await pool.execute<any[]>(
-      `SELECT DISTINCT z.id, z.name, z.zone_type, z.description, z.image_url, zt.name as zone_type_name, zd.name as district_name
+      `SELECT z.id, z.name, z.zone_type, z.description, z.image_url, 
+              zt.name as zone_type_name, zd.name as district_name,
+              COUNT(DISTINCT CASE WHEN poi.poi_type = 'shop' THEN poi.id END) as shop_count,
+              COUNT(DISTINCT CASE WHEN poi.poi_type != 'shop' THEN poi.id END) as terminal_count
        FROM zones z
-       INNER JOIN user_zone_history uzh ON z.id = uzh.zone_id
+       INNER JOIN user_zone_history uzh ON z.id = uzh.zone_id AND uzh.action_type = 'Discovered'
        LEFT JOIN zone_type zt ON z.zone_type = zt.id
        LEFT JOIN zone_districts zd ON z.district = zd.id
+       LEFT JOIN user_zone_history uzh_poi ON z.id = uzh_poi.zone_id AND uzh_poi.user_id = uzh.user_id AND uzh_poi.poi_id IS NOT NULL
+       LEFT JOIN points_of_interest poi ON uzh_poi.poi_id = poi.id
        WHERE uzh.user_id = ?
+       GROUP BY z.id, z.name, z.zone_type, z.description, z.image_url, zt.name, zd.name
        ORDER BY z.name`,
       [userId]
     );
