@@ -16,41 +16,43 @@ export const DEFAULT_NEURAL_THERMAL_INCREASE = 10;
 
 /**
  * Roll for encounter reward type based on percentages
- * Current distribution (with Contact/Item at 0%):
- * - 35.7% Nothing (just base XP)
- * - Discovery chance varies by progress (10-40%)
+ * Discovery calculation:
+ * - Explore (zone): 0.2% per undiscovered zone + arsenal discovery_zone bonus
+ * - Scout (POI): 28.6% base + arsenal discovery_poi bonus
+ * - Nothing %: 35.7% reduced by discovery bonus
  * - Remainder: Encounter
  */
 export function rollEncounterReward(
   discoveredCount: number = 0,
   totalAvailable: number = 100,
-  itemModifiers: number = 0 // Future: binoculars, flashlights, etc.
+  itemModifiers: number = 0, // Arsenal discovery bonus (discovery_zone, discovery_poi, or discovery_item)
+  discoveryType: 'zone' | 'poi' | 'item' = 'zone' // Type of discovery being rolled
 ): EncounterRewardType {
   const roll = Math.random() * 100;
   
-  // Calculate discovery chance based on progress
-  const progressRatio = totalAvailable > 0 ? discoveredCount / (discoveredCount + totalAvailable) : 1;
-  let discoveryChance = 28.6; // base
+  let discoveryChance = 0;
   
-  // Dynamic scaling based on discovery progress
-  if (progressRatio < 0.25) {
-    discoveryChance = 40; // Early game: more discoveries (0-25% complete)
-  } else if (progressRatio < 0.50) {
-    discoveryChance = 28.6; // Mid game: baseline (25-50% complete)
-  } else if (progressRatio < 0.75) {
-    discoveryChance = 20; // Late game: slower (50-75% complete)
-  } else {
-    discoveryChance = 10; // Final zones: rare (75-100% complete)
+  if (discoveryType === 'zone') {
+    // Explore: 0.2% per undiscovered zone
+    const undiscoveredCount = Math.max(0, totalAvailable - discoveredCount);
+    discoveryChance = undiscoveredCount * 0.2;
+  } else if (discoveryType === 'poi') {
+    // Scout: Fixed baseline
+    discoveryChance = 28.6;
+  } else if (discoveryType === 'item') {
+    // Future item discovery mechanic
+    discoveryChance = 20; // Placeholder baseline
   }
   
-  // Apply item modifiers (for future use with arsenal_modifiers)
+  // Apply arsenal modifiers (discovery_zone, discovery_poi, or discovery_item)
   discoveryChance += itemModifiers;
   
-  // Clamp between 5% and 50%
-  discoveryChance = Math.max(5, Math.min(50, discoveryChance));
+  // Clamp between 0% and 70% to keep game balanced
+  discoveryChance = Math.max(0, Math.min(70, discoveryChance));
   
-  // Redistributed percentages
-  const nothingThreshold = 35.7;
+  // Adjust Nothing threshold based on discovery bonus
+  // Base Nothing is 35.7%, reduced by the item modifier amount
+  let nothingThreshold = Math.max(0, 35.7 - itemModifiers);
   const discoveryThreshold = nothingThreshold + discoveryChance;
   
   if (roll < nothingThreshold) return 'nothing';

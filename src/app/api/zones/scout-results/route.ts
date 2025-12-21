@@ -41,8 +41,18 @@ export async function POST(request: NextRequest) {
       [xpGained, userId]
     );
 
-    // Roll for reward type
-    const rewardType = rollEncounterReward();
+    // Get arsenal discovery_poi bonus from equipped arsenal items
+    const [arsenalBonus] = await pool.execute<RowDataPacket[]>(
+      `SELECT COALESCE(SUM(am.discovery_poi), 0) as discovery_poi_bonus
+       FROM user_loadout ul
+       INNER JOIN arsenal_modifiers am ON ul.item_id = am.item_id
+       WHERE ul.user_id = ? AND ul.slot_type = 'arsenal'`,
+      [userId]
+    );
+    const discoveryPoiBonus = arsenalBonus[0]?.discovery_poi_bonus || 0;
+
+    // Roll for reward type with POI discovery mechanics (28.6% base + arsenal bonus)
+    const rewardType = rollEncounterReward(0, 0, discoveryPoiBonus, 'poi');
     
     let encounter = null;
     let unlockedPOI = null;

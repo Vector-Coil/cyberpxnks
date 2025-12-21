@@ -48,9 +48,18 @@ export async function POST(request: NextRequest) {
     const totalZones = discoveryStats[0]?.total || 1;
     const undiscoveredCount = Math.max(0, totalZones - discoveredCount);
 
-    // Roll for reward type with dynamic discovery probability
-    // TODO: Add item modifiers once arsenal_modifiers table is built
-    const rewardType = rollEncounterReward(discoveredCount, undiscoveredCount, 0);
+    // Get arsenal discovery_zone bonus from equipped arsenal items
+    const [arsenalBonus] = await dbPool.query<RowDataPacket[]>(
+      `SELECT COALESCE(SUM(am.discovery_zone), 0) as discovery_zone_bonus
+       FROM user_loadout ul
+       INNER JOIN arsenal_modifiers am ON ul.item_id = am.item_id
+       WHERE ul.user_id = ? AND ul.slot_type = 'arsenal'`,
+      [userId]
+    );
+    const discoveryZoneBonus = arsenalBonus[0]?.discovery_zone_bonus || 0;
+
+    // Roll for reward type with zone discovery mechanics (0.2% per undiscovered zone + arsenal bonus)
+    const rewardType = rollEncounterReward(discoveredCount, totalZones, discoveryZoneBonus, 'zone');
     logger.info('Explore reward rolled', { 
       fid, 
       userId,
