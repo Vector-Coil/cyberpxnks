@@ -639,17 +639,9 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
       <div className="frame-body pt-0">
 
         {/* District Map */}
-        {zone.district_map_url && (
-          <div className="mb-6 city-map" style={{
-            backgroundImage: `url(${zone.district_map_url})`
-          }}>
-          </div>
-        )}
-
-        {/* Hero Image */}
         <div className="w-full mb-6 overflow-hidden rounded relative">
           {zone.image_url ? (
-            <img src={zone.image_url} alt={zone.name} className="w-full h-auto object-cover" />
+            <img src={zone.district_map_url} alt={zone.name} className="w-full h-auto object-cover" />
           ) : (
             <div className="w-full h-48 bg-gray-700" />
           )}
