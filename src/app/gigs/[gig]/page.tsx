@@ -1,8 +1,10 @@
 import React from 'react';
 import { redirect } from 'next/navigation';
 import { FrameHeader, CxCard, NavStrip } from '../../../components/CxShared';
+import NavDrawer from '../../../components/NavDrawer';
 import { getDbPool } from '../../../lib/db';
 import { getNavStripData } from '../../../lib/navUtils';
+import GigDetailClient from './GigDetailClient';
 
 export default async function GigDetailPage({ params }: { params: any }) {
   const p = await params;
@@ -115,170 +117,70 @@ export default async function GigDetailPage({ params }: { params: any }) {
     }
 
     // Fetch gig history rows and build renderable events (server-side)
-    const historyEvents: React.ReactNode[] = [];
+    const historyEvents: Array<{ type: 'unlocked' | 'refreshed' | 'completed'; date: string; gain?: string | null }> = [];
     try {
       const [historyRows] = await pool.execute<any[]>('SELECT * FROM gig_history WHERE user_id = ? AND gig_id = ? ORDER BY id ASC', [user.id, id]);
       for (const hr of (historyRows as any[])) {
         if (hr.unlocked_at) {
-          historyEvents.push(
-            <div key={`u-${hr.id ?? hr.unlocked_at}`} className="flex items-center gap-3 text-gray-300">
-              <svg className="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 17a1 1 0 100-2 1 1 0 000 2z" fill="currentColor"/><path d="M17 8V7a5 5 0 10-10 0v1H5v11h14V8h-2zM9 7a3 3 0 116 0v1H9V7z" fill="currentColor"/></svg>
-              <div>Gig unlocked {(new Date(hr.unlocked_at)).toLocaleDateString('en-US')}</div>
-            </div>
-          );
+          historyEvents.push({
+            type: 'unlocked',
+            date: hr.unlocked_at
+          });
         }
 
         if ((hr.refreshed_at) || (hr.status && String(hr.status).toUpperCase().includes('REFRESH'))) {
           const d = hr.refreshed_at ?? hr.updated_at ?? hr.unlocked_at;
-          if (d) historyEvents.push(
-            <div key={`r-${hr.id ?? d}`} className="flex items-center gap-3 text-gray-300">
-              <svg className="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 12a9 9 0 10-3.1 6.6L20 20v-5.1l-1.1.1A7 7 0 1119 12h2z" fill="currentColor"/></svg>
-              <div>Gig refresh {(new Date(d)).toLocaleDateString('en-US')}</div>
-            </div>
-          );
+          if (d) {
+            historyEvents.push({
+              type: 'refreshed',
+              date: d
+            });
+          }
         }
 
         if (hr.last_completed_at) {
           const gain = hr.gain ?? hr.xp_gain ?? hr.xp ?? hr.reward ?? hr.points ?? hr.xp_gained ?? null;
-          historyEvents.push(
-            <div key={`c-${hr.id ?? hr.last_completed_at}`} className="flex items-center gap-3 text-gray-300">
-              <svg className="w-5 h-5 text-green-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              <div className="flex items-center gap-2">
-                <div>Completed {(new Date(hr.last_completed_at)).toLocaleDateString('en-US')}</div>
-                {gain ? <span className="pill-cloud-gray">{String(gain)}</span> : null}
-              </div>
-            </div>
-          );
+          historyEvents.push({
+            type: 'completed',
+            date: hr.last_completed_at,
+            gain: gain ? String(gain) : null
+          });
         }
       }
 
       if (historyEvents.length === 0 && Array.isArray(historyRows) && (historyRows as any[]).length > 0) {
         const hr = (historyRows as any[])[0];
-        if (hr.unlocked_at) historyEvents.push(
-          <div key={`u-fallback-${hr.id ?? hr.unlocked_at}`} className="flex items-center gap-3 text-gray-300">
-            <svg className="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 17a1 1 0 100-2 1 1 0 000 2z" fill="currentColor"/><path d="M17 8V7a5 5 0 10-10 0v1H5v11h14V8h-2zM9 7a3 3 0 116 0v1H9V7z" fill="currentColor"/></svg>
-            <div>Gig unlocked {(new Date(hr.unlocked_at)).toLocaleDateString('en-US')}</div>
-          </div>
-        );
+        if (hr.unlocked_at) {
+          historyEvents.push({
+            type: 'unlocked',
+            date: hr.unlocked_at
+          });
+        }
       }
     } catch (e) {
       // eslint-disable-next-line no-console
       console.debug('history fetch failed', e);
     }
 
-    return (
-      <div className="frame-container frame-main">
-        <div className="frame-body pt-6 pb-2 px-6">
-          <NavStrip 
-            username={navData.username}
-            userProfileImage={navData.profileImage}
-            cxBalance={navData.cxBalance}
-          />
-        </div>
-        <div className="pt-5 pb-2 px-6 flex flex-row gap-3">
-          <a href="/gigs" className="w-[25px] h-[25px] rounded-full overflow-hidden bg-gray-700 flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors">
-            <span className="material-symbols-outlined text-white text-xl">chevron_left</span>
-          </a>
-          <div className="masthead">GIGS</div>
-        </div>
-        <div className="frame-body">
+    const gigData = {
+      id,
+      gig_code,
+      title,
+      image_url,
+      description,
+      contact_id,
+      contact_name,
+      status,
+      isNew,
+      requirements
+    };
 
-          <div className="mb-6">
-            <div className="w-full mb-4 overflow-hidden rounded">
-              {image_url ? (
-                <img src={image_url} alt={gig_code} className="w-full h-auto object-cover" />
-              ) : (
-                <div className="w-full h-64 bg-gray-600" />
-              )}
-            </div>
+    const navDataWithDefaults = {
+      ...navData,
+      profileImage: navData.profileImage ?? ''
+    };
 
-            <div className="flex flex-col">
-
-              <div className="text-xl font-bold uppercase text-white mt-2 text-center">
-                {gig_code}
-                {isNew && (
-                  <span className="inline-block ml-2 bg-bright-green text-black text-xs font-semibold px-2 py-0.5 rounded-full shadow-xl animate-pulse">NEW</span>
-                )}
-              </div>
-
-
-
-              <div className="mt-4 mb-3  text-gray-300">{description}</div>
-
-              <div className="mb-1">
-                <span className="meta-heading">Requirements:</span>{' '}
-                {requirements && requirements.length > 0 ? (
-                  <span>
-                    {requirements.map((r, i) => (
-                      <span key={i} className={r.met ? 'text-blue-400' : 'text-red-300'}>{r.text}{i < requirements.length - 1 ? ', ' : ''}</span>
-                    ))}
-                  </span>
-                ) : (
-                  <span className="text-gray-400">None</span>
-                )}
-              </div>
-
-              <div className="mb-3">
-                <span className="meta-heading">Contact:</span>{' '}
-                <a href={`/contacts/${contact_id}`}>{contact_name}</a>
-              </div>
-
-            </div>
-          </div>
-
-          
-            <div className="pb-4">
-
-              <div className="mt-3">
-                {/* CTA button */}
-                {(() => {
-                  const statusNorm = (status ?? '').toString().toUpperCase();
-                  let btnLabel = 'BEGIN GIG';
-                  let isDisabled = false;
-                  let btnClass = 'btn-cx btn-cx-primary btn-cx-full';
-
-                  if (statusNorm === 'COMPLETED') {
-                    btnLabel = 'COMPLETED';
-                    isDisabled = true;
-                    btnClass = 'btn-cx btn-cx-disabled btn-cx-full';
-                  } else if (statusNorm !== '' && statusNorm !== 'UNLOCKED') {
-                    btnLabel = statusNorm === 'LOCKED' ? 'LOCKED' : 'UNAVAILABLE';
-                    isDisabled = true;
-                    btnClass = 'btn-cx btn-cx-disabled btn-cx-full';
-                  }
-
-                  if (isDisabled) {
-                    return (<button className={btnClass} disabled aria-disabled="true">{btnLabel}</button>);
-                  }
-
-                  return (
-                    <a href={`/gigs/${id}/play`}>
-                      <button className={btnClass}>{btnLabel}</button>
-                    </a>
-                  );
-                })()}
-              </div>
-
-              {/* Gig History section */}
-              <div className="card-dark mt-4">
-                <h3 className="text-center meta-heading">Gig History</h3>
-
-                <div className="mt-4 space-y-3">
-                  {historyEvents && historyEvents.length > 0 ? (
-                    historyEvents
-                  ) : (
-                    <div className="text-gray-400 text-center">No history</div>
-                  )}
-                </div>
-
-              </div>
-
-            </div>
-          
-
-        </div>
-            </div>
-    );
+    return <GigDetailClient gigData={gigData} historyEvents={historyEvents} navData={navDataWithDefaults} />;
 
   } catch (err: any) {
     console.error('Gig detail error', err?.stack || err);
