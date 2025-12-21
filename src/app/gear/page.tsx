@@ -35,7 +35,7 @@ export default function GearPage() {
   const [userStats, setUserStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<'acquisition' | 'alphabetical' | 'type'>('acquisition');
-  const [activeTab, setActiveTab] = useState<'all' | 'hardware' | 'software' | 'data' | 'arsenal'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'hardware' | 'software' | 'data' | 'arsenal' | 'consumable'>('all');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
@@ -101,6 +101,8 @@ export default function GearPage() {
         return items.filter(item => 
           ['weapon', 'accessory', 'relic'].includes(item.item_type.toLowerCase())
         );
+      case 'consumable':
+        return items.filter(item => item.item_type.toLowerCase() === 'consumable');
       case 'all':
       default:
         return items;
@@ -188,6 +190,16 @@ export default function GearPage() {
             }`}
           >
             Data
+          </button>
+          <button
+            onClick={() => setActiveTab('consumable')}
+            className={`flex-1 min-w-[80px] py-2 px-3 rounded-lg font-bold uppercase text-xs transition-colors ${
+              activeTab === 'consumable' 
+                ? 'bg-fuschia text-white' 
+                : 'bg-charcoal text-gray-400 hover:bg-charcoal-75'
+            }`}
+          >
+            Consumable
           </button>
         </div>
 

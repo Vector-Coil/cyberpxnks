@@ -62,8 +62,8 @@ export async function POST() {
     
     // Manual mappings for specific districts
     const manualMappings: Record<string, string> = {
-      'Selica City Center': '/images/City_-_core.png',
-      'Skylark': '/images/City_-_southeast.png'
+      'Selica City Center': 'https://vectorcoil.com/cx/images/city-maps/City_-_core.png',
+      'Skylark': 'https://vectorcoil.com/cx/images/city-maps/City_-_southeast.png'
     };
     
     // Add manual mappings first
@@ -92,7 +92,7 @@ export async function POST() {
         if (districtNameLower === fileNameClean || 
             districtNameLower.includes(fileNameClean) ||
             fileNameClean.includes(districtNameLower)) {
-          const imageUrl = `/images/${imageFile}`;
+          const imageUrl = `https://vectorcoil.com/cx/images/city-maps/${imageFile}`;
           districtImageMap.set(district.name, imageUrl);
           matches.push(`✅ Matched: "${district.name}" -> ${imageUrl}`);
         }
