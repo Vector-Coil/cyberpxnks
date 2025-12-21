@@ -271,10 +271,10 @@ export default function CityPage() {
           </div>
 
           {/* Explore Card Overlay */}
-          <div className="absolute top-5 left-5 right-5">
+          <div className="absolute top-5 left-5 right-5" style={{ opacity: 0.95 }}>
             <CxCard>
               {!showResults && !activeExplore && (
-                <div className="flex flex-col justify-between gap-1">
+                <div className="flex flex-col justify-between">
                   <button 
                     className={`btn-cx btn-cx-primary ${!canExplore ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onClick={handleExploreClick}
@@ -282,7 +282,7 @@ export default function CityPage() {
                   >
                     EXPLORE
                   </button>
-                  <div className="modal-body-data text-center">Go out into the city and discover new zones.</div>
+                  <div className="modal-body-data text-center mt-1">Go out into the city and discover new zones.</div>
                 </div>
               )}
 
