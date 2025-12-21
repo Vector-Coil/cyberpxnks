@@ -10,6 +10,7 @@ interface District {
   id: number;
   name: string;
   description?: string;
+  image_url?: string;
 }
 
 interface Zone {
@@ -161,8 +162,10 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
       </div>
 
       <div className="frame-body">
-        {/* City Map */}
-        <CxCard className="mb-6 city-map">
+        {/* District Map */}
+        <CxCard className="mb-6 city-map" style={district?.image_url ? {
+          backgroundImage: `url(${district.image_url})`
+        } : undefined}>
         </CxCard>
 
         <div className="text-center mb-6">

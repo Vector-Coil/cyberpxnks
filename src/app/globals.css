@@ -179,8 +179,8 @@
 }
 
 .city-map {
-    background: url('/images/City_-_Downsize.png');
     background-size: cover;
+    background-position: center;
     width: 100%;
     aspect-ratio: 1 / 1;
 }

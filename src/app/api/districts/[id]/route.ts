@@ -24,7 +24,7 @@ export async function GET(
 
     // Fetch district info
     const [districtRows]: any = await pool.execute(
-      `SELECT id, name, description 
+      `SELECT id, name, description, image_url 
        FROM zone_districts 
        WHERE id = ?`,
       [districtId]

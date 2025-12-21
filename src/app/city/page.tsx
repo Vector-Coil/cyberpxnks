@@ -357,7 +357,9 @@ export default function CityPage() {
         </CxCard>
 
         {/* City Map */}
-        <CxCard className="mb-6 city-map">
+        <CxCard className="mb-6 city-map" style={{
+          backgroundImage: 'url(https://vectorcoil.com/cx/images/city-map/City_-_Downsize.png)'
+        }}>
         </CxCard>
 
         {/* Districts Section */}

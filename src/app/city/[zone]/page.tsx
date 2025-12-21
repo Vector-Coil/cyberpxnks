@@ -19,6 +19,7 @@ interface Zone {
   zone_type_name?: string;
   district?: number;
   district_name?: string;
+  district_map_url?: string;
   description: string;
   image_url?: string;
 }
@@ -636,6 +637,14 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
       </div>
 
       <div className="frame-body pt-0">
+
+        {/* District Map */}
+        {zone.district_map_url && (
+          <CxCard className="mb-6 city-map" style={{
+            backgroundImage: `url(${zone.district_map_url})`
+          }}>
+          </CxCard>
+        )}
 
         {/* Hero Image */}
         <div className="w-full mb-6 overflow-hidden rounded relative">
