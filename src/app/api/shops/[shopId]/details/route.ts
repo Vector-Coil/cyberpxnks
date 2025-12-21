@@ -52,8 +52,6 @@ export async function GET(
         poi.image_url,
         poi.zone_id,
         poi.subnet_id,
-        poi.shopkeeper_name,
-        poi.shopkeeper_quote,
         z.name as zone_name
        FROM points_of_interest poi
        LEFT JOIN zones z ON poi.zone_id = z.id

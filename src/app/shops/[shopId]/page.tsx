@@ -64,19 +64,33 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
     async function loadShopData() {
       try {
         setLoading(true);
+        console.log('[Shop] Loading shop data for ID:', shopId, 'User FID:', userFid);
+        
         const [shopRes, inventoryRes, statsRes] = await Promise.all([
           fetch(`/api/shops/${shopId}/details?fid=${userFid}`),
           fetch(`/api/shops/${shopId}/inventory`),
           fetch(`/api/stats?fid=${userFid}`)
         ]);
 
+        console.log('[Shop] API responses:', { 
+          shop: shopRes.status, 
+          inventory: inventoryRes.status, 
+          stats: statsRes.status 
+        });
+
         if (shopRes.ok) {
           const shopData = await shopRes.json();
+          console.log('[Shop] Shop data:', shopData);
           setShop(shopData);
+        } else {
+          const errorData = await shopRes.json();
+          console.error('[Shop] Shop details error:', errorData);
+          setError(errorData.error || 'Failed to load shop');
         }
 
         if (inventoryRes.ok) {
           const invData = await inventoryRes.json();
+          console.log('[Shop] Inventory data:', invData);
           setInventory(invData.items || []);
           setIsAdminShop(invData.isAdminShop || false);
         }
