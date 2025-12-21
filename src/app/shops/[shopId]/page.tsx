@@ -56,6 +56,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isAdminShop, setIsAdminShop] = useState(false);
 
   useEffect(() => {
     if (!shopId || Number.isNaN(shopId) || !userFid || isAuthLoading) return;
@@ -77,6 +78,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
         if (inventoryRes.ok) {
           const invData = await inventoryRes.json();
           setInventory(invData.items || []);
+          setIsAdminShop(invData.isAdminShop || false);
         }
 
         if (statsRes.ok) {
@@ -113,7 +115,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
         throw new Error(data.error || 'Purchase failed');
       }
 
-      setSuccess(`Purchased ${data.item.name}!`);
+      setSuccess(isAdminShop ? `Added ${data.item.name} to inventory!` : `Purchased ${data.item.name}!`);
       
       // Refresh inventory
       const invRes = await fetch(`/api/shops/${shopId}/inventory`);
@@ -131,6 +133,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
   };
 
   const canPurchase = (item: ShopItem): boolean => {
+    if (isAdminShop) return true; // Admin shop - always allow
     if (item.required_level && userLevel < item.required_level) return false;
     if (item.required_street_cred && userStreetCred < item.required_street_cred) return false;
     if (item.currency === 'credits' && (navData?.cxBalance || 0) < item.price) return false;
@@ -283,16 +286,20 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
 
                       <div className="flex items-center justify-between">
                         <div className="text-white font-bold">
-                          {item.price} {item.currency === 'credits' ? '¢' : 'SC'}
+                          {isAdminShop ? (
+                            <span className="text-green-400">FREE</span>
+                          ) : (
+                            <>{item.price} {item.currency === 'credits' ? '¢' : 'SC'}</>
+                          )}
                         </div>
                         <button
-                          onClick={() => handlePurchase(item.id)}
-                          disabled={!canPurchase(item) || purchasing === item.id}
+                          onClick={() => handlePurchase(item.item_id || item.id)}
+                          disabled={!canPurchase(item) || purchasing === (item.item_id || item.id)}
                           className={`cx-btn-primary px-4 py-2 text-xs ${
-                            !canPurchase(item) || purchasing === item.id ? 'opacity-50 cursor-not-allowed' : ''
+                            !canPurchase(item) || purchasing === (item.item_id || item.id) ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
                         >
-                          {purchasing === item.id ? 'BUYING...' : 'BUY'}
+                          {purchasing === (item.item_id || item.id) ? (isAdminShop ? 'ADDING...' : 'BUYING...') : (isAdminShop ? 'ADD' : 'BUY')}
                         </button>
                       </div>
                     </div>

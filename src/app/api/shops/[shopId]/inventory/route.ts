@@ -17,6 +17,32 @@ export async function GET(
 
     const pool = await getDbPool();
 
+    // Admin shop (ID 4) - return ALL items from items table
+    if (shopId === 4) {
+      const [allItemsRows] = await pool.execute<any[]>(
+        `SELECT 
+          i.id as item_id,
+          4 as shop_id,
+          i.name,
+          i.description,
+          i.item_type,
+          i.id,
+          0 as price,
+          'credits' as currency,
+          -1 as stock,
+          NULL as required_level,
+          NULL as required_street_cred,
+          i.image_url
+         FROM items i
+         ORDER BY i.item_type, i.name`
+      );
+
+      return NextResponse.json({
+        items: allItemsRows,
+        isAdminShop: true
+      });
+    }
+
     // Get shop inventory from shop_inventory table
     const [inventoryRows] = await pool.execute<any[]>(
       `SELECT 

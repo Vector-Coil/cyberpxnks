@@ -30,6 +30,76 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    // Admin shop (ID 4) - special handling
+    if (shopId === 4) {
+      // Only allow admin FID
+      if (fid !== 300187) {
+        return NextResponse.json({ error: 'Admin access only' }, { status: 403 });
+      }
+
+      // Get item from items table
+      const [itemRows] = await pool.execute<any[]>(
+        'SELECT id, name, description, item_type, image_url FROM items WHERE id = ? LIMIT 1',
+        [itemId]
+      );
+      const item = (itemRows as any[])[0];
+
+      if (!item) {
+        return NextResponse.json({ error: 'Item not found' }, { status: 404 });
+      }
+
+      // Add to inventory without any checks
+      const connection = await pool.getConnection();
+      await connection.beginTransaction();
+
+      try {
+        if (item.item_type === 'hardware') {
+          await connection.execute(
+            'INSERT INTO user_hardware (user_id, hardware_id, acquired_date) VALUES (?, ?, UTC_TIMESTAMP())',
+            [user.id, item.id]
+          );
+        } else if (item.item_type === 'slimsoft') {
+          await connection.execute(
+            'INSERT INTO user_slimsoft (user_id, slimsoft_id, acquired_date) VALUES (?, ?, UTC_TIMESTAMP())',
+            [user.id, item.id]
+          );
+        } else if (item.item_type === 'consumable' || item.item_type === 'gear') {
+          await connection.execute(
+            `INSERT INTO user_inventory (user_id, item_type, item_id, quantity, acquired_date) 
+             VALUES (?, ?, ?, 1, UTC_TIMESTAMP())
+             ON DUPLICATE KEY UPDATE quantity = quantity + 1`,
+            [user.id, item.item_type, item.id]
+          );
+        }
+
+        await logActivity(
+          user.id,
+          'shop',
+          'admin_grant',
+          0,
+          shopId,
+          `Admin granted ${item.name}`
+        );
+
+        await connection.commit();
+        connection.release();
+
+        return NextResponse.json({
+          success: true,
+          item: {
+            name: item.name,
+            type: item.item_type
+          },
+          cost: 0,
+          currency: 'admin'
+        });
+      } catch (err) {
+        await connection.rollback();
+        connection.release();
+        throw err;
+      }
+    }
+
     // Get shop item details
     const [itemRows] = await pool.execute<any[]>(
       `SELECT 
