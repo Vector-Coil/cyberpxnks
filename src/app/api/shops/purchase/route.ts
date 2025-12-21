@@ -53,24 +53,13 @@ export async function POST(request: NextRequest) {
       await connection.beginTransaction();
 
       try {
-        if (item.item_type === 'hardware') {
-          await connection.execute(
-            'INSERT INTO user_hardware (user_id, hardware_id, acquired_date) VALUES (?, ?, UTC_TIMESTAMP())',
-            [user.id, item.id]
-          );
-        } else if (item.item_type === 'slimsoft') {
-          await connection.execute(
-            'INSERT INTO user_slimsoft (user_id, slimsoft_id, acquired_date) VALUES (?, ?, UTC_TIMESTAMP())',
-            [user.id, item.id]
-          );
-        } else if (item.item_type === 'consumable' || item.item_type === 'gear') {
-          await connection.execute(
-            `INSERT INTO user_inventory (user_id, item_type, item_id, quantity, acquired_date) 
-             VALUES (?, ?, ?, 1, UTC_TIMESTAMP())
-             ON DUPLICATE KEY UPDATE quantity = quantity + 1`,
-            [user.id, item.item_type, item.id]
-          );
-        }
+        // All items go into user_inventory table
+        await connection.execute(
+          `INSERT INTO user_inventory (user_id, item_id, quantity, acquired_at) 
+           VALUES (?, ?, 1, UTC_TIMESTAMP())
+           ON DUPLICATE KEY UPDATE quantity = quantity + 1`,
+          [user.id, item.id]
+        );
 
         await logActivity(
           user.id,
@@ -167,28 +156,13 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Handle item based on type
-      if (item.item_type === 'hardware') {
-        // Add to user_hardware
-        await connection.execute(
-          'INSERT INTO user_hardware (user_id, hardware_id, acquired_date) VALUES (?, ?, UTC_TIMESTAMP())',
-          [user.id, item.item_id]
-        );
-      } else if (item.item_type === 'slimsoft') {
-        // Add to user_slimsoft
-        await connection.execute(
-          'INSERT INTO user_slimsoft (user_id, slimsoft_id, acquired_date) VALUES (?, ?, UTC_TIMESTAMP())',
-          [user.id, item.item_id]
-        );
-      } else if (item.item_type === 'consumable' || item.item_type === 'gear') {
-        // Add to user_inventory (generic inventory table)
-        await connection.execute(
-          `INSERT INTO user_inventory (user_id, item_type, item_id, quantity, acquired_date) 
-           VALUES (?, ?, ?, 1, UTC_TIMESTAMP())
-           ON DUPLICATE KEY UPDATE quantity = quantity + 1`,
-          [user.id, item.item_type, item.item_id]
-        );
-      }
+      // Handle item - all items go into user_inventory table
+      await connection.execute(
+        `INSERT INTO user_inventory (user_id, item_id, quantity, acquired_at) 
+         VALUES (?, ?, 1, UTC_TIMESTAMP())
+         ON DUPLICATE KEY UPDATE quantity = quantity + 1`,
+        [user.id, item.item_id]
+      );
 
       // Update stock if not unlimited
       if (item.stock > 0) {
