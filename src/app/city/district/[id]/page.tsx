@@ -163,10 +163,10 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
 
       <div className="frame-body">
         {/* District Map */}
-        <CxCard className="mb-6 city-map" style={district?.image_url ? {
+        <div className="mb-6 city-map" style={district?.image_url ? {
           backgroundImage: `url(${district.image_url})`
         } : undefined}>
-        </CxCard>
+        </div>
 
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-white uppercase mb-2">{district.name}</h1>

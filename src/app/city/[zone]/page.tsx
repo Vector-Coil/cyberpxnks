@@ -640,10 +640,10 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
 
         {/* District Map */}
         {zone.district_map_url && (
-          <CxCard className="mb-6 city-map" style={{
+          <div className="mb-6 city-map" style={{
             backgroundImage: `url(${zone.district_map_url})`
           }}>
-          </CxCard>
+          </div>
         )}
 
         {/* Hero Image */}
