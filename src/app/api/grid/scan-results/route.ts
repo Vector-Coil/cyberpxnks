@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
            xp_data = ?, 
            gains_data = ? 
        WHERE id = ?`,
-      [xpGained, gainsText, historyId]
+      [totalXp, gainsText, historyId]
     );
 
     // Restore bandwidth and reset loads using StatsService
