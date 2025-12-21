@@ -18,16 +18,44 @@ export const DEFAULT_NEURAL_THERMAL_INCREASE = 10;
  * Roll for encounter reward type based on percentages
  * Current distribution (with Contact/Item at 0%):
  * - 35.7% Nothing (just base XP)
- * - 28.6% Discovery (new zone/POI)
- * - 35.7% Encounter
+ * - Discovery chance varies by progress (10-40%)
+ * - Remainder: Encounter
  */
-export function rollEncounterReward(): EncounterRewardType {
+export function rollEncounterReward(
+  discoveredCount: number = 0,
+  totalAvailable: number = 100,
+  itemModifiers: number = 0 // Future: binoculars, flashlights, etc.
+): EncounterRewardType {
   const roll = Math.random() * 100;
   
-  // Redistributed percentages (Contact and Item at 0% for now)
-  if (roll < 35.7) return 'nothing';
-  if (roll < 64.3) return 'discovery'; // 35.7 + 28.6
-  return 'encounter'; // remaining 35.7%
+  // Calculate discovery chance based on progress
+  const progressRatio = totalAvailable > 0 ? discoveredCount / (discoveredCount + totalAvailable) : 1;
+  let discoveryChance = 28.6; // base
+  
+  // Dynamic scaling based on discovery progress
+  if (progressRatio < 0.25) {
+    discoveryChance = 40; // Early game: more discoveries (0-25% complete)
+  } else if (progressRatio < 0.50) {
+    discoveryChance = 28.6; // Mid game: baseline (25-50% complete)
+  } else if (progressRatio < 0.75) {
+    discoveryChance = 20; // Late game: slower (50-75% complete)
+  } else {
+    discoveryChance = 10; // Final zones: rare (75-100% complete)
+  }
+  
+  // Apply item modifiers (for future use with arsenal_modifiers)
+  discoveryChance += itemModifiers;
+  
+  // Clamp between 5% and 50%
+  discoveryChance = Math.max(5, Math.min(50, discoveryChance));
+  
+  // Redistributed percentages
+  const nothingThreshold = 35.7;
+  const discoveryThreshold = nothingThreshold + discoveryChance;
+  
+  if (roll < nothingThreshold) return 'nothing';
+  if (roll < discoveryThreshold) return 'discovery';
+  return 'encounter';
 }
 
 /**

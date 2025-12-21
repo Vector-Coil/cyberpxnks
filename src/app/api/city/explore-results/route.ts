@@ -34,9 +34,31 @@ export async function POST(request: NextRequest) {
       [userId]
     );
 
-    // Roll for reward type (35.7% nothing, 28.6% discovery, 35.7% encounter)
-    const rewardType = rollEncounterReward();
-    logger.debug('Explore reward rolled', { fid, rewardType });
+    // Get user's discovery progress for dynamic probability
+    const [discoveryStats] = await dbPool.query<RowDataPacket[]>(
+      `SELECT 
+        (SELECT COUNT(DISTINCT zone_id) FROM user_zone_history WHERE user_id = ? AND zone_id IS NOT NULL) as discovered,
+        (SELECT COUNT(*) FROM zones z 
+         INNER JOIN zone_districts zd ON z.district = zd.id 
+         WHERE zd.active = 1) as total
+      `,
+      [userId]
+    );
+    const discoveredCount = discoveryStats[0]?.discovered || 0;
+    const totalZones = discoveryStats[0]?.total || 1;
+    const undiscoveredCount = Math.max(0, totalZones - discoveredCount);
+
+    // Roll for reward type with dynamic discovery probability
+    // TODO: Add item modifiers once arsenal_modifiers table is built
+    const rewardType = rollEncounterReward(discoveredCount, undiscoveredCount, 0);
+    logger.info('Explore reward rolled', { 
+      fid, 
+      userId,
+      rewardType, 
+      discoveredCount, 
+      undiscoveredCount,
+      progressRatio: (discoveredCount / totalZones).toFixed(2)
+    });
     
     let discoveredZone = null;
     let encounter = null;
@@ -44,10 +66,12 @@ export async function POST(request: NextRequest) {
     if (rewardType === 'discovery') {
       // Get undiscovered zones from active districts
       const [undiscoveredZonesRows] = await dbPool.query<RowDataPacket[]>(
-        `SELECT z.id, z.name, z.zone_type, z.district, z.description, z.image_url 
+        `SELECT z.id, z.name, z.zone_type, z.district, z.description, z.image_url,
+                zd.name as district_name,
+                (SELECT COUNT(*) FROM points_of_interest WHERE zone_id = z.id) as poi_count
          FROM zones z
          INNER JOIN zone_districts zd ON z.district = zd.id
-         WHERE zd.active = true
+         WHERE zd.active = 1
            AND z.id NOT IN (
              SELECT DISTINCT zone_id 
              FROM user_zone_history 
@@ -57,9 +81,24 @@ export async function POST(request: NextRequest) {
          LIMIT 1`,
         [userId]
       );
+      
+      logger.info('Zone discovery query executed', {
+        userId,
+        fid,
+        zonesFound: undiscoveredZonesRows.length
+      });
 
       if (undiscoveredZonesRows.length > 0) {
         discoveredZone = undiscoveredZonesRows[0];
+        
+        logger.info('Zone discovered!', {
+          userId,
+          fid,
+          zoneName: discoveredZone.name,
+          zoneId: discoveredZone.id,
+          district: discoveredZone.district_name,
+          poiCount: discoveredZone.poi_count
+        });
 
         // Update history with discovered zone ID
         await dbPool.query(
@@ -82,11 +121,18 @@ export async function POST(request: NextRequest) {
           'zone_discovered',
           null,
           discoveredZone.id,
-          `Discovered ${discoveredZone.name}`
+          `Discovered ${discoveredZone.name} in ${discoveredZone.district_name}`
         );
 
         // Trigger junk message with 1-in-20 probability
         await triggerJunkMessageWithProbability(userId, 0.05, 'ZONE_DISCOVERY');
+      } else {
+        logger.warn('Discovery rolled but no zones available', {
+          userId,
+          fid,
+          discoveredCount,
+          totalZones
+        });
       }
     } else if (rewardType === 'encounter') {
       // Get random encounter for city context (zone_id = 1 for generic city encounters)
@@ -112,7 +158,10 @@ export async function POST(request: NextRequest) {
     // Build gains text
     let gainsText = '+75 XP';
     if (discoveredZone) {
-      gainsText += `, Discovered ${discoveredZone.name}`;
+      const poiInfo = discoveredZone.poi_count > 0 
+        ? ` (${discoveredZone.poi_count} POI${discoveredZone.poi_count !== 1 ? 's' : ''})`
+        : '';
+      gainsText += `, 🗺️ Discovered ${discoveredZone.name}${poiInfo}`;
     } else if (encounter) {
       gainsText += `, Encountered ${encounter.name}`;
     }
@@ -160,7 +209,16 @@ export async function POST(request: NextRequest) {
       success: true,
       xpGained: 75,
       rewardType,
-      discoveredZone,
+      discoveredZone: discoveredZone ? {
+        id: discoveredZone.id,
+        name: discoveredZone.name,
+        zoneType: discoveredZone.zone_type,
+        district: discoveredZone.district,
+        districtName: discoveredZone.district_name,
+        description: discoveredZone.description,
+        imageUrl: discoveredZone.image_url,
+        poiCount: discoveredZone.poi_count
+      } : null,
       encounter: encounter ? {
         id: encounter.id,
         name: encounter.name,
@@ -168,6 +226,12 @@ export async function POST(request: NextRequest) {
         sentiment: encounter.default_sentiment,
         imageUrl: encounter.image_url
       } : null,
+      discoveryProgress: {
+        discovered: discoveredCount,
+        total: totalZones,
+        remaining: undiscoveredCount,
+        percentage: Math.round((discoveredCount / totalZones) * 100)
+      },
       levelUp: levelUpData?.leveledUp ? levelUpData : null
     });
   } catch (error: any) {
