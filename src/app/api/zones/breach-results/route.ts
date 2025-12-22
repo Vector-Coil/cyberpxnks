@@ -170,6 +170,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      historyId: historyId,
       xpGained: totalXp,
       rewardType,
       encounter: encounter ? {

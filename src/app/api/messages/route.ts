@@ -1,30 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../lib/db';
+import { validateFid, handleApiError } from '../../../lib/api/errors';
+import { getUserIdByFid } from '../../../lib/api/userUtils';
 
 export async function GET(request: NextRequest) {
-  const searchParams = request.nextUrl.searchParams;
-  const fid = searchParams.get('fid');
-  const sort = searchParams.get('sort') || 'newest';
-  const contactId = searchParams.get('contact_id');
-
-  if (!fid) {
-    return NextResponse.json({ error: 'Missing fid parameter' }, { status: 400 });
-  }
-
-  const pool = await getDbPool();
-
   try {
-    // Get user ID
-    const [userRows] = await pool.execute(
-      'SELECT id FROM users WHERE fid = ? LIMIT 1',
-      [fid]
-    );
-    
-    if (!(userRows as any).length) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-    
-    const userId = (userRows as any)[0].id;
+    const searchParams = request.nextUrl.searchParams;
+    const fid = validateFid(searchParams.get('fid'));
+    const sort = searchParams.get('sort') || 'newest';
+    const contactId = searchParams.get('contact_id');
+
+    const pool = await getDbPool();
+    const userId = await getUserIdByFid(pool, fid);
 
     // Build query based on sort/filter options
     // Union query to get both regular messages and junk messages
@@ -100,7 +87,6 @@ export async function GET(request: NextRequest) {
       contactId: contactId || null
     });
   } catch (error: any) {
-    console.error('Error fetching messages:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    return handleApiError(error, 'Failed to fetch messages');
   }
 }

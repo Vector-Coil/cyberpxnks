@@ -71,6 +71,31 @@ export async function GET(
       return NextResponse.json({ error: 'Not a shop' }, { status: 400 });
     }
 
+    // Check if user is at the correct location for physical shops
+    if (shop.zone_id) {
+      // This is a physical shop in a zone - check user's location
+      const [userLocationRows] = await pool.execute<any[]>(
+        `SELECT current_zone_id FROM users WHERE id = ? LIMIT 1`,
+        [userId]
+      );
+      
+      const userZoneId = (userLocationRows as any[])[0]?.current_zone_id;
+      
+      if (userZoneId !== shop.zone_id) {
+        logger.info('User attempted to access shop at wrong location', { 
+          userId, 
+          shopId, 
+          requiredZone: shop.zone_id, 
+          userZone: userZoneId 
+        });
+        return NextResponse.json({ 
+          error: 'You must be at this location to access this shop',
+          requiredZone: shop.zone_name,
+          requiredZoneId: shop.zone_id
+        }, { status: 403 });
+      }
+    }
+
     // Determine shop type based on location
     let shop_type: 'physical' | 'virtual' | 'protocol' = 'physical';
     if (shop.subnet_id) {

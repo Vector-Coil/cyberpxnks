@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     const [activeJobsRows] = await pool.execute<any[]>(
       `SELECT COUNT(*) as active_count FROM user_zone_history
        WHERE user_id = ? 
-       AND action_type IN ('Breached', 'Scouted', 'Exploring')
+       AND action_type IN ('Breached', 'Scouted', 'Exploring', 'RemoteBreach', 'OvernetScan')
        AND (result_status IS NULL OR result_status = '')
        LIMIT 1`,
       [user.id]

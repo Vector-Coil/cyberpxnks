@@ -162,16 +162,16 @@ export async function POST(request: NextRequest) {
       logger.info('Consumable used successfully', {
         userId,
         itemId,
-        quantityBefore: inventoryItem.quantity,
-        quantityAfter: inventoryItem.quantity - 1
+        quantityBefore: parseInt(inventoryItem.quantity, 10),
+        quantityAfter: parseInt(inventoryItem.quantity, 10) - 1
       });
 
       return NextResponse.json({
         success: true,
         item: inventoryItem.name,
         effects: appliedEffects,
-        remainingQuantity: inventoryItem.quantity - 1,
-        quantityBefore: inventoryItem.quantity
+        remainingQuantity: parseInt(inventoryItem.quantity, 10) - 1,
+        quantityBefore: parseInt(inventoryItem.quantity, 10)
       });
 
     } catch (err) {

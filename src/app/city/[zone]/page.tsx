@@ -491,7 +491,7 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
   const isAtLocation = userLocation === zoneId;
   
   // Check for any physical actions in progress at current location
-  // Only physical breaches block travel, not remote breaches
+  // Physical actions (Scout and physical Breach) block travel
   const hasPhysicalBreachInProgress = history.some(h => 
     h.action_type === 'Breached' && 
     h.end_time && 
@@ -499,6 +499,7 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
     new Date(h.end_time).getTime() > Date.now()
   );
   
+  // Include Scouting action as a physical action that blocks travel
   const hasPhysicalActionInProgress = activeScout || hasPhysicalBreachInProgress;
   
   const canTravel = userStats && 

@@ -63,7 +63,8 @@ export async function GET(
       itemId,
       userId,
       hasInventoryItem: !!inventoryItem,
-      quantity: inventoryItem?.quantity || 0
+      quantity: inventoryItem?.quantity || 0,
+      quantityType: typeof inventoryItem?.quantity
     });
 
     // Check if item is equipped
@@ -79,7 +80,7 @@ export async function GET(
     return NextResponse.json({
       item,
       owned: !!inventoryItem,
-      quantity: inventoryItem?.quantity || 0,
+      quantity: inventoryItem ? parseInt(inventoryItem.quantity, 10) || 0 : 0,
       acquired_at: inventoryItem?.acquired_at || null,
       is_equipped: !!loadoutItem,
       slot_name: loadoutItem?.slot_name || null,
