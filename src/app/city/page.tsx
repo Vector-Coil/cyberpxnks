@@ -48,6 +48,7 @@ export default function CityPage() {
   const [zones, setZones] = useState<Zone[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [currentLocationId, setCurrentLocationId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [showExploreModal, setShowExploreModal] = useState(false);
   const [showResults, setShowResults] = useState(false);
@@ -69,12 +70,13 @@ export default function CityPage() {
       
       try {
         // Parallelize all independent API calls for faster loading
-        const [statsRes, zonesRes, exploreRes, historyRes, districtsRes] = await Promise.all([
+        const [statsRes, zonesRes, exploreRes, historyRes, districtsRes, alertsRes] = await Promise.all([
           fetch(`/api/stats?fid=${userFid}`),
           fetch(`/api/zones?fid=${userFid}`),
           fetch(`/api/city/explore-status?fid=${userFid}`),
           fetch('/api/city/all-history'),
-          fetch(`/api/districts?fid=${userFid}`)
+          fetch(`/api/districts?fid=${userFid}`),
+          fetch(`/api/alerts?fid=${userFid}`)
         ]);
 
         // Process user stats
@@ -114,6 +116,15 @@ export default function CityPage() {
           setDistricts(districtsData);
         } else {
           console.error('Failed to fetch districts:', districtsRes.status, await districtsRes.text());
+        }
+
+        // Process user location
+        if (alertsRes.ok) {
+          const alertsData = await alertsRes.json();
+          if (alertsData.location?.zoneId) {
+            setCurrentLocationId(alertsData.location.zoneId);
+            console.log('Current location:', alertsData.location);
+          }
         }
       } catch (err) {
         console.error('Failed to load city data:', err);
@@ -401,53 +412,68 @@ export default function CityPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {zones.map((zone) => (
-              <a 
-                key={zone.id} 
-                href={`/city/${zone.id}`} 
-                className="block"
-              >
-                <div 
-                  className="cx-banner"
-                  style={zone.image_url ? { 
-                    backgroundImage: `url(${zone.image_url})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center'
-                  } : undefined}
+            {zones.map((zone) => {
+              const isCurrentLocation = zone.id === currentLocationId;
+              return (
+                <a 
+                  key={zone.id} 
+                  href={`/city/${zone.id}`} 
+                  className="block"
                 >
-                  <div className="banner-left flex flex-col gap-2">
-                    <div className="flex items-start justify-between gap-2">
-                      {zone.district_name && (
-                        <span className="px-2 py-1 bg-fuschia text-white text-xs font-bold uppercase rounded flex-shrink-0">
-                          {zone.district_name}
-                        </span>
-                      )}
-                      <span className="pill-cloud-gray uppercase flex-shrink-0">{zone.zone_type_name || zone.zone_type}</span>
-                    </div>
-                    <div className="flex items-end justify-between gap-2">
-                      <div className="text-white font-bold uppercase text-lg">{zone.name}</div>
-                      {/* POI Indicators */}
-                      {((zone.terminal_count || 0) > 0 || (zone.shop_count || 0) > 0) && (
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                          {(zone.terminal_count || 0) > 0 && (
-                            <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-black/60 rounded text-xs">
-                              <span className="material-symbols-outlined text-cyan-400" style={{ fontSize: '14px' }}>terminal</span>
-                              <span className="text-cyan-400 font-semibold">{zone.terminal_count}</span>
-                            </div>
+                  <div 
+                    className={`cx-banner ${isCurrentLocation ? 'ring-2 ring-cyan-400 shadow-lg shadow-cyan-400/50' : ''}`}
+                    style={zone.image_url ? { 
+                      backgroundImage: `url(${zone.image_url})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center'
+                    } : undefined}
+                  >
+                    <div className="banner-left flex flex-col gap-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {zone.district_name && (
+                            <span className="px-2 py-1 bg-fuschia text-white text-xs font-bold uppercase rounded flex-shrink-0">
+                              {zone.district_name}
+                            </span>
                           )}
-                          {(zone.shop_count || 0) > 0 && (
-                            <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-black/60 rounded text-xs">
-                              <span className="material-symbols-outlined text-green-400" style={{ fontSize: '14px' }}>storefront</span>
-                              <span className="text-green-400 font-semibold">{zone.shop_count}</span>
-                            </div>
+                          {isCurrentLocation && (
+                            <span className="px-2 py-1 bg-cyan-400 text-black text-xs font-bold uppercase rounded flex-shrink-0">
+                              CURRENT LOCATION
+                            </span>
                           )}
                         </div>
-                      )}
+                        <span className="pill-cloud-gray uppercase flex-shrink-0">{zone.zone_type_name || zone.zone_type}</span>
+                      </div>
+                      <div className="flex items-end justify-between gap-2">
+                        <div className="text-white font-bold uppercase text-lg flex items-center gap-2">
+                          {isCurrentLocation && (
+                            <span className="material-symbols-outlined text-cyan-400" style={{ fontSize: '20px' }}>location_on</span>
+                          )}
+                          {zone.name}
+                        </div>
+                        {/* POI Indicators */}
+                        {((zone.terminal_count || 0) > 0 || (zone.shop_count || 0) > 0) && (
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            {(zone.terminal_count || 0) > 0 && (
+                              <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-black/60 rounded text-xs">
+                                <span className="material-symbols-outlined text-cyan-400" style={{ fontSize: '14px' }}>terminal</span>
+                                <span className="text-cyan-400 font-semibold">{zone.terminal_count}</span>
+                              </div>
+                            )}
+                            {(zone.shop_count || 0) > 0 && (
+                              <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-black/60 rounded text-xs">
+                                <span className="material-symbols-outlined text-green-400" style={{ fontSize: '14px' }}>storefront</span>
+                                <span className="text-green-400 font-semibold">{zone.shop_count}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </a>
-            ))}
+                </a>
+              );
+            })}
           </div>
         )}
 

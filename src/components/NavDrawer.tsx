@@ -140,7 +140,7 @@ const NavDrawer: React.FC<NavDrawerProps> = ({ isOpen, onClose, username, profil
                   }}
                 >
                   <div className="tab-icon">
-                    {!alerts.location.zoneImage && <img src="/icon_crest.png" alt="Location" />}
+                    <img src="/icon_crest.png" alt="Location" />
                   </div>
                   <div className="tab-label text-white" style={{ textShadow: '1px 1px 3px black' }}>
                     Location
