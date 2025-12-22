@@ -37,11 +37,11 @@ export async function GET(req: Request) {
 
     const locationQuery = `
       SELECT 
-        u.current_zone_id,
+        u.location as current_zone_id,
         z.name AS zone_name,
         z.image_url AS zone_image
       FROM users u
-      LEFT JOIN zones z ON u.current_zone_id = z.id
+      LEFT JOIN zones z ON u.location = z.id
       WHERE u.id = ?
       LIMIT 1
     `;
@@ -59,16 +59,23 @@ export async function GET(req: Request) {
     const location = (locationRows as any)[0] || null;
 
     logger.info('Retrieved alerts', { fid, contacts, gigs, messages, unallocatedPoints, location });
+    
+    // Build location object only if we have valid data
+    let locationData = null;
+    if (location && location.current_zone_id) {
+      locationData = {
+        zoneId: location.current_zone_id,
+        zoneName: location.zone_name || 'Unknown Zone',
+        zoneImage: location.zone_image || ''
+      };
+    }
+    
     return NextResponse.json({ 
       contacts, 
       gigs, 
       messages, 
       unallocatedPoints,
-      location: location ? {
-        zoneId: location.current_zone_id,
-        zoneName: location.zone_name,
-        zoneImage: location.zone_image
-      } : null
+      location: locationData
     });
   } catch (err) {
     return handleApiError(err, '/api/alerts');

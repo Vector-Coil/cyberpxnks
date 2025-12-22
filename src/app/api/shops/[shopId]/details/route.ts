@@ -76,11 +76,11 @@ export async function GET(
     if (shop.zone_id) {
       // This is a physical shop in a zone - check user's location
       const [userLocationRows] = await pool.execute<any[]>(
-        `SELECT current_zone_id FROM users WHERE id = ? LIMIT 1`,
+        `SELECT location FROM users WHERE id = ? LIMIT 1`,
         [userId]
       );
       
-      const userZoneId = (userLocationRows as any[])[0]?.current_zone_id;
+      const userZoneId = (userLocationRows as any[])[0]?.location;
       
       if (userZoneId !== shop.zone_id) {
         logger.info('User at wrong location for shop', { 
