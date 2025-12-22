@@ -509,13 +509,17 @@ export default function Dashboard() {
         // Process alerts
         if (alertsRes && alertsRes.ok) {
           const aData = await alertsRes.json();
+          console.log('Dashboard alerts data:', aData);
           const contactsCount = aData?.contacts ?? 0;
           const gigsCount = aData?.gigs ?? 0;
           const messagesCount = aData?.messages ?? 0;
 
           // Set current location data
           if (mounted && aData?.location) {
+            console.log('Setting location:', aData.location);
             setCurrentLocation(aData.location);
+          } else {
+            console.log('No location data in alerts response');
           }
 
           if (mounted) {
@@ -800,6 +804,7 @@ export default function Dashboard() {
         username={navData.username}
         profileImage={navData.profileImage}
         cxBalance={navData.cxBalance}
+        userFid={userFid || undefined}
       />
       <div className="frame-container frame-main">
         <div className="frame-body pt-6 pb-2 px-6">

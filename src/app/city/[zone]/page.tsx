@@ -618,6 +618,7 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
         username={navData.username}
         profileImage={navData.profileImage}
         cxBalance={navData.cxBalance}
+        userFid={userFid || undefined}
       />
       <div className="frame-container frame-city">
         <div className="frame-body pt-6 pb-2 px-6">

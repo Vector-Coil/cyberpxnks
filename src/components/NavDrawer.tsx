@@ -8,6 +8,7 @@ interface NavDrawerProps {
   username: string;
   profileImage?: string;
   cxBalance: number;
+  userFid?: number;
 }
 
 interface Alerts {
@@ -22,7 +23,7 @@ interface Alerts {
   } | null;
 }
 
-const NavDrawer: React.FC<NavDrawerProps> = ({ isOpen, onClose, username, profileImage, cxBalance }) => {
+const NavDrawer: React.FC<NavDrawerProps> = ({ isOpen, onClose, username, profileImage, cxBalance, userFid }) => {
   const [alerts, setAlerts] = useState<Alerts>({ 
     contacts: 0, 
     gigs: 0, 
@@ -32,16 +33,19 @@ const NavDrawer: React.FC<NavDrawerProps> = ({ isOpen, onClose, username, profil
   });
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && userFid) {
       fetchAlerts();
     }
-  }, [isOpen]);
+  }, [isOpen, userFid]);
 
   const fetchAlerts = async () => {
+    if (!userFid) return;
+    
     try {
-      const res = await fetch('/api/alerts');
+      const res = await fetch(`/api/alerts?fid=${userFid}`);
       if (res.ok) {
         const data = await res.json();
+        console.log('NavDrawer alerts data:', data);
         setAlerts({
           contacts: data.contacts || 0,
           gigs: data.gigs || 0,
