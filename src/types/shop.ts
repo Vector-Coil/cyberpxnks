@@ -5,15 +5,16 @@
 export interface ShopItem {
   id: number;
   shop_id: number;
-  name: string;
-  description: string;
-  item_type: 'hardware' | 'slimsoft' | 'consumable' | 'gear';
-  item_id?: number; // References the actual item in hardware/slimsoft tables
+  item_id: number; // References items table (now required)
   price: number;
-  currency: 'credits' | 'street_cred';
   stock: number; // -1 for unlimited
+  stock_replenish?: number; // Hours until stock resets (NULL = no replenish)
   required_level?: number;
   required_street_cred?: number;
+  // Joined from items table:
+  name?: string;
+  description?: string;
+  item_type?: string;
   image_url?: string;
 }
 

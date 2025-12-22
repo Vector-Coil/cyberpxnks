@@ -43,29 +43,102 @@ export async function GET(
       });
     }
 
+    // Get user ID for per-user stock calculations
+    const fidParam = request.nextUrl.searchParams.get('fid');
+    const fid = fidParam ? parseInt(fidParam, 10) : null;
+    
+    let userId = null;
+    if (fid) {
+      const [userRows] = await pool.execute<any[]>(
+        'SELECT id FROM users WHERE fid = ? LIMIT 1',
+        [fid]
+      );
+      userId = (userRows as any[])[0]?.id;
+    }
+
     // Get shop inventory from shop_inventory table
     const [inventoryRows] = await pool.execute<any[]>(
       `SELECT 
         si.id,
         si.shop_id,
-        si.name,
-        si.description,
-        si.item_type,
         si.item_id,
         si.price,
-        si.currency,
         si.stock,
+        si.stock_replenish,
         si.required_level,
         si.required_street_cred,
-        si.image_url
+        i.name,
+        i.description,
+        i.item_type,
+        i.image_url
        FROM shop_inventory si
-       WHERE si.shop_id = ? AND (si.stock > 0 OR si.stock = -1)
-       ORDER BY si.item_type, si.price`,
+       INNER JOIN items i ON si.item_id = i.id
+       WHERE si.shop_id = ?
+       ORDER BY i.item_type, si.price`,
       [shopId]
     );
 
+    // Calculate per-user stock for items with replenishment
+    const items = await Promise.all((inventoryRows as any[]).map(async (item) => {
+      // Skip calculation if no user or no replenishment period set
+      if (!userId || !item.stock_replenish || item.stock === -1) {
+        // Filter out items with 0 stock (no replenishment)
+        if (item.stock === 0) return null;
+        return item;
+      }
+
+      // Get user's purchase history for this specific item in this shop
+      const [purchaseRows] = await pool.execute<any[]>(
+        `SELECT COUNT(*) as purchase_count, MAX(timestamp) as last_purchase
+         FROM shop_transactions
+         WHERE user_id = ? AND shop_id = ? AND item_id = ?
+         GROUP BY item_id`,
+        [userId, shopId, item.item_id]
+      );
+
+      const purchaseData = (purchaseRows as any[])[0];
+      
+      if (!purchaseData) {
+        // User hasn't purchased this item, show full stock
+        return item;
+      }
+
+      const lastPurchase = new Date(purchaseData.last_purchase);
+      const now = new Date();
+      const hoursSinceLastPurchase = (now.getTime() - lastPurchase.getTime()) / (1000 * 60 * 60);
+
+      // If enough time has passed, reset stock
+      if (hoursSinceLastPurchase >= item.stock_replenish) {
+        return item; // Show full stock
+      }
+
+      // Otherwise, calculate remaining stock
+      // Count purchases within the current replenish window
+      const windowStart = new Date(now.getTime() - (item.stock_replenish * 60 * 60 * 1000));
+      const [windowPurchases] = await pool.execute<any[]>(
+        `SELECT COUNT(*) as count
+         FROM shop_transactions
+         WHERE user_id = ? AND shop_id = ? AND item_id = ? AND timestamp >= ?`,
+        [userId, shopId, item.item_id, windowStart]
+      );
+
+      const purchasedInWindow = (windowPurchases as any[])[0]?.count || 0;
+      const remainingStock = Math.max(0, item.stock - purchasedInWindow);
+
+      // Filter out if stock depleted
+      if (remainingStock === 0) return null;
+
+      return {
+        ...item,
+        stock: remainingStock
+      };
+    }));
+
+    // Filter out null items (depleted stock)
+    const availableItems = items.filter(item => item !== null);
+
     return NextResponse.json({
-      items: inventoryRows
+      items: availableItems
     });
   } catch (err: any) {
     return handleApiError(err, 'Failed to fetch shop inventory');

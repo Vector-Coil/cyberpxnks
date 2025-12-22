@@ -89,8 +89,7 @@ export default function ShopCard({
   const canPurchase = (item: ShopItem): boolean => {
     if (item.required_level && userLevel < item.required_level) return false;
     if (item.required_street_cred && userStreetCred < item.required_street_cred) return false;
-    if (item.currency === 'credits' && userCredits < item.price) return false;
-    if (item.currency === 'street_cred' && userStreetCred < item.price) return false;
+    if (userCredits < item.price) return false;
     if (item.stock === 0) return false;
     return true;
   };
@@ -184,7 +183,7 @@ export default function ShopCard({
                     
                     <div className="flex flex-col items-end gap-2">
                       <div className="text-white font-bold text-sm">
-                        {item.price} {item.currency === 'credits' ? '¢' : 'SC'}
+                        {item.price} ¢
                       </div>
                       <button
                         onClick={() => handlePurchase(item.id)}

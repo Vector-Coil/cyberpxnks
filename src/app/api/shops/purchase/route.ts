@@ -79,8 +79,7 @@ export async function POST(request: NextRequest) {
             name: item.name,
             type: item.item_type
           },
-          cost: 0,
-          currency: 'admin'
+          cost: 0
         });
       } catch (err) {
         await connection.rollback();
@@ -92,10 +91,12 @@ export async function POST(request: NextRequest) {
     // Get shop item details
     const [itemRows] = await pool.execute<any[]>(
       `SELECT 
-        id, shop_id, name, description, item_type, item_id, 
-        price, currency, stock, required_level, required_street_cred
-       FROM shop_inventory 
-       WHERE id = ? AND shop_id = ? 
+        si.id, si.shop_id, si.item_id, si.price, si.stock, si.stock_replenish,
+        si.required_level, si.required_street_cred,
+        i.name, i.description, i.item_type, i.image_url
+       FROM shop_inventory si
+       INNER JOIN items i ON si.item_id = i.id
+       WHERE si.id = ? AND si.shop_id = ? 
        LIMIT 1`,
       [itemId, shopId]
     );
@@ -118,19 +119,11 @@ export async function POST(request: NextRequest) {
       }, { status: 403 });
     }
 
-    // Check currency and balance
-    if (item.currency === 'credits') {
-      if (user.credits < item.price) {
-        return NextResponse.json({ 
-          error: `Insufficient credits. Need ${item.price}, have ${user.credits}` 
-        }, { status: 403 });
-      }
-    } else if (item.currency === 'street_cred') {
-      if (user.street_cred < item.price) {
-        return NextResponse.json({ 
-          error: `Insufficient Street Cred. Need ${item.price}, have ${user.street_cred}` 
-        }, { status: 403 });
-      }
+    // Check credits balance
+    if (user.credits < item.price) {
+      return NextResponse.json({ 
+        error: `Insufficient credits. Need ${item.price}, have ${user.credits}` 
+      }, { status: 403 });
     }
 
     // Check stock
@@ -143,18 +136,11 @@ export async function POST(request: NextRequest) {
     await connection.beginTransaction();
 
     try {
-      // Deduct currency
-      if (item.currency === 'credits') {
-        await connection.execute(
-          'UPDATE users SET credits = credits - ? WHERE id = ?',
-          [item.price, user.id]
-        );
-      } else {
-        await connection.execute(
-          'UPDATE users SET street_cred = street_cred - ? WHERE id = ?',
-          [item.price, user.id]
-        );
-      }
+      // Deduct credits
+      await connection.execute(
+        'UPDATE users SET credits = credits - ? WHERE id = ?',
+        [item.price, user.id]
+      );
 
       // Handle item - all items go into user_inventory table
       await connection.execute(
@@ -164,20 +150,41 @@ export async function POST(request: NextRequest) {
         [user.id, item.item_id]
       );
 
-      // Update stock if not unlimited
-      if (item.stock > 0) {
+      // Update stock if not unlimited AND no replenishment system
+      // Items with stock_replenish use per-user purchase history instead
+      if (item.stock > 0 && !item.stock_replenish) {
         await connection.execute(
           'UPDATE shop_inventory SET stock = stock - 1 WHERE id = ?',
           [itemId]
         );
       }
 
+      // For items WITH replenishment, check if user has exceeded their window limit
+      if (item.stock_replenish && item.stock > 0) {
+        const windowStart = new Date(Date.now() - (item.stock_replenish * 60 * 60 * 1000));
+        const [windowPurchases] = await connection.execute<any[]>(
+          `SELECT COUNT(*) as count
+           FROM shop_transactions
+           WHERE user_id = ? AND shop_id = ? AND item_id = ? AND timestamp >= ?`,
+          [user.id, shopId, item.item_id, windowStart]
+        );
+        
+        const purchasedInWindow = (windowPurchases as any[])[0]?.count || 0;
+        if (purchasedInWindow >= item.stock) {
+          await connection.rollback();
+          connection.release();
+          return NextResponse.json({ 
+            error: 'Item temporarily out of stock. Check back later.' 
+          }, { status: 403 });
+        }
+      }
+
       // Record transaction
       await connection.execute(
         `INSERT INTO shop_transactions 
-         (user_id, shop_id, item_id, item_name, price, currency, timestamp) 
-         VALUES (?, ?, ?, ?, ?, ?, UTC_TIMESTAMP())`,
-        [user.id, shopId, itemId, item.name, item.price, item.currency]
+         (user_id, shop_id, item_id, price, timestamp) 
+         VALUES (?, ?, ?, ?, UTC_TIMESTAMP())`,
+        [user.id, shopId, item.item_id, item.price]
       );
 
       // Log activity
@@ -187,7 +194,7 @@ export async function POST(request: NextRequest) {
         'purchase',
         item.price,
         shopId,
-        `Purchased ${item.name} for ${item.price} ${item.currency}`
+        `Purchased ${item.name} for ${item.price} credits`
       );
 
       await connection.commit();
@@ -199,8 +206,7 @@ export async function POST(request: NextRequest) {
           name: item.name,
           type: item.item_type
         },
-        cost: item.price,
-        currency: item.currency
+        cost: item.price
       });
     } catch (err) {
       await connection.rollback();
