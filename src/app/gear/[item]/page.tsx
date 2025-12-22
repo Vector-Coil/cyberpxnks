@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { NavStrip, CxCard } from '../../../components/CxShared';
 import NavDrawer from '../../../components/NavDrawer';
 import ConfirmModal from '../../../components/ConfirmModal';
+import CompactMeterStrip from '../../../components/CompactMeterStrip';
 import { useNavData } from '../../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../../hooks/useAuthenticatedUser';
 import { getItemTypeColor } from '../../../lib/itemUtils';
@@ -200,8 +201,11 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
             userProfileImage={navData.profileImage}
             cxBalance={navData.cxBalance}
             onMenuClick={() => setIsDrawerOpen(true)}
-        />
-      </div>
+          />
+        </div>
+        <div className="frame-body pt-0 pb-2 px-6 mb-2">
+          <CompactMeterStrip meters={navData.meters} />
+        </div>
 
       <div className="pt-5 pb-2 px-6 flex flex-row gap-3">
         <a href="/gear" className="w-[25px] h-[25px] rounded-full overflow-hidden bg-bright-blue flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors">

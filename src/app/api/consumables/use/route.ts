@@ -38,6 +38,13 @@ export async function POST(request: NextRequest) {
 
       const inventoryItem = (inventoryRows as any[])[0];
 
+      logger.info('Consumable use - inventory check', { 
+        userId, 
+        itemId, 
+        quantity: inventoryItem?.quantity,
+        name: inventoryItem?.name 
+      });
+
       if (!inventoryItem) {
         await connection.rollback();
         connection.release();
@@ -152,11 +159,19 @@ export async function POST(request: NextRequest) {
       await connection.commit();
       connection.release();
 
+      logger.info('Consumable used successfully', {
+        userId,
+        itemId,
+        quantityBefore: inventoryItem.quantity,
+        quantityAfter: inventoryItem.quantity - 1
+      });
+
       return NextResponse.json({
         success: true,
         item: inventoryItem.name,
         effects: appliedEffects,
-        remainingQuantity: inventoryItem.quantity - 1
+        remainingQuantity: inventoryItem.quantity - 1,
+        quantityBefore: inventoryItem.quantity
       });
 
     } catch (err) {

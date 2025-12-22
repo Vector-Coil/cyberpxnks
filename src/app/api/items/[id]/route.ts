@@ -59,6 +59,13 @@ export async function GET(
     );
     const inventoryItem = (inventoryRows as any[])[0];
 
+    logger.info('Item detail fetch', {
+      itemId,
+      userId,
+      hasInventoryItem: !!inventoryItem,
+      quantity: inventoryItem?.quantity || 0
+    });
+
     // Check if item is equipped
     const [loadoutRows] = await pool.execute<any[]>(
       `SELECT slot_name, slot_type
