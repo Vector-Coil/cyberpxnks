@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { NavStrip, CxCard } from '../../../components/CxShared';
 import NavDrawer from '../../../components/NavDrawer';
+import ConfirmModal from '../../../components/ConfirmModal';
 import { useNavData } from '../../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../../hooks/useAuthenticatedUser';
 import { getItemTypeColor } from '../../../lib/itemUtils';
@@ -42,6 +43,8 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
   const [itemData, setItemData] = useState<ItemData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [showUseConfirm, setShowUseConfirm] = useState(false);
+  const [isUsing, setIsUsing] = useState(false);
 
   useEffect(() => {
     params.then(({ item }) => {
@@ -75,7 +78,10 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
   }
 
   async function handleUseItem() {
-    if (!userFid || !itemId) return;
+    if (!userFid || !itemId || isUsing) return;
+
+    setIsUsing(true);
+    setShowUseConfirm(false);
 
     try {
       const response = await fetch(`/api/consumables/use?fid=${userFid}`, {
@@ -87,8 +93,7 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
       const result = await response.json();
 
       if (response.ok) {
-        alert(`${result.item} used successfully!\n\nEffects:\n${result.effects.join('\n')}`);
-        // Reload data to update quantity
+        // Success - reload data to update quantity and stats
         await loadData();
       } else {
         alert(`Failed to use item: ${result.error}`);
@@ -96,6 +101,8 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
     } catch (err) {
       console.error('Failed to use consumable:', err);
       alert('An error occurred while using the item');
+    } finally {
+      setIsUsing(false);
     }
   }
 
@@ -349,15 +356,28 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
             <div className="font-bold uppercase mb-3" style={{ color: 'var(--fuschia)' }}>Actions</div>
             <button
               className="btn-cx-primary w-full"
-              onClick={handleUseItem}
+              onClick={() => setShowUseConfirm(true)}
+              disabled={isUsing}
             >
               <span className="material-symbols-outlined text-xl mr-2 align-middle">medication</span>
-              Use Item
+              {isUsing ? 'Using...' : 'Use Item'}
             </button>
           </CxCard>
         )}
       </div>
     </div>
+
+    {/* Use Item Confirmation Modal */}
+    {itemData && (
+      <ConfirmModal
+        isOpen={showUseConfirm}
+        title="Use Item?"
+        description={`Use ${itemData.item.name}? This will consume 1 item from your inventory.`}
+        onCancel={() => setShowUseConfirm(false)}
+        onConfirm={handleUseItem}
+        isConfirming={isUsing}
+      />
+    )}
     </>
   );
 }
