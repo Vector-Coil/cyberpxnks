@@ -625,6 +625,7 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
           <NavStrip 
             username={navData.username}
             userProfileImage={navData.profileImage}
+            credits={navData.credits}
             cxBalance={navData.cxBalance}
             onMenuClick={() => setIsDrawerOpen(true)}
           />

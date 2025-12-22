@@ -71,6 +71,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
       <ProfileLayout
         username={navData.username}
         profileImage={navData.profileImage}
+        credits={navData.credits}
         cxBalance={navData.cxBalance}
       >
         <div className="pt-5 pb-2 px-6 flex flex-row gap-3">

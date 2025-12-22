@@ -195,6 +195,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
       <NavStrip 
         username={navData.username} 
         userProfileImage={navData.profileImage} 
+        credits={navData.credits}
         cxBalance={navData.cxBalance}
         onMenuClick={() => setIsDrawerOpen(true)}
       />

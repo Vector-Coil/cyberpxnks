@@ -170,6 +170,7 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
             <NavStrip 
               username={navData.username}
               userProfileImage={navData.profileImage}
+              credits={navData.credits}
               cxBalance={navData.cxBalance}
               onMenuClick={() => setIsDrawerOpen(true)}
             />
@@ -209,6 +210,7 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
           <NavStrip 
             username={navData.username}
             userProfileImage={navData.profileImage}
+            credits={navData.credits}
             cxBalance={navData.cxBalance}
             onMenuClick={() => setIsDrawerOpen(true)}
           />

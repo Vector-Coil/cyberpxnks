@@ -124,8 +124,7 @@ export default function GearPage() {
         <div className="frame-body pt-6 pb-2 px-6 mb-2">
           <NavStrip 
             username={navData.username}
-            userProfileImage={navData.profileImage}
-            cxBalance={navData.cxBalance}
+            userProfileImage={navData.profileImage}            credits={navData.credits}            cxBalance={navData.cxBalance}
             onMenuClick={() => setIsDrawerOpen(true)}
           />
         </div>

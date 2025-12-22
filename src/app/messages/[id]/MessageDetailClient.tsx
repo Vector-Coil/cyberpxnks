@@ -31,6 +31,7 @@ export default function MessageDetailClient({ message, navData }: MessageDetailC
           <NavStrip 
             username={navData.username}
             userProfileImage={navData.profileImage}
+            credits={navData.credits}
             cxBalance={navData.cxBalance}
             onMenuClick={() => setIsDrawerOpen(true)}
           />

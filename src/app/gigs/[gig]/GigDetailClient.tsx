@@ -40,6 +40,7 @@ export default function GigDetailClient({ gigData, historyEvents, navData }: Gig
           <NavStrip 
             username={navData.username}
             userProfileImage={navData.profileImage}
+            credits={navData.credits}
             cxBalance={navData.cxBalance}
             onMenuClick={() => setIsDrawerOpen(true)}
           />

@@ -93,6 +93,7 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
             <NavStrip 
               username={navData.username}
               userProfileImage={navData.profileImage}
+              credits={navData.credits}
               cxBalance={navData.cxBalance}
               onMenuClick={() => setIsDrawerOpen(true)}
             />
@@ -120,6 +121,7 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
             <NavStrip 
               username={navData.username}
               userProfileImage={navData.profileImage}
+              credits={navData.credits}
               cxBalance={navData.cxBalance}
               onMenuClick={() => setIsDrawerOpen(true)}
             />
@@ -146,6 +148,7 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
           <NavStrip 
             username={navData.username}
             userProfileImage={navData.profileImage}
+            credits={navData.credits}
             cxBalance={navData.cxBalance}
             onMenuClick={() => setIsDrawerOpen(true)}
           />

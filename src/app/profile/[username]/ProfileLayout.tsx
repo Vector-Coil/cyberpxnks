@@ -7,11 +7,12 @@ import NavDrawer from '../../../components/NavDrawer';
 interface ProfileLayoutProps {
   username: string;
   profileImage?: string;
+  credits: number;
   cxBalance: number;
   children: React.ReactNode;
 }
 
-export default function ProfileLayout({ username, profileImage, cxBalance, children }: ProfileLayoutProps) {
+export default function ProfileLayout({ username, profileImage, credits, cxBalance, children }: ProfileLayoutProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   return (
@@ -28,6 +29,7 @@ export default function ProfileLayout({ username, profileImage, cxBalance, child
           <NavStrip 
             username={username}
             userProfileImage={profileImage}
+            credits={credits}
             cxBalance={cxBalance}
             onMenuClick={() => setIsDrawerOpen(true)}
           />

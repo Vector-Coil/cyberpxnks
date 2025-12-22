@@ -5,7 +5,8 @@
 export interface NavData {
   username: string;
   profileImage?: string;
-  cxBalance: number;
+  credits: number; // In-game credits from database
+  cxBalance: number; // On-chain $CX token balance from wallet
 }
 
 export interface UserStats {

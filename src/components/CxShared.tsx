@@ -10,7 +10,8 @@ export const FrameHeader: React.FC<{ titleSrc?: string }> = ({ titleSrc = '/cx-t
 export interface NavStripProps {
   userProfileImage?: string;
   username?: string;
-  cxBalance?: number;
+  cxBalance?: number; // On-chain $CX token balance from wallet
+  credits?: number; // In-game credits from database
   onMenuClick?: () => void;
   hasAlerts?: boolean;
 }
@@ -19,6 +20,7 @@ export const NavStrip: React.FC<NavStripProps> = ({
   userProfileImage, 
   username = 'user',
   cxBalance = 0,
+  credits = 0,
   onMenuClick,
   hasAlerts
 }) => {
@@ -72,10 +74,30 @@ export const NavStrip: React.FC<NavStripProps> = ({
       
       <div className="navCenter">
         <div className="flex items-center gap-2">
-          <div className="w-[25px] h-[25px] rounded-full overflow-hidden bg-gray-700 flex items-center justify-center">
-            <img src="/icon_cx-cred.png" alt="CX Token" className="w-full h-full object-cover" />
+          {/* Credits Display */}
+          <div className="flex items-center gap-1.5">
+            <span className="pill-charcoal text-xs">{credits.toLocaleString()}</span>
+            <img 
+              src="https://vectorcoil.com/cx/images/credits-currency.svg" 
+              alt="Credits" 
+              className="w-4 h-4"
+            />
           </div>
-          <span className="pill-charcoal">{cxBalance.toLocaleString()} $CX</span>
+          
+          {/* Icon Separator */}
+          <div className="w-[20px] h-[20px] rounded-full overflow-hidden bg-gray-700 flex items-center justify-center flex-shrink-0">
+            <img src="/icon_cx.png" alt="CYBERPXNKS" className="w-full h-full object-cover" />
+          </div>
+          
+          {/* $CX Token Display */}
+          <div className="flex items-center gap-1.5">
+            <img 
+              src="/icon_cx.png" 
+              alt="$CX Token" 
+              className="w-4 h-4"
+            />
+            <span className="pill-charcoal text-xs">{cxBalance.toLocaleString()} $CX</span>
+          </div>
         </div>
       </div>
       

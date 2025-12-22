@@ -27,6 +27,7 @@ export default function ContactDetailClient({ contact, gigs, navData, messageInf
           <NavStrip 
             username={navData.username}
             userProfileImage={navData.profileImage}
+            credits={navData.credits}
             cxBalance={navData.cxBalance}
             onMenuClick={() => setIsDrawerOpen(true)}
           />
