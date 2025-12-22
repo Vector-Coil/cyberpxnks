@@ -411,7 +411,7 @@ export default function CityPage() {
             No zones explored yet.
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-1">
             {zones.map((zone) => {
               const isCurrentLocation = zone.id === currentLocationId;
               return (
@@ -434,11 +434,6 @@ export default function CityPage() {
                           {zone.district_name && (
                             <span className="px-2 py-1 bg-fuschia text-white text-xs font-bold uppercase rounded flex-shrink-0">
                               {zone.district_name}
-                            </span>
-                          )}
-                          {isCurrentLocation && (
-                            <span className="px-2 py-1 bg-cyan-400 text-black text-xs font-bold uppercase rounded flex-shrink-0">
-                              CURRENT LOCATION
                             </span>
                           )}
                         </div>
