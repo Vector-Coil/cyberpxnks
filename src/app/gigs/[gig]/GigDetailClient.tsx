@@ -24,6 +24,7 @@ interface GigDetailClientProps {
   navData: {
     username: string;
     profileImage: string;
+    credits: number;
     cxBalance: number;
   };
 }
