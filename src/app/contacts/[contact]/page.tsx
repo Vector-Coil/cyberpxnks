@@ -138,7 +138,7 @@ export default async function ContactDetailPage({ params }: { params: any }) {
       gigs.push({ id, gig_code, image_url, description, unlocked_at, status, requirements });
     }
 
-    return <ContactDetailClient contact={contact} gigs={gigs} navData={navData} messageInfo={messageInfo} />;
+    return <ContactDetailClient contact={contact} gigs={gigs} navData={{ ...navData, cxBalance: 0 }} messageInfo={messageInfo} />;
   } catch (err: any) {
     // Log full error server-side for debugging
     console.error('Contact detail error', err?.stack || err);

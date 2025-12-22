@@ -177,7 +177,8 @@ export default async function GigDetailPage({ params }: { params: any }) {
 
     const navDataWithDefaults = {
       ...navData,
-      profileImage: navData.profileImage ?? ''
+      profileImage: navData.profileImage ?? '',
+      cxBalance: 0 // Will be updated on client side from wallet
     };
 
     return <GigDetailClient gigData={gigData} historyEvents={historyEvents} navData={navDataWithDefaults} />;
