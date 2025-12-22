@@ -93,23 +93,10 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
               <div className="meta-heading text-center">{user.username}</div>
           </div>
 
-          {/* Level Card */}
+          {/* Level & Experience Card */}
           <CxCard className="mb-4">
-            <div className="flex items-center justify-between">
-              <div className="font-bold uppercase" style={{ color: 'var(--fuschia)' }}>Level</div>
-              <div className="flex gap-2">
-                <span className="pill-stat">
-                  {user.level || 1}
-                </span>
-                <span className="pill-charcoal">RANK</span>
-              </div>
-            </div>
-          </CxCard>
-
-          {/* Experience Card */}
-          <CxCard className="mb-4">
-            <div className="flex items-center justify-between gap-4">
-              <div className="font-bold uppercase" style={{ color: 'var(--fuschia)' }}>Experience</div>
+            <div className="flex items-center gap-4">
+              <div className="font-bold uppercase whitespace-nowrap" style={{ color: 'var(--fuschia)' }}>Level</div>
               <div className="relative flex-1 h-8 bg-charcoal-75 rounded-full overflow-hidden">
                 <div
                   className="absolute top-0 left-0 h-full transition-all duration-300"
@@ -119,6 +106,9 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
                   {currentXp} / {xpToNextLevel}
                 </div>
               </div>
+              <span className="pill-stat whitespace-nowrap">
+                {user.level || 1}
+              </span>
             </div>
           </CxCard>
 
