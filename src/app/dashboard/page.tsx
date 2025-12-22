@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { sdk } from '@farcaster/miniapp-sdk';
 import { useNeynarContext } from '@neynar/react';
 import { useDailyFarcasterSync } from '../../hooks/useDailyFarcasterSync';
+import { NavStrip } from '../../components/CxShared';
 import NavDrawer from '../../components/NavDrawer';
 import { useNavData } from '../../hooks/useNavData';
 import { useRegenTimer } from '../../hooks/useRegenTimer';
@@ -94,61 +95,6 @@ const FrameHeader: React.FC<FrameHeaderProps> = ({ titleSrc }) => (
     <img src={titleSrc} alt="CYBERPXNKS" />
   </div>
 );
-
-interface NavStripProps {
-  userProfileImage?: string;
-  username?: string;
-  cxBalance?: number;
-  onMenuClick?: () => void;
-}
-
-const NavStrip: React.FC<NavStripProps> = ({ 
-  userProfileImage, 
-  username = 'user',
-  cxBalance = 0,
-  onMenuClick
-}) => {
-  const handleMenuClick = () => {
-    if (onMenuClick) {
-      onMenuClick();
-    }
-  };
-
-  return (
-    <div className="navStrip">
-      <div className="navLeft">
-        <a href={`/profile/${username}`} className="block">
-          <div className="w-[25px] h-[25px] rounded-full overflow-hidden bg-gray-700 flex items-center justify-center">
-            {userProfileImage ? (
-              <img src={userProfileImage} alt={username} className="w-full h-full object-cover" />
-            ) : (
-              <div className="text-xs font-bold text-gray-400">{username?.charAt(0).toUpperCase()}</div>
-            )}
-          </div>
-        </a>
-      </div>
-      
-      <div className="navCenter">
-        <div className="flex items-center gap-2">
-          <div className="w-[25px] h-[25px] rounded-full overflow-hidden bg-gray-700 flex items-center justify-center">
-            <img src="/icon_cx-cred.png" alt="CX Token" className="w-full h-full object-cover" />
-          </div>
-          <span className="pill-charcoal">{cxBalance.toLocaleString()} $CX</span>
-        </div>
-      </div>
-      
-      <div className="navRight">
-        <button 
-          onClick={handleMenuClick}
-          className="w-[25px] h-[25px] flex items-center justify-center cursor-pointer bg-transparent border-0"
-          aria-label="Menu"
-        >
-          <span className="material-symbols-outlined text-white text-2xl">menu</span>
-        </button>
-      </div>
-    </div>
-  );
-};
 
 interface CxCardProps {
   title?: React.ReactNode;
