@@ -72,7 +72,7 @@ export default async function ProfilePage({ params }: { params: Promise<{ userna
         username={navData.username}
         profileImage={navData.profileImage}
         credits={navData.credits}
-        cxBalance={navData.cxBalance}
+        cxBalance={0}
       >
         <div className="pt-5 pb-2 px-6 flex flex-row gap-3">
           <a href="/dashboard" className="w-[25px] h-[25px] rounded-full overflow-hidden bg-bright-blue flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors">
