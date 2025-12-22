@@ -44,6 +44,21 @@ export interface SlimsoftModifiers {
   credits_multiplier: number;
 }
 
+export interface ConsumableBuffs {
+  buff_consciousness: number;
+  buff_stamina: number;
+  buff_charge: number;
+  buff_bandwidth: number;
+  buff_thermal: number;
+  buff_neural: number;
+  buff_cognition: number;
+  buff_insight: number;
+  buff_interface: number;
+  buff_power: number;
+  buff_resilience: number;
+  buff_agility: number;
+}
+
 export interface CurrentStats {
   consciousness: number;
   stamina: number;
@@ -95,6 +110,8 @@ export interface CompleteStats {
   hardware: HardwareModifiers;
   // Slimsoft modifiers (from equipped slimsoft)
   slimsoft: SlimsoftModifiers;
+  // Consumable buffs (from active temporary buffs)
+  consumableBuffs: ConsumableBuffs;
   // Combat stat components (for UI display)
   base_tac: number;
   mod_tac: number;
@@ -304,7 +321,78 @@ export class StatsService {
       }
     }
 
-    // Step 4: Get arsenal modifiers for metered stats and discovery bonuses
+    // Step 4: Clean up expired consumable buffs
+    await this.pool.execute(
+      `DELETE FROM active_consumable_buffs WHERE expires_at <= NOW()`,
+      []
+    );
+
+    // Step 4a: Get active consumable buffs
+    const [buffRows] = await this.pool.execute(
+      `SELECT effect_type, COALESCE(SUM(effect_value), 0) as total_value
+       FROM active_consumable_buffs
+       WHERE user_id = ? AND expires_at > NOW()
+       GROUP BY effect_type`,
+      [this.userId]
+    );
+
+    const consumableBuffs: ConsumableBuffs = {
+      buff_consciousness: 0,
+      buff_stamina: 0,
+      buff_charge: 0,
+      buff_bandwidth: 0,
+      buff_thermal: 0,
+      buff_neural: 0,
+      buff_cognition: 0,
+      buff_insight: 0,
+      buff_interface: 0,
+      buff_power: 0,
+      buff_resilience: 0,
+      buff_agility: 0
+    };
+
+    for (const buff of buffRows as any[]) {
+      switch (buff.effect_type) {
+        case 'buff_consciousness':
+          consumableBuffs.buff_consciousness = Number(buff.total_value) || 0;
+          break;
+        case 'buff_stamina':
+          consumableBuffs.buff_stamina = Number(buff.total_value) || 0;
+          break;
+        case 'buff_charge':
+          consumableBuffs.buff_charge = Number(buff.total_value) || 0;
+          break;
+        case 'buff_bandwidth':
+          consumableBuffs.buff_bandwidth = Number(buff.total_value) || 0;
+          break;
+        case 'buff_thermal':
+          consumableBuffs.buff_thermal = Number(buff.total_value) || 0;
+          break;
+        case 'buff_neural':
+          consumableBuffs.buff_neural = Number(buff.total_value) || 0;
+          break;
+        case 'buff_cognition':
+          consumableBuffs.buff_cognition = Number(buff.total_value) || 0;
+          break;
+        case 'buff_insight':
+          consumableBuffs.buff_insight = Number(buff.total_value) || 0;
+          break;
+        case 'buff_interface':
+          consumableBuffs.buff_interface = Number(buff.total_value) || 0;
+          break;
+        case 'buff_power':
+          consumableBuffs.buff_power = Number(buff.total_value) || 0;
+          break;
+        case 'buff_resilience':
+          consumableBuffs.buff_resilience = Number(buff.total_value) || 0;
+          break;
+        case 'buff_agility':
+          consumableBuffs.buff_agility = Number(buff.total_value) || 0;
+          break;
+      }
+    }
+
+    // Step 5: Get arsenal modifiers for metered stats and discovery bonuses
     const [arsenalRows] = await this.pool.execute(
       `SELECT 
         COALESCE(SUM(am.consciousness), 0) as arsenal_consciousness,
@@ -330,7 +418,7 @@ export class StatsService {
       arsenal_discovery_item: 0
     };
 
-    // Step 5: Calculate tech stats (base + hardware + slimsoft)
+    // Step 6: Calculate tech stats (base + hardware + slimsoft)
     // Ensure numeric addition by explicitly converting to numbers
     const tech: TechStats = {
       clock_speed: Number(baseStats.clock_speed) + Number(hardware.processor),
@@ -341,7 +429,7 @@ export class StatsService {
       cache: Number(baseStats.cache) + Number(hardware.memory)
     };
 
-    // Step 6: Calculate max values using formulas + arsenal bonuses
+    // Step 7: Calculate max values using formulas + arsenal bonuses + consumable buffs
     // Ensure numeric addition by explicitly converting to numbers
     const bandwidth = Math.floor(
       ((Number(hardware.processor) + Number(hardware.memory)) * 
@@ -350,15 +438,15 @@ export class StatsService {
     );
 
     const max: MaxStats = {
-      consciousness: Number(attributes.cognition) * Number(attributes.resilience) + Number(arsenalMods.arsenal_consciousness),
-      stamina: Number(attributes.power) * Number(attributes.resilience) + Number(arsenalMods.arsenal_stamina),
-      charge: Number(tech.clock_speed) + Number(hardware.cell_capacity) + Number(arsenalMods.arsenal_charge),
-      thermal: Number(tech.clock_speed) + Number(tech.cooling) + Number(arsenalMods.arsenal_thermal), // tech.cooling already includes hardware.heat_sink
-      neural: Number(attributes.cognition) + Number(attributes.resilience) + bandwidth + Number(arsenalMods.arsenal_neural), // Mental capacity based on cognition, resilience, and data processing capability
-      bandwidth: bandwidth
+      consciousness: Number(attributes.cognition) * Number(attributes.resilience) + Number(arsenalMods.arsenal_consciousness) + Number(consumableBuffs.buff_consciousness),
+      stamina: Number(attributes.power) * Number(attributes.resilience) + Number(arsenalMods.arsenal_stamina) + Number(consumableBuffs.buff_stamina),
+      charge: Number(tech.clock_speed) + Number(hardware.cell_capacity) + Number(arsenalMods.arsenal_charge) + Number(consumableBuffs.buff_charge),
+      thermal: Number(tech.clock_speed) + Number(tech.cooling) + Number(arsenalMods.arsenal_thermal) + Number(consumableBuffs.buff_thermal), // tech.cooling already includes hardware.heat_sink
+      neural: Number(attributes.cognition) + Number(attributes.resilience) + bandwidth + Number(arsenalMods.arsenal_neural) + Number(consumableBuffs.buff_neural), // Mental capacity based on cognition, resilience, and data processing capability
+      bandwidth: bandwidth + Number(consumableBuffs.buff_bandwidth)
     };
 
-    // Step 7: Calculate combat stats (base + mod, similar to tech stats)
+    // Step 8: Calculate combat stats (base + mod, similar to tech stats)
     const combat: CombatStats = {
       tactical: (stats.base_tac || 0) + (stats.mod_tac || 0),
       smart_tech: (stats.base_smt || 0) + (stats.mod_smt || 0),
@@ -377,6 +465,7 @@ export class StatsService {
       attributes,
       hardware,
       slimsoft,
+      consumableBuffs,
       // Combat stat components (for UI display)
       base_tac: stats.base_tac || 0,
       mod_tac: stats.mod_tac || 0,

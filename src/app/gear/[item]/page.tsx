@@ -74,6 +74,31 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
     }
   }
 
+  async function handleUseItem() {
+    if (!userFid || !itemId) return;
+
+    try {
+      const response = await fetch(`/api/consumables/use?fid=${userFid}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId })
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert(`${result.item} used successfully!\n\nEffects:\n${result.effects.join('\n')}`);
+        // Reload data to update quantity
+        await loadData();
+      } else {
+        alert(`Failed to use item: ${result.error}`);
+      }
+    } catch (err) {
+      console.error('Failed to use consumable:', err);
+      alert('An error occurred while using the item');
+    }
+  }
+
   const getTierColor = (tier: number) => {
     const colors: { [key: number]: string } = {
       1: 'text-gray-400',
@@ -323,8 +348,8 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
           <CxCard className="mt-4">
             <div className="font-bold uppercase mb-3" style={{ color: 'var(--fuschia)' }}>Actions</div>
             <button
-              className="w-full py-3 px-4 rounded bg-green-600 hover:bg-green-700 text-white font-bold uppercase transition-colors"
-              onClick={() => {/* TODO: Implement consume */}}
+              className="btn-cx-primary w-full"
+              onClick={handleUseItem}
             >
               <span className="material-symbols-outlined text-xl mr-2 align-middle">medication</span>
               Use Item
