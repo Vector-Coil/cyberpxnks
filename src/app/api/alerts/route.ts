@@ -39,9 +39,10 @@ export async function GET(req: Request) {
       SELECT 
         u.location as current_zone_id,
         z.name AS zone_name,
-        z.image_url AS zone_image
+        zt.image_url AS zone_image
       FROM users u
       LEFT JOIN zones z ON u.location = z.id
+      LEFT JOIN zone_type zt ON z.zone_type = zt.id
       WHERE u.id = ?
       LIMIT 1
     `;

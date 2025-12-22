@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch discovered zones for this user with POI counts
     const [zoneRows] = await pool.execute<any[]>(
-      `SELECT z.id, z.name, z.zone_type, z.description, z.image_url, 
+      `SELECT z.id, z.name, z.zone_type, z.description, zt.image_url, 
               zt.name as zone_type_name, zd.name as district_name,
               COUNT(DISTINCT CASE WHEN poi.poi_type = 'shop' THEN poi.id END) as shop_count,
               COUNT(DISTINCT CASE WHEN poi.poi_type != 'shop' THEN poi.id END) as terminal_count
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
        LEFT JOIN user_zone_history uzh_poi ON z.id = uzh_poi.zone_id AND uzh_poi.user_id = uzh.user_id AND uzh_poi.poi_id IS NOT NULL
        LEFT JOIN points_of_interest poi ON uzh_poi.poi_id = poi.id
        WHERE uzh.user_id = ?
-       GROUP BY z.id, z.name, z.zone_type, z.description, z.image_url, zt.name, zd.name
+       GROUP BY z.id, z.name, z.zone_type, z.description, zt.image_url, zt.name, zd.name
        ORDER BY z.name`,
       [userId]
     );
