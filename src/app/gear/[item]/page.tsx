@@ -8,6 +8,7 @@ import CompactMeterStrip from '../../../components/CompactMeterStrip';
 import { useNavData } from '../../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../../hooks/useAuthenticatedUser';
 import { getItemTypeColor } from '../../../lib/itemUtils';
+import { getMeterData } from '../../../lib/meterUtils';
 
 interface ItemDetail {
   id: number;
@@ -42,6 +43,7 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
   const [itemId, setItemId] = useState<number | null>(null);
   const navData = useNavData(userFid || 0);
   const [itemData, setItemData] = useState<ItemData | null>(null);
+  const [userStats, setUserStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [showUseConfirm, setShowUseConfirm] = useState(false);
@@ -65,11 +67,19 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
     
     try {
       setLoading(true);
-      const itemRes = await fetch(`/api/items/${itemId}?fid=${userFid}`);
+      const [itemRes, statsRes] = await Promise.all([
+        fetch(`/api/items/${itemId}?fid=${userFid}`),
+        fetch(`/api/stats?fid=${userFid}`)
+      ]);
 
       if (itemRes.ok) {
         const data = await itemRes.json();
         setItemData(data);
+      }
+
+      if (statsRes.ok) {
+        const stats = await statsRes.json();
+        setUserStats(stats);
       }
     } catch (err) {
       console.error('Failed to load item details:', err);
@@ -204,7 +214,7 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
           />
         </div>
         <div className="frame-body pt-0 pb-2 px-6 mb-2">
-          <CompactMeterStrip meters={navData.meters} />
+          <CompactMeterStrip meters={getMeterData(userStats)} />
         </div>
 
       <div className="pt-5 pb-2 px-6 flex flex-row gap-3">
