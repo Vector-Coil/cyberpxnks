@@ -15,10 +15,21 @@ interface Alerts {
   gigs: number;
   messages: number;
   unallocatedPoints: number;
+  location: {
+    zoneId: number;
+    zoneName: string;
+    zoneImage: string;
+  } | null;
 }
 
 const NavDrawer: React.FC<NavDrawerProps> = ({ isOpen, onClose, username, profileImage, cxBalance }) => {
-  const [alerts, setAlerts] = useState<Alerts>({ contacts: 0, gigs: 0, messages: 0, unallocatedPoints: 0 });
+  const [alerts, setAlerts] = useState<Alerts>({ 
+    contacts: 0, 
+    gigs: 0, 
+    messages: 0, 
+    unallocatedPoints: 0,
+    location: null
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -36,6 +47,7 @@ const NavDrawer: React.FC<NavDrawerProps> = ({ isOpen, onClose, username, profil
           gigs: data.gigs || 0,
           messages: data.messages || 0,
           unallocatedPoints: data.unallocatedPoints || 0,
+          location: data.location || null,
         });
       }
     } catch (error) {
@@ -100,7 +112,7 @@ const NavDrawer: React.FC<NavDrawerProps> = ({ isOpen, onClose, username, profil
 
         {/* Navigation Grid */}
         <div className="px-5">
-          {/* Row 1: Dashboard, Stats, Profile */}
+          {/* Row 1: Dashboard, Location, Profile */}
           <div className="cx-tabs">
             {/* Dashboard */}
             <Link href="/dashboard" onClick={onClose}>
@@ -112,16 +124,33 @@ const NavDrawer: React.FC<NavDrawerProps> = ({ isOpen, onClose, username, profil
               </div>
             </Link>
 
-            {/* Stats */}
-            <Link href="/allocate-points" onClick={onClose}>
-              <div className="cx-tab cursor-pointer relative">
-                <div className="tab-icon">
-                  <img src="/icon_crest.png" alt="Stats" />
+            {/* Location - links to current zone */}
+            {alerts.location && alerts.location.zoneId ? (
+              <Link href={`/city/${alerts.location.zoneId}`} onClick={onClose}>
+                <div 
+                  className="cx-tab cursor-pointer"
+                  style={{
+                    backgroundImage: alerts.location.zoneImage ? `url(${alerts.location.zoneImage})` : 'none',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center'
+                  }}
+                >
+                  <div className="tab-icon">
+                    {!alerts.location.zoneImage && <img src="/icon_crest.png" alt="Location" />}
+                  </div>
+                  <div className="tab-label text-white" style={{ textShadow: '1px 1px 3px black' }}>
+                    Location
+                  </div>
                 </div>
-                <div className="tab-label text-white">Stats</div>
-                {renderAlertPill(alerts.unallocatedPoints)}
+              </Link>
+            ) : (
+              <div className="cx-tab opacity-50">
+                <div className="tab-icon">
+                  <img src="/icon_crest.png" alt="Location" />
+                </div>
+                <div className="tab-label text-white">Location</div>
               </div>
-            </Link>
+            )}
 
             {/* Profile */}
             <Link href="/profile" onClick={onClose}>
@@ -138,7 +167,40 @@ const NavDrawer: React.FC<NavDrawerProps> = ({ isOpen, onClose, username, profil
             </Link>
           </div>
 
-          {/* Row 2: Contacts, Gigs, Messages */}
+          {/* Row 2: City, Grid, Terminals */}
+          <div className="cx-tabs">
+            {/* City */}
+            <Link href="/city" onClick={onClose}>
+              <div className="cx-tab cursor-pointer">
+                <div className="tab-icon">
+                  <img src="/icon_crest.png" alt="City" />
+                </div>
+                <div className="tab-label text-white">City</div>
+              </div>
+            </Link>
+
+            {/* Grid */}
+            <Link href="/grid" onClick={onClose}>
+              <div className="cx-tab cursor-pointer">
+                <div className="tab-icon">
+                  <img src="/icon_crest.png" alt="Grid" />
+                </div>
+                <div className="tab-label text-white">Grid</div>
+              </div>
+            </Link>
+
+            {/* Terminals */}
+            <Link href="/terminals" onClick={onClose}>
+              <div className="cx-tab cursor-pointer">
+                <div className="tab-icon">
+                  <img src="/icon_crest.png" alt="Terminals" />
+                </div>
+                <div className="tab-label text-white">Terminals</div>
+              </div>
+            </Link>
+          </div>
+
+          {/* Row 3: Contacts, Gigs, Messages */}
           <div className="cx-tabs">
             {/* Contacts */}
             <Link href="/contacts" onClick={onClose}>
@@ -174,7 +236,7 @@ const NavDrawer: React.FC<NavDrawerProps> = ({ isOpen, onClose, username, profil
             </Link>
           </div>
 
-          {/* Row 3: Hardware, Slimsoft, Inventory */}
+          {/* Row 4: Hardware, Arsenal, Inventory */}
           <div className="cx-tabs">
             {/* Hardware */}
             <Link href="/hardware" onClick={onClose}>
@@ -207,47 +269,25 @@ const NavDrawer: React.FC<NavDrawerProps> = ({ isOpen, onClose, username, profil
             </Link>
           </div>
 
-          {/* Row 4: City, Grid, Terminals */}
+          {/* Row 5: Stats, Reputation (placeholder), Factions */}
           <div className="cx-tabs">
-            {/* City */}
-            <Link href="/city" onClick={onClose}>
-              <div className="cx-tab cursor-pointer">
+            {/* Stats */}
+            <Link href="/allocate-points" onClick={onClose}>
+              <div className="cx-tab cursor-pointer relative">
                 <div className="tab-icon">
-                  <img src="/icon_crest.png" alt="City" />
+                  <img src="/icon_crest.png" alt="Stats" />
                 </div>
-                <div className="tab-label text-white">City</div>
+                <div className="tab-label text-white">Stats</div>
+                {renderAlertPill(alerts.unallocatedPoints)}
               </div>
             </Link>
 
-            {/* Grid */}
-            <Link href="/grid" onClick={onClose}>
-              <div className="cx-tab cursor-pointer">
-                <div className="tab-icon">
-                  <img src="/icon_crest.png" alt="Grid" />
-                </div>
-                <div className="tab-label text-white">Grid</div>
-              </div>
-            </Link>
-
-            {/* Terminals */}
-            <Link href="/terminals" onClick={onClose}>
-              <div className="cx-tab cursor-pointer">
-                <div className="tab-icon">
-                  <img src="/icon_crest.png" alt="Terminals" />
-                </div>
-                <div className="tab-label text-white">Terminals</div>
-              </div>
-            </Link>
-          </div>
-
-          {/* Row 5: Crafting, Factions, Precepts (Placeholders) */}
-          <div className="cx-tabs">
-            {/* Crafting */}
+            {/* Reputation - placeholder */}
             <div className="cx-tab opacity-50">
               <div className="tab-icon">
-                <img src="/icon_crest.png" alt="Crafting" />
+                <img src="/icon_crest.png" alt="Reputation" />
               </div>
-              <div className="tab-label text-white">Crafting</div>
+              <div className="tab-label text-white">Reputation</div>
             </div>
 
             {/* Factions */}
@@ -257,6 +297,17 @@ const NavDrawer: React.FC<NavDrawerProps> = ({ isOpen, onClose, username, profil
               </div>
               <div className="tab-label text-white">Factions</div>
             </div>
+          </div>
+
+          {/* Row 6: Crafting, Precepts, Story (placeholder) */}
+          <div className="cx-tabs">
+            {/* Crafting */}
+            <div className="cx-tab opacity-50">
+              <div className="tab-icon">
+                <img src="/icon_crest.png" alt="Crafting" />
+              </div>
+              <div className="tab-label text-white">Crafting</div>
+            </div>
 
             {/* Precepts */}
             <div className="cx-tab opacity-50">
@@ -264,6 +315,14 @@ const NavDrawer: React.FC<NavDrawerProps> = ({ isOpen, onClose, username, profil
                 <img src="/icon_crest.png" alt="Precepts" />
               </div>
               <div className="tab-label text-white">Precepts</div>
+            </div>
+
+            {/* Story - placeholder */}
+            <div className="cx-tab opacity-50">
+              <div className="tab-icon">
+                <img src="/icon_crest.png" alt="Story" />
+              </div>
+              <div className="tab-label text-white">Story</div>
             </div>
           </div>
         </div>
