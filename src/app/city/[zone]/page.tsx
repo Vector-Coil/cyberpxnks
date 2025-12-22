@@ -879,11 +879,17 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
                           {/* Right side: Title and Button stacked */}
                           <div className="flex-1 flex flex-col justify-center gap-2">
                             <h3 className="text-white font-bold uppercase text-sm">{shop.name}</h3>
-                            <a href={`/shops/${shop.id}`}>
-                              <button className="btn-cx btn-cx-primary btn-cx-full">
-                                SHOP
+                            {isAtLocation ? (
+                              <a href={`/shops/${shop.id}`}>
+                                <button className="btn-cx btn-cx-primary btn-cx-full">
+                                  SHOP
+                                </button>
+                              </a>
+                            ) : (
+                              <button className="btn-cx btn-cx-disabled btn-cx-full" disabled>
+                                SHOP (NOT HERE)
                               </button>
-                            </a>
+                            )}
                           </div>
                         </div>
                       </CxCard>

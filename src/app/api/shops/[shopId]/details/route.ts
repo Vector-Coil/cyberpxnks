@@ -72,6 +72,7 @@ export async function GET(
     }
 
     // Check if user is at the correct location for physical shops
+    let atWrongLocation = false;
     if (shop.zone_id) {
       // This is a physical shop in a zone - check user's location
       const [userLocationRows] = await pool.execute<any[]>(
@@ -82,17 +83,13 @@ export async function GET(
       const userZoneId = (userLocationRows as any[])[0]?.current_zone_id;
       
       if (userZoneId !== shop.zone_id) {
-        logger.info('User attempted to access shop at wrong location', { 
+        logger.info('User at wrong location for shop', { 
           userId, 
           shopId, 
           requiredZone: shop.zone_id, 
           userZone: userZoneId 
         });
-        return NextResponse.json({ 
-          error: 'You must be at this location to access this shop',
-          requiredZone: shop.zone_name,
-          requiredZoneId: shop.zone_id
-        }, { status: 403 });
+        atWrongLocation = true;
       }
     }
 
@@ -114,7 +111,8 @@ export async function GET(
       image_url: shop.image_url,
       zone_id: shop.zone_id,
       zone_name: shop.zone_name,
-      subnet_id: shop.subnet_id
+      subnet_id: shop.subnet_id,
+      atWrongLocation
     });
   } catch (err: any) {
     return handleApiError(err, 'Failed to fetch shop details');

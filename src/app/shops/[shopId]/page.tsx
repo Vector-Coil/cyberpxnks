@@ -81,10 +81,26 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
         if (shopRes.ok) {
           const shopData = await shopRes.json();
           console.log('[Shop] Shop data:', shopData);
+          
+          // Check if user needs to be at location for physical shops
+          if (shopData.zone_id && shopData.atWrongLocation) {
+            console.warn('[Shop] User at wrong location, redirecting to dashboard');
+            router.push('/dashboard');
+            return;
+          }
+          
           setShop(shopData);
         } else {
           const errorData = await shopRes.json();
           console.error('[Shop] Shop details error:', errorData);
+          
+          // If it's a location error, redirect to dashboard
+          if (shopRes.status === 403 || errorData.error?.includes('location')) {
+            console.warn('[Shop] Location error, redirecting to dashboard');
+            router.push('/dashboard');
+            return;
+          }
+          
           setError(errorData.error || 'Failed to load shop');
         }
 
