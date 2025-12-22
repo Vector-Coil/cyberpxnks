@@ -414,6 +414,7 @@ export default function Dashboard() {
     const [equippedCyberdeck, setEquippedCyberdeck] = useState<any>(null);
     const [equippedArsenal, setEquippedArsenal] = useState<any>(null);
     const [recentInventoryItem, setRecentInventoryItem] = useState<any>(null);
+    const [currentLocation, setCurrentLocation] = useState<{ zoneId: number; zoneName: string; zoneImage: string } | null>(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isLoadingAuth, setIsLoadingAuth] = useState(true);
     const [isLoadingStats, setIsLoadingStats] = useState(true);
@@ -511,6 +512,11 @@ export default function Dashboard() {
           const contactsCount = aData?.contacts ?? 0;
           const gigsCount = aData?.gigs ?? 0;
           const messagesCount = aData?.messages ?? 0;
+
+          // Set current location data
+          if (mounted && aData?.location) {
+            setCurrentLocation(aData.location);
+          }
 
           if (mounted) {
             setNavTabs((prev) => prev.map((tab) => {
@@ -886,6 +892,38 @@ export default function Dashboard() {
               })}
             </div>
           </CxCard>
+        )}
+
+        {/* Current Location Banner */}
+        {currentLocation && currentLocation.zoneId && (
+          <div 
+            className="relative w-full h-[120px] rounded-lg overflow-hidden mb-4 cursor-pointer"
+            style={{
+              backgroundImage: currentLocation.zoneImage ? `url(${currentLocation.zoneImage})` : 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+            onClick={() => router.push(`/city/${currentLocation.zoneId}`)}
+          >
+            {/* Dark overlay for better text visibility */}
+            <div className="absolute inset-0 bg-black bg-opacity-40"></div>
+            
+            {/* Content */}
+            <div className="relative h-full flex items-center justify-between px-6">
+              {/* Left side: Location info */}
+              <div>
+                <div className="text-gray-300 text-sm uppercase mb-1">Current location:</div>
+                <div className="text-white font-bold text-2xl uppercase" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+                  {currentLocation.zoneName}
+                </div>
+              </div>
+              
+              {/* Right side: View button */}
+              <button className="btn-cx btn-cx-primary px-6 py-2">
+                VIEW
+              </button>
+            </div>
+          </div>
         )}
 
         <ActionBanner
