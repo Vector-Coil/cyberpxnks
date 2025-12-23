@@ -656,7 +656,7 @@ export default function Dashboard() {
 // Mock data for repeated elements
   const iconSrc = "/icon_crest.png";
   // navTabs will be stateful so we can update alert pills from the API
-  const [navTabs, setNavTabs] = useState<Array<{ href: string; label: string; iconSrc?: string; alertText?: string; alertActive?: boolean }>>[
+  const [navTabs, setNavTabs] = useState<Array<{ href: string; label: string; iconSrc?: string; alertText?: string; alertActive?: boolean }>>([
     { href: "/contacts", label: "Contacts", iconSrc: "/icon_contacts.png" },
     { href: "/gigs", label: "Gigs", iconSrc: "/icon_gigs.png" },
     { href: "/messages", label: "Messages", iconSrc: "/icon_msg.png" },
@@ -786,16 +786,16 @@ export default function Dashboard() {
 
             <CxCard title="Your Dashboard" className="mb-6">
                 <div className="cx-tabs">
-                    {navTabs.map((tab) => (
-                    <CxTabLink 
-                        key={tab.href}
-                        href={tab.href}
-                        label={tab.label}
-                        iconSrc={tab.iconSrc}
-                        alertText={tab.alertText}
-                        alertActive={tab.alertActive}
-                    />
-                    ))}
+                    {navTabs.map((tab: { href: string; label: string; iconSrc?: string; alertText?: string; alertActive?: boolean }) => (
+                        <CxTabLink 
+                            key={tab.href}
+                            href={tab.href}
+                            label={tab.label}
+                            iconSrc={tab.iconSrc}
+                            alertText={tab.alertText}
+                            alertActive={tab.alertActive}
+                        />
+                        ))}
                 </div>
 
                 {/* Meter Gauges */}
