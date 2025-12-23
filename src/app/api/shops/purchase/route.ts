@@ -17,6 +17,8 @@ export async function POST(request: NextRequest) {
     requireParams(body, ['shopId', 'itemId']);
     const { shopId, itemId } = body;
 
+    logger.info('[Shop Purchase] Request:', { fid, shopId, itemId });
+
     const pool = await getDbPool();
 
     // Get user ID and current resources
@@ -61,14 +63,19 @@ export async function POST(request: NextRequest) {
           [user.id, item.id]
         );
 
-        await logActivity(
-          user.id,
-          'shop',
-          'admin_grant',
-          0,
-          shopId,
-          `Admin granted ${item.name}`
-        );
+        try {
+          await logActivity(
+            user.id,
+            'shop',
+            'admin_grant',
+            0,
+            shopId,
+            `Admin granted ${item.name}`
+          );
+        } catch (logErr: any) {
+          logger.warn('[Shop Purchase] Admin logActivity failed:', logErr.message);
+          // Continue - activity log is optional
+        }
 
         await connection.commit();
         connection.release();
@@ -81,9 +88,10 @@ export async function POST(request: NextRequest) {
           },
           cost: 0
         });
-      } catch (err) {
+      } catch (err: any) {
         await connection.rollback();
         connection.release();
+        logger.error('[Shop Purchase] Admin transaction failed:', err);
         throw err;
       }
     }
@@ -179,31 +187,43 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Record transaction
-      await connection.execute(
-        `INSERT INTO shop_transactions 
-         (user_id, shop_id, item_id, price, timestamp) 
-         VALUES (?, ?, ?, ?, UTC_TIMESTAMP())`,
-        [user.id, shopId, item.item_id, item.price]
-      );
+      // Record transaction (if table exists)
+      try {
+        await connection.execute(
+          `INSERT INTO shop_transactions 
+           (user_id, shop_id, item_id, price, timestamp) 
+           VALUES (?, ?, ?, ?, UTC_TIMESTAMP())`,
+          [user.id, shopId, item.item_id, item.price]
+        );
+      } catch (transErr: any) {
+        logger.warn('[Shop Purchase] shop_transactions insert failed:', transErr.message);
+        // Continue - transaction history is optional
+      }
 
       // Log activity
-      await logActivity(
-        user.id,
-        'shop',
-        'purchase',
-        item.price,
-        shopId,
-        `Purchased ${item.name} for ${item.price} credits`
-      );
+      try {
+        await logActivity(
+          user.id,
+          'shop',
+          'purchase',
+          item.price,
+          shopId,
+          `Purchased ${item.name} for ${item.price} credits`
+        );
+      } catch (logErr: any) {
+        logger.warn('[Shop Purchase] logActivity failed:', logErr.message);
+        // Continue - activity log is optional
+      }
 
       await connection.commit();
+      connection: any) {
+      await connection.rollback();
       connection.release();
-
-      return NextResponse.json({
-        success: true,
-        item: {
-          name: item.name,
+      logger.error('[Shop Purchase] Transaction failed:', err);
+      throw err;
+    }
+  } catch (err: any) {
+    logger.error('[Shop Purchase] Error:', err);ame,
           type: item.item_type
         },
         cost: item.price
