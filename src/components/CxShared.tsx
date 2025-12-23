@@ -88,7 +88,7 @@ export const NavStrip: React.FC<NavStripProps> = ({
           <a href="/dashboard" className="block">
             <div className="w-[20px] h-[20px] rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">
               <img 
-                src="/cx.png" 
+                src="https://vectorcoil.com/cx/images/cx.png" 
                 alt="CYBERPXNKS" 
                 className="h-4"
               />

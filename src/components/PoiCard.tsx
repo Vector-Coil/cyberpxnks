@@ -143,8 +143,24 @@ export default function PoiCard({
                 <span className="text-gray-300 text-sm">Terminal</span>
                 <span className="text-white text-sm">{poiItem.name}</span>
               </div>
+              {breachResults.unlockedPOI && (
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-300 text-sm">Discovery</span>
+                  <span className="pill-bright-green text-xs">{breachResults.unlockedPOI.name}</span>
+                </div>
+              )}
             </div>
           </div>
+          
+          {breachResults.unlockedPOI && (
+            <div className="mb-3 border-2 border-bright-green/50 rounded p-3 bg-green-900/10">
+              <div className="text-bright-green font-bold uppercase text-sm mb-2">✨ Discovery</div>
+              <div className="text-gray-300 text-sm">
+                You discovered <span className="text-white font-semibold">{breachResults.unlockedPOI.name}</span>, a new{' '}
+                <span className="text-cyan-400">{breachResults.unlockedPOI.type === 'shop' ? 'shop' : 'terminal'}</span> in this zone!
+              </div>
+            </div>
+          )}
           
           {/* Encounter Card */}
           {breachResults.encounter && (

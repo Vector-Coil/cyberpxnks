@@ -323,12 +323,29 @@ export default function CityPage() {
                       </div>
                       {exploreResults.discoveredZone && (
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-300">Discovered Zone</span>
-                          <span className="text-green-400 font-semibold">{exploreResults.discoveredZone.name}</span>
+                          <span className="text-gray-300">Discovery</span>
+                          <span className="pill-bright-green">{exploreResults.discoveredZone.name}</span>
                         </div>
                       )}
                     </div>
                   </div>
+                  
+                  {exploreResults.discoveredZone && (
+                    <div className="modal-base mb-2 border-2 border-bright-green/50">
+                      <div className="modal-title mb-2 text-bright-green">✨ DISCOVERY</div>
+                      <div className="modal-body-data space-y-2">
+                        <div className="text-gray-300 text-sm">
+                          You discovered <span className="text-white font-semibold">{exploreResults.discoveredZone.name}</span> in{' '}
+                          <span className="text-cyan-400">{exploreResults.discoveredZone.districtName}</span>!
+                          {exploreResults.discoveredZone.poiCount > 0 && (
+                            <span className="block mt-1 text-gray-400 text-xs">
+                              This zone contains {exploreResults.discoveredZone.poiCount} point{exploreResults.discoveredZone.poiCount !== 1 ? 's' : ''} of interest.
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   
                   {exploreResults.encounter && (
                     <div className="modal-base mb-2 border-2 border-yellow-500/50">

@@ -65,9 +65,67 @@ export async function POST(request: NextRequest) {
     // Note: Thermal/neural load increases are handled automatically by the regeneration system during breach
     const xpOptions = [30, 35, 40, 45, 50];
     const baseXp = xpOptions[Math.floor(Math.random() * xpOptions.length)];
+
+    // Get arsenal discovery_poi bonus from equipped arsenal items
+    const [arsenalBonus] = await pool.execute<RowDataPacket[]>(
+      `SELECT COALESCE(SUM(am.discovery_poi), 0) as discovery_poi_bonus
+       FROM user_loadout ul
+       INNER JOIN arsenal_modifiers am ON ul.item_id = am.item_id
+       WHERE ul.user_id = ? AND ul.slot_type = 'arsenal'`,
+      [userId]
+    );
+    const discoveryPoiBonus = arsenalBonus[0]?.discovery_poi_bonus || 0;
+
+    // Roll for reward type with POI discovery mechanics (28.6% base + arsenal bonus)
+    const rewardType = rollEncounterReward(0, 0, discoveryPoiBonus, 'poi');
     
-    // TODO: Add +10 XP bonus on data/item discovery (when discovery system implemented)
-    const discoveryBonus = 0;
+    let unlockedPOI = null;
+    let discoveryBonus = 0;
+
+    if (rewardType === 'discovery') {
+      // Try to unlock a POI (terminal or shop) in this zone
+      const [undiscoveredPOIRows] = await pool.execute<any[]>(
+        `SELECT poi.id, poi.name, poi.poi_type, poi.image_url
+         FROM points_of_interest poi
+         WHERE poi.zone_id = ?
+           AND poi.id NOT IN (
+             SELECT DISTINCT poi_id 
+             FROM user_zone_history 
+             WHERE user_id = ? AND poi_id IS NOT NULL AND action_type = 'UnlockedPOI'
+           )
+         ORDER BY RAND()
+         LIMIT 1`,
+        [breach.zone_id, userId]
+      );
+
+      if (undiscoveredPOIRows.length > 0) {
+        unlockedPOI = undiscoveredPOIRows[0];
+
+        // +10 XP bonus for POI discovery
+        discoveryBonus = 10;
+
+        // Create POI unlock entry in user_zone_history
+        await pool.execute(
+          `INSERT INTO user_zone_history 
+           (user_id, zone_id, poi_id, action_type, timestamp, result_status) 
+           VALUES (?, ?, ?, 'UnlockedPOI', UTC_TIMESTAMP(), 'completed')`,
+          [userId, breach.zone_id, unlockedPOI.id]
+        );
+
+        // Determine POI type for logging
+        const poiTypeLabel = unlockedPOI.poi_type === 'shop' ? 'shop' : 'terminal';
+        
+        // Log POI unlock activity
+        await logActivity(
+          userId,
+          'discovery',
+          'poi_unlocked',
+          null,
+          unlockedPOI.id,
+          `Unlocked ${unlockedPOI.name} (${poiTypeLabel}) in zone ${breach.zone_id}`
+        );
+      }
+    }
 
     // Get user's street cred for encounter filtering
     const [userDataRows] = await pool.execute<RowDataPacket[]>(
@@ -76,9 +134,6 @@ export async function POST(request: NextRequest) {
     );
     const userStreetCred = userDataRows[0]?.street_cred || 0;
 
-    // Roll for reward type (encounter chance on breach)
-    const rewardType = rollEncounterReward();
-    
     let encounter = null;
     if (rewardType === 'encounter') {
       // Get random encounter for city context with the specific zone
@@ -112,10 +167,9 @@ export async function POST(request: NextRequest) {
 
     // Build gains text
     let gainsText = `+${totalXp} XP`;
-    if (discoveryBonus > 0) {
-      gainsText += ' (+10 discovery bonus)';
-    }
-    if (encounter) {
+    if (unlockedPOI) {
+      gainsText += ` (+10 discovery bonus), Unlocked ${unlockedPOI.name}`;
+    } else if (encounter) {
       gainsText += `, Encountered ${encounter.name}`;
     }
 
@@ -173,6 +227,12 @@ export async function POST(request: NextRequest) {
       historyId: historyId,
       xpGained: totalXp,
       rewardType,
+      unlockedPOI: unlockedPOI ? {
+        id: unlockedPOI.id,
+        name: unlockedPOI.name,
+        type: unlockedPOI.poi_type,
+        imageUrl: unlockedPOI.image_url
+      } : null,
       encounter: encounter ? {
         id: encounter.id,
         name: encounter.name,

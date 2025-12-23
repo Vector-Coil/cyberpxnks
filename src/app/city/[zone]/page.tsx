@@ -729,9 +729,27 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
                                   <span className="text-gray-300">Gained XP</span>
                                   <span className="pill-cloud-gray">{scoutResults.xpGained} XP</span>
                               </div>
+                              {scoutResults.unlockedPOI && (
+                                <div className="flex items-center justify-between">
+                                  <span className="text-gray-300">Discovery</span>
+                                  <span className="pill-bright-green">{scoutResults.unlockedPOI.name}</span>
+                                </div>
+                              )}
                               </div>
                           </div>
                         </div>
+                        
+                        {scoutResults.unlockedPOI && (
+                          <div className="modal-base mb-2 border-2 border-bright-green/50">
+                            <div className="modal-title mb-2 text-bright-green">✨ DISCOVERY</div>
+                            <div className="modal-body-data space-y-2">
+                              <div className="text-gray-300 text-sm">
+                                You discovered <span className="text-white font-semibold">{scoutResults.unlockedPOI.name}</span>, a new{' '}
+                                <span className="text-cyan-400">{scoutResults.unlockedPOI.type === 'shop' ? 'shop' : 'terminal'}</span> in this zone!
+                              </div>
+                            </div>
+                          </div>
+                        )}
                         
                         {scoutResults.encounter && (
                           <div className="modal-base mb-2 border-2 border-yellow-500/50">
