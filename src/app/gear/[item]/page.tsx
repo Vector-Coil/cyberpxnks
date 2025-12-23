@@ -104,8 +104,16 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
       const result = await response.json();
 
       if (response.ok) {
-        // Success - reload data to update quantity and stats
-        await loadData();
+        // Check if quantity will be 0 after use
+        const wasLastItem = itemData && itemData.quantity <= 1;
+        
+        if (wasLastItem) {
+          // Redirect to gear page if this was the last item
+          router.push('/gear');
+        } else {
+          // Reload data to update quantity and stats
+          await loadData();
+        }
       } else {
         alert(`Failed to use item: ${result.error}`);
       }
