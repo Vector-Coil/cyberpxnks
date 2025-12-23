@@ -137,7 +137,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
   const handleConfirmPurchase = async () => {
     if (!selectedItem) return;
     
-    const itemId = selectedItem.item_id || selectedItem.id;
+    const itemId = isAdminShop ? selectedItem.item_id : selectedItem.id;
     setPurchasing(itemId);
     setError(null);
     setSuccess(null);
@@ -299,63 +299,53 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
               <div className="text-center text-gray-400 py-8">No items available</div>
             </CxCard>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               {inventory.map((item) => (
                 <CxCard key={item.id}>
                   <div className="flex gap-3">
-                    {item.image_url && (
-                      <div className="w-20 h-20 flex-shrink-0">
-                        <img 
-                          src={item.image_url} 
-                          alt={item.name} 
-                          className="w-full h-full object-contain" 
-                        />
-                      </div>
-                    )}
-                    
-                    <div className="flex-1">
-                      <h3 className="text-white font-bold uppercase text-sm mb-1">{item.name}</h3>
-                      <p className="text-gray-400 text-xs mb-2">{item.description}</p>
-                      
-                      <div className="flex items-center gap-2 mb-2">
+                    <div className="flex flex-col gap-2">
+                      {item.image_url && (
+                        <div className="w-20 h-20 flex-shrink-0">
+                          <img 
+                            src={item.image_url} 
+                            alt={item.name} 
+                            className="w-full h-full object-contain" 
+                          />
+                        </div>
+                      )}
+                      <div className="flex flex-col gap-1 items-center">
                         <span className="pill-cloud-gray text-xs">{item.item_type}</span>
                         {item.stock >= 0 && (
                           <span className="text-gray-500 text-xs">Stock: {item.stock}</span>
                         )}
                       </div>
+                    </div>
+                    
+                    <div className="flex-1">
+                      <h3 className="text-white font-bold uppercase text-sm mb-1">{item.name}</h3>
+                      <p className="text-gray-400 text-xs mb-2">{item.description}</p>
 
-                      {(item.required_level || item.required_street_cred) && (
-                        <div className="text-yellow-500 text-xs mb-2">
-                          {item.required_level && `Lv ${item.required_level}+ `}
-                          {item.required_street_cred && `${item.required_street_cred} Street Cred`}
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between mt-auto">
                         <div className="flex items-center gap-1">
                           {isAdminShop ? (
                             <span className="text-green-400 font-bold">FREE</span>
                           ) : (
                             <>
                               <span className="text-white font-bold">{item.price}</span>
-                              {item.currency === 'credits' ? (
-                                <img src="/images/credits-currency.png" alt="Credits" className="w-4 h-4" />
-                              ) : (
-                                <span className="text-yellow-400"> SC</span>
-                              )}
+                              <img src="/images/credits-currency.png" alt="Credits" className="w-4 h-4" />
                             </>
                           )}
                         </div>
                         <button
                           onClick={() => handlePurchaseClick(item)}
-                          disabled={!canPurchase(item) || purchasing === (item.item_id || item.id)}
-                          className={`btn-cx btn-cx-full px-4 py-1.5 text-xs ${
-                            !canPurchase(item) || purchasing === (item.item_id || item.id) 
+                          disabled={!canPurchase(item) || purchasing === (isAdminShop ? item.item_id : item.id)}
+                          className={`btn-cx px-4 py-1.5 text-xs ${
+                            !canPurchase(item) || purchasing === (isAdminShop ? item.item_id : item.id) 
                               ? 'btn-cx-disabled' 
                               : 'btn-cx-primary'
                           }`}
                         >
-                          {purchasing === (item.item_id || item.id) ? (isAdminShop ? 'ADDING...' : 'BUYING...') : (isAdminShop ? 'ADD' : 'BUY')}
+                          {purchasing === (isAdminShop ? item.item_id : item.id) ? (isAdminShop ? 'ADDING...' : 'BUYING...') : (isAdminShop ? 'ADD' : 'BUY')}
                         </button>
                       </div>
                     </div>
