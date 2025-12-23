@@ -22,6 +22,32 @@ export async function POST(req: NextRequest) {
     // Get user ID
     const userId = await getUserIdByFid(pool, fid);
 
+    // Check for active actions that would prevent travel
+    const [activeActions]: any = await pool.execute(
+      `SELECT id, action_type, end_time 
+       FROM user_zone_history 
+       WHERE user_id = ? 
+         AND action_type IN ('Scouting', 'Breaching', 'RemoteBreach', 'OvernetScan', 'Exploring')
+         AND result_status = 'in_progress' 
+         AND end_time > UTC_TIMESTAMP()
+       LIMIT 1`,
+      [userId]
+    );
+
+    if (activeActions.length > 0) {
+      const activeAction = activeActions[0];
+      return NextResponse.json(
+        { 
+          error: `Cannot travel while ${activeAction.action_type.toLowerCase()} is in progress. Complete or wait for it to finish.`,
+          activeAction: {
+            type: activeAction.action_type,
+            endsAt: activeAction.end_time
+          }
+        },
+        { status: 400 }
+      );
+    }
+
     // Get user stats using StatsService
     const statsService = new StatsService(pool, userId);
     const stats = await statsService.getStats();
