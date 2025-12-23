@@ -202,29 +202,34 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
   }
 
   return (
-    <div className="min-h-screen bg-black text-white pb-24">
-      <NavStrip 
-        username={navData.username} 
-        userProfileImage={navData.profileImage} 
-        credits={navData.credits}
-        cxBalance={navData.cxBalance}
-        onMenuClick={() => setIsDrawerOpen(true)}
-      />
+    <>
       <NavDrawer 
         isOpen={isDrawerOpen} 
         onClose={() => setIsDrawerOpen(false)}
         username={navData.username}
+        profileImage={navData.profileImage}
         cxBalance={navData.cxBalance}
+        userFid={userFid || undefined}
       />
+      <div className="frame-container frame-main">
+        <div className="frame-body pt-6 pb-2 px-6">
+          <NavStrip 
+            username={navData.username} 
+            userProfileImage={navData.profileImage} 
+            credits={navData.credits}
+            cxBalance={navData.cxBalance}
+            onMenuClick={() => setIsDrawerOpen(true)}
+          />
+        </div>
 
-      <div className="container mx-auto px-4 py-6 max-w-4xl">
-        {/* Back Button */}
-        <button
-          onClick={() => router.back()}
-          className="mb-4 text-gray-400 hover:text-white transition-colors flex items-center gap-2"
-        >
-          <span>←</span> Back
-        </button>
+        <div className="frame-body px-6 py-4">
+          {/* Back Button */}
+          <button
+            onClick={() => router.back()}
+            className="mb-4 text-gray-400 hover:text-white transition-colors flex items-center gap-2"
+          >
+            <span>←</span> Back
+          </button>
 
         {/* Shop Header */}
         <CxCard>
@@ -398,6 +403,6 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
