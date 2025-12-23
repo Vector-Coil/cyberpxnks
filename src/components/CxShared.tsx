@@ -84,14 +84,16 @@ export const NavStrip: React.FC<NavStripProps> = ({
             /></div>
           </div>
           
-          {/* Icon Separator */}
-          <div className="w-[20px] h-[20px] rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">
-            <img 
-              src="/cx.png" 
-              alt="CYBERPXNKS" 
-              className="h-4"
-            />
-          </div>
+          {/* CX logo */}
+          <a href="/dashboard" className="block">
+            <div className="w-[20px] h-[20px] rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">
+              <img 
+                src="/cx.png" 
+                alt="CYBERPXNKS" 
+                className="h-4"
+              />
+            </div>
+          </a>
           
           {/* $CX Token Display */}
           <div className="flex items-center gap-1.5">
