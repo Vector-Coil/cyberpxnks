@@ -171,7 +171,6 @@ export const CxTabLink: React.FC<CxTabLinkProps> = ({ href, label, iconSrc, icon
               <div className="tab-icon">
                 <span className="material-symbols-outlined" style={{ 
                   fontSize: '50px', 
-                  marginBottom: '12px', 
                   display: 'block',
                   color: backgroundImage ? 'white' : 'inherit'
                 }}>
