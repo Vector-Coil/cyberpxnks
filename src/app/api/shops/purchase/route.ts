@@ -210,7 +210,9 @@ export async function POST(request: NextRequest) {
         // Continue - transaction history is optional
       }
 
-      //logger.info('[Shop Purchase] Logging activity');
+      // Log activity
+      try {
+        logger.info('[Shop Purchase] Logging activity');
         await logActivity(
           user.id,
           'shop',
