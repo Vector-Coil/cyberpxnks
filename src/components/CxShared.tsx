@@ -76,26 +76,25 @@ export const NavStrip: React.FC<NavStripProps> = ({
         <div className="flex items-center gap-2">
           {/* Credits Display */}
           <div className="flex items-center gap-1.5">
-            <span className="pill-charcoal text-xs">{credits.toLocaleString()}</span>
+            <span className="pill-charcoal text-xs">{credits.toLocaleString()}
             <img 
               src="https://vectorcoil.com/cx/images/credits-currency.svg" 
               alt="Credits" 
               className="w-4 h-4"
-            />
+            /></span>
           </div>
           
           {/* Icon Separator */}
-          <div className="w-[20px] h-[20px] rounded-full overflow-hidden bg-gray-700 flex items-center justify-center flex-shrink-0">
-            <img src="/icon_cx.png" alt="CYBERPXNKS" className="w-full h-full object-cover" />
-          </div>
-          
-          {/* $CX Token Display */}
-          <div className="flex items-center gap-1.5">
+          <div className="w-[20px] h-[20px] rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">
             <img 
               src="/icon_cx.png" 
               alt="$CX Token" 
               className="w-4 h-4"
             />
+          </div>
+          
+          {/* $CX Token Display */}
+          <div className="flex items-center gap-1.5">
             <span className="pill-charcoal text-xs">{cxBalance.toLocaleString()} $CX</span>
           </div>
         </div>
