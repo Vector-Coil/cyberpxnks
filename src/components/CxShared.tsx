@@ -90,7 +90,7 @@ export const NavStrip: React.FC<NavStripProps> = ({
               <img 
                 src="https://vectorcoil.com/cx/images/cx.png" 
                 alt="CYBERPXNKS" 
-                className="h-4"
+                className="h-5"
               />
             </div>
           </a>

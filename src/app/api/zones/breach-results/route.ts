@@ -20,10 +20,10 @@ export async function POST(request: NextRequest) {
     const pool = await getDbPool();
     const userId = await getUserIdByFid(pool, fid);
 
-    // Verify this is the user's breach and it's complete
+    // Verify this is the user's breach and it's complete (both physical and remote breaches)
     const [breachRows] = await pool.execute<any[]>(
-      `SELECT id, zone_id, end_time, result_status FROM user_zone_history 
-       WHERE id = ? AND user_id = ? AND action_type = 'Breached'
+      `SELECT id, zone_id, end_time, result_status, action_type FROM user_zone_history 
+       WHERE id = ? AND user_id = ? AND action_type IN ('Breached', 'RemoteBreach')
        LIMIT 1`,
       [historyId, userId]
     );
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       // Try to find ANY breach for this user to help debug
       const [debugRows] = await pool.execute<any[]>(
         `SELECT id, action_type, result_status, poi_id FROM user_zone_history 
-         WHERE user_id = ? AND action_type = 'Breached' ORDER BY timestamp DESC LIMIT 3`,
+         WHERE user_id = ? AND action_type IN ('Breached', 'RemoteBreach') ORDER BY timestamp DESC LIMIT 3`,
         [userId]
       );
       logger.warn('Breach not found', { fid, historyId, recentBreaches: debugRows });
