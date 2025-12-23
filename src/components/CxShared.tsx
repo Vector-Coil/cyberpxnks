@@ -86,7 +86,7 @@ export const NavStrip: React.FC<NavStripProps> = ({
           
           {/* CX logo */}
           <a href="/dashboard" className="block">
-            <div className="w-[20px] h-[20px] rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">
+            <div className="h-[20px] rounded-full overflow-hidden flex items-center justify-center flex-shrink-0">
               <img 
                 src="https://vectorcoil.com/cx/images/cx.png" 
                 alt="CYBERPXNKS" 
