@@ -38,8 +38,8 @@ export async function GET(
 
     // Fetch zone details
     const [zoneRows] = await pool.execute<any[]>(
-      `SELECT z.id, z.name, z.zone_type, z.description, z.image_url, z.district, 
-              zt.name as zone_type_name, zd.name as district_name, zd.image_url as district_map_url
+      `SELECT z.id, z.name, z.zone_type, z.description, z.district, 
+              zt.name as zone_type_name, zt.image_url, zd.name as district_name, zd.image_url as district_map_url
        FROM zones z
        LEFT JOIN zone_type zt ON z.zone_type = zt.id
        LEFT JOIN zone_districts zd ON z.district = zd.id
