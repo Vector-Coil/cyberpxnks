@@ -114,11 +114,12 @@ interface CxTabLinkProps {
   iconSrc?: string;
   icon?: string; // Material Symbols icon name
   alertText?: string;
+  alertActive?: boolean;
   backgroundImage?: string;
   hideIcon?: boolean;
 }
 
-const CxTabLink: React.FC<CxTabLinkProps> = ({ href, label, iconSrc, icon, alertText, backgroundImage, hideIcon }) => {
+const CxTabLink: React.FC<CxTabLinkProps> = ({ href, label, iconSrc, icon, alertText, alertActive = false, backgroundImage, hideIcon }) => {
   // Determine if the tab is 'blank' based on props
   const isBlank = !label && !iconSrc && !icon;
 
@@ -141,7 +142,11 @@ const CxTabLink: React.FC<CxTabLinkProps> = ({ href, label, iconSrc, icon, alert
         {/* Content wrapper with relative positioning */}
         <div className="relative z-10 w-full h-full flex flex-col items-center justify-end pb-2">
           {alertText && (
-            <div className="tab-alert absolute top-0 right-0 -mt-2 -mr-2 bg-bright-green text-black text-xs font-semibold px-2 py-0.5 rounded-full shadow-xl animate-pulse">
+            <div className={`tab-alert absolute top-0 right-0 -mt-2 -mr-2 text-xs font-semibold px-2 py-0.5 rounded-full shadow-xl ${
+              alertActive 
+                ? 'bg-bright-green text-black animate-pulse' 
+                : 'bg-gray-600 text-gray-300'
+            }`}>
               {alertText}
             </div>
           )}
@@ -471,13 +476,25 @@ export default function Dashboard() {
           if (mounted) {
             setNavTabs((prev) => prev.map((tab) => {
               if (tab.href === '/contacts') {
-                return { ...tab, alertText: contactsCount > 0 ? `${contactsCount} NEW` : undefined };
+                return { 
+                  ...tab, 
+                  alertText: contactsCount > 0 ? `${contactsCount} NEW` : '0 NEW',
+                  alertActive: contactsCount > 0
+                };
               }
               if (tab.href === '/gigs') {
-                return { ...tab, alertText: gigsCount > 0 ? `${gigsCount} NEW` : undefined };
+                return { 
+                  ...tab, 
+                  alertText: gigsCount > 0 ? `${gigsCount} NEW` : '0 NEW',
+                  alertActive: gigsCount > 0
+                };
               }
               if (tab.href === '/messages') {
-                return { ...tab, alertText: messagesCount > 0 ? `${messagesCount} UNREAD` : undefined };
+                return { 
+                  ...tab, 
+                  alertText: messagesCount > 0 ? `${messagesCount} UNREAD` : '0 UNREAD',
+                  alertActive: messagesCount > 0
+                };
               }
               return tab;
             }));
@@ -639,7 +656,7 @@ export default function Dashboard() {
 // Mock data for repeated elements
   const iconSrc = "/icon_crest.png";
   // navTabs will be stateful so we can update alert pills from the API
-  const [navTabs, setNavTabs] = useState<Array<{ href: string; label: string; iconSrc?: string; alertText?: string }>>([
+  const [navTabs, setNavTabs] = useState<Array<{ href: string; label: string; iconSrc?: string; alertText?: string; alertActive?: boolean }>>[
     { href: "/contacts", label: "Contacts", iconSrc: "/icon_contacts.png" },
     { href: "/gigs", label: "Gigs", iconSrc: "/icon_gigs.png" },
     { href: "/messages", label: "Messages", iconSrc: "/icon_msg.png" },
@@ -776,6 +793,7 @@ export default function Dashboard() {
                         label={tab.label}
                         iconSrc={tab.iconSrc}
                         alertText={tab.alertText}
+                        alertActive={tab.alertActive}
                     />
                     ))}
                 </div>

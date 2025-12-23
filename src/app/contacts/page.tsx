@@ -109,9 +109,9 @@ export default function ContactsPage() {
                     </div>
 
                     <div className="flex items-center gap-2 mt-2">
-                      {c.gigs > 0 && (<div className="px-2 py-0.5 bg-fuchsia-600 text-white text-xs rounded-full">{c.gigs} GIGS</div>)}
-                      {c.messages > 0 && (<div className="px-2 py-0.5 bg-bright-blue text-black text-xs font-bold rounded-full">{c.messages} MESSAGES</div>)}
-                      {c.intel > 0 && (<div className="px-2 py-0.5 bg-lime-400 text-black text-xs rounded-full">{c.intel} INTEL</div>)}
+                      <div className={`px-2 py-0.5 text-xs rounded-full ${c.gigs > 0 ? 'bg-fuchsia-600 text-white' : 'bg-gray-600 text-gray-300'}`}>{c.gigs} GIGS</div>
+                      <div className={`px-2 py-0.5 text-xs font-bold rounded-full ${c.messages > 0 ? 'bg-bright-blue text-black' : 'bg-gray-600 text-gray-300'}`}>{c.messages} MESSAGES</div>
+                      <div className={`px-2 py-0.5 text-xs rounded-full ${c.intel > 0 ? 'bg-lime-400 text-black' : 'bg-gray-600 text-gray-300'}`}>{c.intel} INTEL</div>
                     </div>
 
                   </div>

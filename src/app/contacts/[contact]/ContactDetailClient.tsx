@@ -43,17 +43,9 @@ export default function ContactDetailClient({ contact, gigs, navData, messageInf
           {/* Top section outside of cards */}
           <div className="flex direction-row gap-3 mb-6">
             
-            <div className="w-28 h-28 bg-gray-700 overflow-hidden flex-shrink-0">
+            <div className="w-28 overflow-hidden flex-shrink-0">
               {contact.image_url ? <img src={contact.image_url} alt={contact.name} className="w-full h-full object-cover" /> : null}
-            </div>
-            
-            <div className="direction-column">
-              <div className="card-title uppercase">{contact.name}</div>
 
-              {contact.class_name && <div className="mt-2"><span className="uppercase pill-cloud-gray">{contact.class_name}</span></div>}
-
-              <div className="mt-2 text-gray-300">{contact.intro || 'No intro available.'}</div>
-              
               {/* Messages section */}
               <div className="mt-3">
                 {messageInfo.total > 0 ? (
@@ -69,6 +61,16 @@ export default function ContactDetailClient({ contact, gigs, navData, messageInf
                   <div className="text-sm text-gray-500">No Messages</div>
                 )}
               </div>
+            </div>
+            
+            <div className="direction-column">
+              <div className="card-title uppercase">{contact.name}</div>
+
+              {contact.class_name && <div className="mt-2"><span className="uppercase pill-cloud-gray">{contact.class_name}</span></div>}
+
+              <div className="mt-2 text-gray-300">{contact.intro || 'No intro available.'}</div>
+              
+
             </div>
           </div>
 
@@ -92,6 +94,20 @@ export default function ContactDetailClient({ contact, gigs, navData, messageInf
 
                                 <div className="flex items-center justify-between">
                                     <div className="card-title uppercase">{g.gig_code}</div>
+
+                                    {/* Requirements placeholder until a requirements table is added */}
+                                    <div className="mt-2">
+                                      <span className="meta-heading">Requirements:</span>{' '}
+                                      {g.requirements && g.requirements.length > 0 ? (
+                                          <span>
+                                          {g.requirements.map((r: any, i: number) => (
+                                              <span key={i} className={r.met ? 'text-blue-400' : 'text-red-300'}>{r.text}{i < g.requirements.length - 1 ? ', ' : ''}</span>
+                                          ))}
+                                          </span>
+                                      ) : (
+                                          <span className="text-gray-400">None</span>
+                                      )}
+                                    </div>
                                 </div>
 
                             </div>
@@ -100,19 +116,7 @@ export default function ContactDetailClient({ contact, gigs, navData, messageInf
                 
                         <div>
 
-                            {/* Requirements placeholder until a requirements table is added */}
-                            <div className="mt-2">
-                            <span className="meta-heading">Requirements:</span>{' '}
-                            {g.requirements && g.requirements.length > 0 ? (
-                                <span>
-                                {g.requirements.map((r: any, i: number) => (
-                                    <span key={i} className={r.met ? 'text-blue-400' : 'text-red-300'}>{r.text}{i < g.requirements.length - 1 ? ', ' : ''}</span>
-                                ))}
-                                </span>
-                            ) : (
-                                <span className="text-gray-400">None</span>
-                            )}
-                            </div>
+
 
                             <div className="mt-1 text-gray-300">{g.description}</div>
 
