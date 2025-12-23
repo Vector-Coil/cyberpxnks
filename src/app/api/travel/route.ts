@@ -27,18 +27,20 @@ export async function POST(req: NextRequest) {
       `SELECT id, action_type, end_time 
        FROM user_zone_history 
        WHERE user_id = ? 
-         AND action_type IN ('Scouting', 'Breaching', 'RemoteBreach', 'OvernetScan', 'Exploring')
-         AND result_status = 'in_progress' 
+         AND action_type IN ('Scouted', 'Breached', 'RemoteBreach', 'OvernetScan', 'Exploring')
+         AND end_time IS NOT NULL
          AND end_time > UTC_TIMESTAMP()
+         AND (result_status IS NULL OR result_status = '' OR result_status = 'in_progress')
        LIMIT 1`,
       [userId]
     );
 
     if (activeActions.length > 0) {
       const activeAction = activeActions[0];
+      const actionLabel = activeAction.action_type === 'Scouted' ? 'scouting' : activeAction.action_type.toLowerCase();
       return NextResponse.json(
         { 
-          error: `Cannot travel while ${activeAction.action_type.toLowerCase()} is in progress. Complete or wait for it to finish.`,
+          error: `Cannot travel while ${actionLabel} is in progress. Complete or wait for it to finish.`,
           activeAction: {
             type: activeAction.action_type,
             endsAt: activeAction.end_time
