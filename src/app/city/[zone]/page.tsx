@@ -237,6 +237,26 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
     router.push('/city');
   };
 
+  // Check for any physical actions in progress at current location
+  // Physical actions (Scout, Breach, Explore, etc) block travel and other physical actions
+  const hasPhysicalActionInProgress = history.some(h => {
+    // Physical action types that require user to be at the location
+    const physicalActionTypes = ['Scouted', 'Breached', 'RemoteBreach', 'OvernetScan', 'Exploring'];
+    
+    // Check if this is a physical action type
+    if (!physicalActionTypes.includes(h.action_type)) return false;
+    
+    // Check if it has an end time
+    if (!h.end_time) return false;
+    
+    // Check if it's still in progress (matches backend logic)
+    const isInProgress = !h.result_status || h.result_status === '' || h.result_status === 'in_progress';
+    if (!isInProgress) return false;
+    
+    // Check if end time hasn't passed yet
+    return new Date(h.end_time).getTime() > Date.now();
+  });
+
   const staminaCost = 10;
   const canScout = userStats && 
     userStats.current_consciousness >= (userStats.max_consciousness * 0.5) &&
@@ -489,26 +509,6 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
   // Travel handlers
   const travelCost = 25;
   const isAtLocation = userLocation === zoneId;
-  
-  // Check for any physical actions in progress at current location
-  // Physical actions (Scout, Breach, Explore, etc) block travel - matching backend validation
-  const hasPhysicalActionInProgress = history.some(h => {
-    // Physical action types that require user to be at the location
-    const physicalActionTypes = ['Scouted', 'Breached', 'RemoteBreach', 'OvernetScan', 'Exploring'];
-    
-    // Check if this is a physical action type
-    if (!physicalActionTypes.includes(h.action_type)) return false;
-    
-    // Check if it has an end time
-    if (!h.end_time) return false;
-    
-    // Check if it's still in progress (matches backend logic)
-    const isInProgress = !h.result_status || h.result_status === '' || h.result_status === 'in_progress';
-    if (!isInProgress) return false;
-    
-    // Check if end time hasn't passed yet
-    return new Date(h.end_time).getTime() > Date.now();
-  });
   
   const canTravel = userStats && 
     userStats.current_stamina >= travelCost && 
