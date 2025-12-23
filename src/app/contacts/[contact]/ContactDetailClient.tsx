@@ -43,24 +43,24 @@ export default function ContactDetailClient({ contact, gigs, navData, messageInf
           {/* Top section outside of cards */}
           <div className="flex direction-row gap-3 mb-6">
             
-            <div className="w-28 overflow-hidden flex-shrink-0">
-              {contact.image_url ? <img src={contact.image_url} alt={contact.name} className="w-full h-full object-cover" /> : null}
-
-              {/* Messages section */}
-              <div className="mt-3">
-                {messageInfo.total > 0 ? (
-                  <a href={`/messages?contact_id=${contact.id}`} className="inline-block">
-                    <button className="btn-cx btn-cx-secondary text-xs flex items-center gap-2">
-                      VIEW MESSAGES
-                      {messageInfo.unread > 0 && (
-                        <span className="pill pill-alert text-xs">{messageInfo.unread}</span>
-                      )}
-                    </button>
-                  </a>
-                ) : (
-                  <div className="text-sm text-gray-500">No Messages</div>
-                )}
+            <div className="flex direction-column gap-3">
+              <div className="w-28 h-28overflow-hidden flex-shrink-0">
+                {contact.image_url ? <img src={contact.image_url} alt={contact.name} className="w-full h-full object-cover" /> : null}
               </div>
+              
+              {/* Messages section */}              
+              {messageInfo.total > 0 ? (
+                <a href={`/messages?contact_id=${contact.id}`} className="inline-block">
+                  <button className="btn-cx btn-cx-secondary text-xs flex items-center gap-2">
+                    VIEW MESSAGES
+                    {messageInfo.unread > 0 && (
+                      <span className="pill pill-alert text-xs">{messageInfo.unread}</span>
+                    )}
+                  </button>
+                </a>
+              ) : (
+                <div className="text-sm text-gray-500">No Messages</div>
+              )}
             </div>
             
             <div className="direction-column">
@@ -92,7 +92,7 @@ export default function ContactDetailClient({ contact, gigs, navData, messageInf
 
                             <div className="flex-1">
 
-                                <div className="flex items-center justify-between">
+                                <div className="flex direction-column">
                                     <div className="card-title uppercase">{g.gig_code}</div>
 
                                     {/* Requirements placeholder until a requirements table is added */}
