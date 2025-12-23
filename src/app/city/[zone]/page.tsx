@@ -242,7 +242,7 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
     userStats.current_consciousness >= (userStats.max_consciousness * 0.5) &&
     userStats.current_bandwidth >= 1 &&
     userStats.current_stamina >= staminaCost &&
-    !activeScout;
+    !hasPhysicalActionInProgress;
 
   const handleScoutClick = () => {
     if (canScout) {
@@ -714,7 +714,7 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
                   userStats.current_consciousness >= (userStats.max_consciousness * 0.5) &&
                   userStats.current_bandwidth >= 1 &&
                   userStats.current_stamina >= 10 &&
-                  !activeScout &&
+                  !hasPhysicalActionInProgress &&
                   isAtLocation;
 
                 return (
@@ -846,6 +846,7 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
                       timeLeft={breachTimeRemaining.get(poiItem.id) || ''}
                       breachResults={breachResults}
                       selectedPoi={selectedPoi}
+                      hasPhysicalActionInProgress={hasPhysicalActionInProgress}
                       onBreachClick={handleBreachClick}
                       onViewBreachResults={handleViewBreachResults}
                       onBackFromBreachResults={handleBackFromBreachResults}

@@ -35,6 +35,7 @@ interface PoiCardProps {
   timeLeft?: string;
   breachResults?: any;
   selectedPoi?: POI | null;
+  hasPhysicalActionInProgress?: boolean;
   onBreachClick: (poi: POI) => void;
   onViewBreachResults: (poi: POI) => void;
   onBackFromBreachResults: () => void;
@@ -48,6 +49,7 @@ export default function PoiCard({
   timeLeft = '',
   breachResults,
   selectedPoi,
+  hasPhysicalActionInProgress = false,
   onBreachClick,
   onViewBreachResults,
   onBackFromBreachResults
@@ -63,7 +65,8 @@ export default function PoiCard({
     userStats.current_bandwidth >= 1 &&
     userStats.current_charge >= requiredCharge &&
     userStats.current_stamina >= requiredStamina &&
-    !activeBreach;
+    !activeBreach &&
+    !hasPhysicalActionInProgress;
 
   // Check if POI was recently unlocked (within last 24 hours)
   const isNewlyUnlocked = poiItem.unlocked_at && 
