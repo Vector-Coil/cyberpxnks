@@ -57,6 +57,8 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
   const [success, setSuccess] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isAdminShop, setIsAdminShop] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null);
 
   useEffect(() => {
     if (!shopId || Number.isNaN(shopId) || !userFid || isAuthLoading) return;
@@ -127,10 +129,19 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
     loadShopData();
   }, [shopId, userFid, isAuthLoading]);
 
-  const handlePurchase = async (itemId: number) => {
+  const handlePurchaseClick = (item: ShopItem) => {
+    setSelectedItem(item);
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmPurchase = async () => {
+    if (!selectedItem) return;
+    
+    const itemId = selectedItem.item_id || selectedItem.id;
     setPurchasing(itemId);
     setError(null);
     setSuccess(null);
+    setShowConfirmModal(false);
     
     try {
       const res = await fetch(`/api/shops/purchase?fid=${userFid}`, {
@@ -166,7 +177,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
     if (isAdminShop) return true; // Admin shop - always allow
     if (item.required_level && userLevel < item.required_level) return false;
     if (item.required_street_cred && userStreetCred < item.required_street_cred) return false;
-    if (item.currency === 'credits' && (navData?.cxBalance || 0) < item.price) return false;
+    if (item.currency === 'credits' && (navData?.credits || 0) < item.price) return false;
     if (item.currency === 'street_cred' && userStreetCred < item.price) return false;
     if (item.stock === 0) return false;
     return true;
@@ -316,18 +327,27 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
                       )}
 
                       <div className="flex items-center justify-between">
-                        <div className="text-white font-bold">
+                        <div className="flex items-center gap-1">
                           {isAdminShop ? (
-                            <span className="text-green-400">FREE</span>
+                            <span className="text-green-400 font-bold">FREE</span>
                           ) : (
-                            <>{item.price} {item.currency === 'credits' ? '¢' : 'SC'}</>
+                            <>
+                              <span className="text-white font-bold">{item.price}</span>
+                              {item.currency === 'credits' ? (
+                                <img src="/images/credits-currency.png" alt="Credits" className="w-4 h-4" />
+                              ) : (
+                                <span className="text-yellow-400"> SC</span>
+                              )}
+                            </>
                           )}
                         </div>
                         <button
-                          onClick={() => handlePurchase(item.item_id || item.id)}
+                          onClick={() => handlePurchaseClick(item)}
                           disabled={!canPurchase(item) || purchasing === (item.item_id || item.id)}
-                          className={`cx-btn-primary px-4 py-2 text-xs ${
-                            !canPurchase(item) || purchasing === (item.item_id || item.id) ? 'opacity-50 cursor-not-allowed' : ''
+                          className={`btn-cx btn-cx-full px-4 py-1.5 text-xs ${
+                            !canPurchase(item) || purchasing === (item.item_id || item.id) 
+                              ? 'btn-cx-disabled' 
+                              : 'btn-cx-primary'
                           }`}
                         >
                           {purchasing === (item.item_id || item.id) ? (isAdminShop ? 'ADDING...' : 'BUYING...') : (isAdminShop ? 'ADD' : 'BUY')}
@@ -341,6 +361,43 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
           )}
         </div>
       </div>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && selectedItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+          <div className="bg-gray-900 border-2 border-fuschia rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-white font-bold uppercase text-lg mb-4">Confirm Purchase</h3>
+            <p className="text-gray-300 mb-6">
+              Do you want to purchase <span className="text-white font-semibold">{selectedItem.name}</span> for{' '}
+              <span className="inline-flex items-center gap-1">
+                <span className="text-white font-bold">{selectedItem.price}</span>
+                {selectedItem.currency === 'credits' ? (
+                  <img src="/images/credits-currency.png" alt="Credits" className="w-4 h-4" />
+                ) : (
+                  <span className="text-yellow-400">SC</span>
+                )}
+              </span>?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  setSelectedItem(null);
+                }}
+                className="btn-cx btn-cx-secondary btn-cx-full flex-1"
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={handleConfirmPurchase}
+                className="btn-cx btn-cx-primary btn-cx-full flex-1"
+              >
+                CONFIRM
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
