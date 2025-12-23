@@ -228,9 +228,7 @@ export async function POST(request: NextRequest) {
       logger.info('[Shop Purchase] Committing transaction');
       await connection.commit();
       connection.release();
-      logger.info('[Shop Purchase] Success!'
-      await connection.commit();
-      connection.release();
+      logger.info('[Shop Purchase] Success!');
 
       return NextResponse.json({
         success: true,
