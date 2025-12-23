@@ -76,12 +76,12 @@ export const NavStrip: React.FC<NavStripProps> = ({
         <div className="flex items-center gap-2">
           {/* Credits Display */}
           <div className="flex items-center gap-1.5">
-            <span className="pill-charcoal text-xs">{credits.toLocaleString()}
+            <div className="pill-charcoal text-xs flex flex-row">{credits.toLocaleString()}
             <img 
               src="https://vectorcoil.com/cx/images/credits-currency.svg" 
               alt="Credits" 
               className="w-4 h-4"
-            /></span>
+            /></div>
           </div>
           
           {/* Icon Separator */}
