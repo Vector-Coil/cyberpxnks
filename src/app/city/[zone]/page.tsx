@@ -491,16 +491,24 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
   const isAtLocation = userLocation === zoneId;
   
   // Check for any physical actions in progress at current location
-  // Physical actions (Scout and physical Breach) block travel
-  const hasPhysicalBreachInProgress = history.some(h => 
-    h.action_type === 'Breached' && 
-    h.end_time && 
-    !h.result_status &&
-    new Date(h.end_time).getTime() > Date.now()
-  );
-  
-  // Include Scouting action as a physical action that blocks travel
-  const hasPhysicalActionInProgress = activeScout || hasPhysicalBreachInProgress;
+  // Physical actions (Scout, Breach, Explore, etc) block travel - matching backend validation
+  const hasPhysicalActionInProgress = history.some(h => {
+    // Physical action types that require user to be at the location
+    const physicalActionTypes = ['Scouted', 'Breached', 'RemoteBreach', 'OvernetScan', 'Exploring'];
+    
+    // Check if this is a physical action type
+    if (!physicalActionTypes.includes(h.action_type)) return false;
+    
+    // Check if it has an end time
+    if (!h.end_time) return false;
+    
+    // Check if it's still in progress (matches backend logic)
+    const isInProgress = !h.result_status || h.result_status === '' || h.result_status === 'in_progress';
+    if (!isInProgress) return false;
+    
+    // Check if end time hasn't passed yet
+    return new Date(h.end_time).getTime() > Date.now();
+  });
   
   const canTravel = userStats && 
     userStats.current_stamina >= travelCost && 
