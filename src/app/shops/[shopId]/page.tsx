@@ -366,6 +366,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
           )}
         </div>
       </div>
+      </div>
 
       {/* Confirmation Modal */}
       {showConfirmModal && selectedItem && (
