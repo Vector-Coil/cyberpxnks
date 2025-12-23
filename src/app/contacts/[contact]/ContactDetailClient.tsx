@@ -43,7 +43,7 @@ export default function ContactDetailClient({ contact, gigs, navData, messageInf
           {/* Top section outside of cards */}
           <div className="flex direction-row gap-3 mb-6">
             
-            <div className="flex direction-column gap-3">
+            <div className="direction-column gap-3">
               <div className="w-28 h-28overflow-hidden flex-shrink-0">
                 {contact.image_url ? <img src={contact.image_url} alt={contact.name} className="w-full h-full object-cover" /> : null}
               </div>
@@ -92,7 +92,7 @@ export default function ContactDetailClient({ contact, gigs, navData, messageInf
 
                             <div className="flex-1">
 
-                                <div className="flex direction-column">
+                                <div className="direction-column">
                                     <div className="card-title uppercase">{g.gig_code}</div>
 
                                     {/* Requirements placeholder until a requirements table is added */}
