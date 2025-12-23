@@ -146,32 +146,48 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
     setShowConfirmModal(false);
     
     try {
+      console.log('[Shop] Making purchase request:', { shopId, itemId, isAdminShop });
+      
       const res = await fetch(`/api/shops/purchase?fid=${userFid}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ shopId, itemId })
       });
 
-      const data = await res.json();
-
+      console.log('[Shop] Purchase response status:', res.status);
+      
       if (!res.ok) {
-        throw new Error(data.error || 'Purchase failed');
+        const errorText = await res.text();
+        console.error('[Shop] Purchase error response:', errorText);
+        
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          throw new Error(`Purchase failed: ${res.status} ${res.statusText}`);
+        }
+        
+        throw new Error(errorData.error || 'Purchase failed');
       }
+
+      const data = await res.json();
+      console.log('[Shop] Purchase success:', data);
 
       setSuccess(isAdminShop ? `Added ${data.item.name} to inventory!` : `Purchased ${data.item.name}!`);
       
       // Refresh inventory
-      const invRes = await fetch(`/api/shops/${shopId}/inventory`);
+      const invRes = await fetch(`/api/shops/${shopId}/inventory?fid=${userFid}`);
       const invData = await invRes.json();
       setInventory(invData.items || []);
 
       // Clear success message after 3 seconds
       setTimeout(() => setSuccess(null), 3000);
     } catch (err: any) {
-      console.error('Purchase error:', err);
-      setError(err.message);
+      console.error('[Shop] Purchase error:', err);
+      setError(err.message || 'Failed to complete purchase');
     } finally {
       setPurchasing(null);
+      setSelectedItem(null);
     }
   };
 
