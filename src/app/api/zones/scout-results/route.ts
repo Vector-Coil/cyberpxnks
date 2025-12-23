@@ -37,21 +37,25 @@ export async function POST(request: NextRequest) {
     const baseXpOptions = [10, 15, 20, 25, 30];
     const baseXp = baseXpOptions[Math.floor(Math.random() * baseXpOptions.length)];
 
-    // Get arsenal discovery_poi bonus from equipped arsenal items
+    // Get arsenal discovery bonuses from equipped arsenal items
     const [arsenalBonus] = await pool.execute<RowDataPacket[]>(
-      `SELECT COALESCE(SUM(am.discovery_poi), 0) as discovery_poi_bonus
+      `SELECT 
+        COALESCE(SUM(am.discovery_poi), 0) as discovery_poi_bonus,
+        COALESCE(SUM(am.discovery_item), 0) as discovery_item_bonus
        FROM user_loadout ul
        INNER JOIN arsenal_modifiers am ON ul.item_id = am.item_id
        WHERE ul.user_id = ? AND ul.slot_type = 'arsenal'`,
       [userId]
     );
     const discoveryPoiBonus = arsenalBonus[0]?.discovery_poi_bonus || 0;
+    const discoveryItemBonus = arsenalBonus[0]?.discovery_item_bonus || 0;
 
-    // Roll for reward type with POI discovery mechanics (28.6% base + arsenal bonus)
-    const rewardType = rollEncounterReward(0, 0, discoveryPoiBonus, 'poi');
+    // Roll for reward type: POI discovery OR item OR encounter OR nothing
+    const rewardType = rollEncounterReward(0, 0, discoveryPoiBonus, discoveryItemBonus, 'poi');
     
     let encounter = null;
     let unlockedPOI = null;
+    let discoveredItem = null;
     let discoveryBonus = 0;
 
     if (rewardType === 'discovery') {
@@ -97,6 +101,47 @@ export async function POST(request: NextRequest) {
           `Unlocked ${unlockedPOI.name} (${poiTypeLabel}) in zone ${zoneId}`
         );
       }
+    } else if (rewardType === 'item') {
+      // Try to discover a discoverable item (non-intel only for Scout)
+      const [undiscoveredItemRows] = await pool.execute<any[]>(
+        `SELECT i.id, i.name, i.item_type, i.image_url, i.rarity
+         FROM items i
+         WHERE i.discoverable = 1
+           AND i.item_type != 'intel'
+           AND i.id NOT IN (
+             SELECT DISTINCT item_id 
+             FROM user_inventory 
+             WHERE user_id = ?
+           )
+         ORDER BY RAND()
+         LIMIT 1`,
+        [userId]
+      );
+
+      if (undiscoveredItemRows.length > 0) {
+        discoveredItem = undiscoveredItemRows[0];
+
+        // +10 XP bonus for item discovery
+        discoveryBonus = 10;
+
+        // Add item to user's inventory
+        await pool.execute(
+          `INSERT INTO user_inventory (user_id, item_id, quantity, acquired_at)
+           VALUES (?, ?, 1, UTC_TIMESTAMP())
+           ON DUPLICATE KEY UPDATE quantity = quantity + 1`,
+          [userId, discoveredItem.id]
+        );
+
+        // Log item discovery activity
+        await logActivity(
+          userId,
+          'discovery',
+          'item_discovered',
+          null,
+          discoveredItem.id,
+          `Discovered ${discoveredItem.name} (${discoveredItem.item_type}) while scouting zone ${zoneId}`
+        );
+      }
     } else if (rewardType === 'encounter') {
       // Get random encounter for city context with the specific zone
       encounter = await getRandomEncounter(pool, zoneId, 'city', userStreetCred);
@@ -125,6 +170,8 @@ export async function POST(request: NextRequest) {
     let gainsText = `+${totalXp} XP`;
     if (unlockedPOI) {
       gainsText += ` (+10 discovery bonus), Unlocked ${unlockedPOI.name}`;
+    } else if (discoveredItem) {
+      gainsText += ` (+10 discovery bonus), Discovered ${discoveredItem.name}`;
     } else if (encounter) {
       gainsText += `, Encountered ${encounter.name}`;
     }
@@ -178,6 +225,13 @@ export async function POST(request: NextRequest) {
         name: unlockedPOI.name,
         type: unlockedPOI.poi_type,
         imageUrl: unlockedPOI.image_url
+      } : null,
+      discoveredItem: discoveredItem ? {
+        id: discoveredItem.id,
+        name: discoveredItem.name,
+        type: discoveredItem.item_type,
+        rarity: discoveredItem.rarity,
+        imageUrl: discoveredItem.image_url
       } : null,
       encounter: encounter ? {
         id: encounter.id,

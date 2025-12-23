@@ -16,47 +16,51 @@ export const DEFAULT_NEURAL_THERMAL_INCREASE = 10;
 
 /**
  * Roll for encounter reward type based on percentages
+ * Returns ONE reward type: primary discovery (zone/poi) OR item OR encounter OR nothing
  * Discovery calculation:
  * - Explore (zone): 0.2% per undiscovered zone + arsenal discovery_zone bonus
  * - Scout (POI): 28.6% base + arsenal discovery_poi bonus
- * - Nothing %: 35.7% reduced by discovery bonus
+ * - Item: 20% base + arsenal discovery_item bonus
+ * - Nothing %: 35.7% reduced by total discovery bonuses
  * - Remainder: Encounter
  */
 export function rollEncounterReward(
   discoveredCount: number = 0,
   totalAvailable: number = 100,
-  itemModifiers: number = 0, // Arsenal discovery bonus (discovery_zone, discovery_poi, or discovery_item)
-  discoveryType: 'zone' | 'poi' | 'item' = 'zone' // Type of discovery being rolled
+  primaryModifier: number = 0, // Arsenal discovery bonus for primary (discovery_zone or discovery_poi)
+  itemModifier: number = 0, // Arsenal discovery_item bonus
+  discoveryType: 'zone' | 'poi' = 'zone' // Type of primary discovery
 ): EncounterRewardType {
   const roll = Math.random() * 100;
   
-  let discoveryChance = 0;
-  
+  // Calculate primary discovery chance (zone or poi)
+  let primaryDiscoveryChance = 0;
   if (discoveryType === 'zone') {
     // Explore: 0.2% per undiscovered zone
     const undiscoveredCount = Math.max(0, totalAvailable - discoveredCount);
-    discoveryChance = undiscoveredCount * 0.2;
+    primaryDiscoveryChance = undiscoveredCount * 0.2;
   } else if (discoveryType === 'poi') {
     // Scout: Fixed baseline
-    discoveryChance = 28.6;
-  } else if (discoveryType === 'item') {
-    // Future item discovery mechanic
-    discoveryChance = 20; // Placeholder baseline
+    primaryDiscoveryChance = 28.6;
   }
   
-  // Apply arsenal modifiers (discovery_zone, discovery_poi, or discovery_item)
-  discoveryChance += itemModifiers;
+  // Apply arsenal modifiers
+  primaryDiscoveryChance += primaryModifier;
+  primaryDiscoveryChance = Math.max(0, Math.min(70, primaryDiscoveryChance));
   
-  // Clamp between 0% and 70% to keep game balanced
-  discoveryChance = Math.max(0, Math.min(70, discoveryChance));
+  // Calculate item discovery chance: 20% base + modifiers, clamped to 70%
+  let itemDiscoveryChance = 20 + itemModifier;
+  itemDiscoveryChance = Math.max(0, Math.min(70, itemDiscoveryChance));
   
-  // Adjust Nothing threshold based on discovery bonus
-  // Base Nothing is 35.7%, reduced by the item modifier amount
-  let nothingThreshold = Math.max(0, 35.7 - itemModifiers);
-  const discoveryThreshold = nothingThreshold + discoveryChance;
+  // Adjust Nothing threshold based on total discovery bonuses
+  // Base Nothing is 35.7%, reduced by the sum of modifiers
+  let nothingThreshold = Math.max(0, 35.7 - primaryModifier - itemModifier);
+  const primaryThreshold = nothingThreshold + primaryDiscoveryChance;
+  const itemThreshold = primaryThreshold + itemDiscoveryChance;
   
   if (roll < nothingThreshold) return 'nothing';
-  if (roll < discoveryThreshold) return 'discovery';
+  if (roll < primaryThreshold) return 'discovery'; // Zone or POI
+  if (roll < itemThreshold) return 'item';
   return 'encounter';
 }
 

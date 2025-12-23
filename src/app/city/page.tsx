@@ -321,10 +321,12 @@ export default function CityPage() {
                         <span className="text-gray-300">Gained XP</span>
                         <span className="pill-cloud-gray">{exploreResults.xpGained} XP</span>
                       </div>
-                      {exploreResults.discoveredZone && (
+                      {(exploreResults.discoveredZone || exploreResults.discoveredItem) && (
                         <div className="flex items-center justify-between">
                           <span className="text-gray-300">Discovery</span>
-                          <span className="pill-bright-green">{exploreResults.discoveredZone.name}</span>
+                          <span className="pill-bright-green">
+                            {exploreResults.discoveredZone?.name || exploreResults.discoveredItem?.name}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -342,6 +344,19 @@ export default function CityPage() {
                               This zone contains {exploreResults.discoveredZone.poiCount} point{exploreResults.discoveredZone.poiCount !== 1 ? 's' : ''} of interest.
                             </span>
                           )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {exploreResults.discoveredItem && (
+                    <div className="modal-base mb-2 border-2 border-bright-green/50">
+                      <div className="modal-title mb-2 text-bright-green">✨ ITEM DISCOVERY</div>
+                      <div className="modal-body-data space-y-2">
+                        <div className="text-gray-300 text-sm">
+                          You discovered <span className="text-white font-semibold">{exploreResults.discoveredItem.name}</span>, a{' '}
+                          <span className="text-cyan-400">{exploreResults.discoveredItem.rarity}</span>{' '}
+                          <span className="text-purple-400">{exploreResults.discoveredItem.type}</span>!
                         </div>
                       </div>
                     </div>
