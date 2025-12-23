@@ -191,9 +191,9 @@ export async function POST(request: NextRequest) {
       try {
         await connection.execute(
           `INSERT INTO shop_transactions 
-           (user_id, shop_id, item_id, price, timestamp) 
-           VALUES (?, ?, ?, ?, UTC_TIMESTAMP())`,
-          [user.id, shopId, item.item_id, item.price]
+           (user_id, shop_id, item_id, item_name, price, timestamp) 
+           VALUES (?, ?, ?, ?, ?, UTC_TIMESTAMP())`,
+          [user.id, shopId, item.item_id, item.name, item.price]
         );
       } catch (transErr: any) {
         logger.warn('[Shop Purchase] shop_transactions insert failed:', transErr.message);
@@ -216,24 +216,24 @@ export async function POST(request: NextRequest) {
       }
 
       await connection.commit();
-      connection: any) {
+      connection.release();
+
+      return NextResponse.json({
+        success: true,
+        item: {
+          name: item.name,
+          type: item.item_type
+        },
+        cost: item.price
+      });
+    } catch (err: any) {
       await connection.rollback();
       connection.release();
       logger.error('[Shop Purchase] Transaction failed:', err);
       throw err;
     }
   } catch (err: any) {
-    logger.error('[Shop Purchase] Error:', err);ame,
-          type: item.item_type
-        },
-        cost: item.price
-      });
-    } catch (err) {
-      await connection.rollback();
-      connection.release();
-      throw err;
-    }
-  } catch (err: any) {
+    logger.error('[Shop Purchase] Error:', err);
     return handleApiError(err, 'Failed to complete purchase');
   }
 }
