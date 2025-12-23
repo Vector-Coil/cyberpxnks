@@ -138,6 +138,8 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
     if (!selectedItem) return;
     
     const itemId = isAdminShop ? selectedItem.item_id : selectedItem.id;
+    if (!itemId) return;
+    
     setPurchasing(itemId);
     setError(null);
     setSuccess(null);
