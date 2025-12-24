@@ -23,6 +23,7 @@ export default function ProfileLayout({ username, profileImage, credits, cxBalan
         username={username}
         profileImage={profileImage}
         cxBalance={cxBalance}
+        userFid={userFid}
       />
       <div className="frame-container frame-main">
         <div className="frame-body pt-6 pb-2 px-6 mb-2">

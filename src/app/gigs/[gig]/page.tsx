@@ -181,7 +181,7 @@ export default async function GigDetailPage({ params }: { params: any }) {
       cxBalance: 0 // Will be updated on client side from wallet
     };
 
-    return <GigDetailClient gigData={gigData} historyEvents={historyEvents} navData={navDataWithDefaults} />;
+    return <GigDetailClient gigData={gigData} historyEvents={historyEvents} navData={navDataWithDefaults} userFid={300187} />;
 
   } catch (err: any) {
     console.error('Gig detail error', err?.stack || err);

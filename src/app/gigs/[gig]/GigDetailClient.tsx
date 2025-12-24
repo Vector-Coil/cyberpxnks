@@ -27,14 +27,15 @@ interface GigDetailClientProps {
     credits: number;
     cxBalance: number;
   };
+  userFid: number;
 }
 
-export default function GigDetailClient({ gigData, historyEvents, navData }: GigDetailClientProps) {
+export default function GigDetailClient({ gigData, historyEvents, navData, userFid }: GigDetailClientProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   return (
     <>
-      <NavDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} username={navData.username} cxBalance={navData.cxBalance} />
+      <NavDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} username={navData.username} cxBalance={navData.cxBalance} userFid={userFid} />
       
       <div className="frame-container frame-main">
         <div className="frame-body pt-6 pb-2 px-6">

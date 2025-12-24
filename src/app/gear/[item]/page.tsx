@@ -145,6 +145,7 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
           username={navData.username}
           profileImage={navData.profileImage}
           cxBalance={navData.cxBalance}
+          userFid={userFid || undefined}
         />
         <div className="frame-container frame-main">
           <div className="frame-body pt-6 pb-2 px-6 mb-2">
@@ -172,6 +173,7 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
           username={navData.username}
           profileImage={navData.profileImage}
           cxBalance={navData.cxBalance}
+          userFid={userFid || undefined}
         />
         <div className="frame-container frame-main">
           <div className="frame-body pt-6 pb-2 px-6 mb-2">
@@ -212,6 +214,7 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
         username={navData.username}
         profileImage={navData.profileImage}
         cxBalance={navData.cxBalance}
+        userFid={userFid || undefined}
       />
       <div className="frame-container frame-main">
         <div className="frame-body pt-6 pb-2 px-6 mb-2">
