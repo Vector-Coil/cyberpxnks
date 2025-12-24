@@ -82,7 +82,8 @@ export async function POST(request: NextRequest) {
 
     // Roll for reward type: item (intel only) OR encounter OR nothing
     // Note: No POI/terminal discovery during breach - terminals are discovered via Scout/Explore
-    const rewardType = rollEncounterReward(0, 0, 0, discoveryItemBonus, 'item');
+    // Using 'poi' type but with 0 modifier to disable POI discovery, focus on item/encounter/nothing
+    const rewardType = rollEncounterReward(0, 0, 0, discoveryItemBonus, 'poi');
     
     let discoveredItem = null;
     let discoveryBonus = 0;
@@ -155,12 +156,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Restore bandwidth (increment by 1, will be capped by validation elsewhere)
-    await pool.execute(
-      'UPDATE user_stats SET current_bandwidth = current_bandwidth + 1 WHERE user_id = ?',
-      [userId]
-    );
-
     // Apply total XP (base + discovery bonus)
     const totalXp = baseXp + discoveryBonus;
     await pool.execute(
@@ -182,6 +177,12 @@ export async function POST(request: NextRequest) {
        SET result_status = 'completed', xp_data = ?, gains_data = ?
        WHERE id = ?`,
       [totalXp, gainsText, historyId]
+    );
+
+    // Restore bandwidth AFTER marking as complete to prevent double-restoration on retry
+    await pool.execute(
+      'UPDATE user_stats SET current_bandwidth = current_bandwidth + 1 WHERE user_id = ?',
+      [userId]
     );
 
     // Get POI details for logging
