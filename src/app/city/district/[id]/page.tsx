@@ -21,6 +21,8 @@ interface Zone {
   district_name?: string;
   description: string;
   image_url?: string;
+  shop_count?: number;
+  terminal_count?: number;
 }
 
 interface HistoryEntry {
@@ -42,6 +44,7 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
   const [district, setDistrict] = useState<District | null>(null);
   const [zones, setZones] = useState<Zone[]>([]);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [currentLocationId, setCurrentLocationId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -55,8 +58,11 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
 
     async function loadData() {
       try {
-        // Fetch district details
-        const districtRes = await fetch(`/api/districts/${districtId}?fid=${userFid}`);
+        // Parallelize API calls
+        const [districtRes, alertsRes] = await Promise.all([
+          fetch(`/api/districts/${districtId}?fid=${userFid}`),
+          fetch(`/api/alerts?fid=${userFid}`)
+        ]);
 
         // Process district details
         if (districtRes.ok) {
@@ -64,6 +70,14 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
           setDistrict(districtData.district);
           setZones(districtData.zones || []);
           setHistory(districtData.history || []);
+        }
+
+        // Process user location
+        if (alertsRes.ok) {
+          const alertsData = await alertsRes.json();
+          if (alertsData.location?.zoneId) {
+            setCurrentLocationId(alertsData.location.zoneId);
+          }
         }
       } catch (err) {
         console.error('Failed to load district data:', err);
@@ -193,17 +207,65 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
             No zones discovered in this district yet.
           </div>
         ) : (
-          <div className="space-y-3 mb-6">
-            {zones.map((zone) => (
-              <CxCard key={zone.id} href={`/city/${zone.id}`}>
-                <div className="flex flex-col gap-2">
-                  <div className="flex direction-row justify-between items-center">
-                    <span className="pill-cloud-gray uppercase">{zone.zone_type_name || zone.zone_type}</span>
+          <div className="space-y-1 mb-6">
+            {zones.map((zone) => {
+              const isCurrentLocation = zone.id === currentLocationId;
+              return (
+                <a 
+                  key={zone.id} 
+                  href={`/city/${zone.id}`} 
+                  className="block"
+                >
+                  <div 
+                    className={`cx-banner ${isCurrentLocation ? 'ring-2 ring-cyan-400 shadow-lg shadow-cyan-400/50' : ''}`}
+                    style={zone.image_url ? { 
+                      backgroundImage: `url(${zone.image_url})`,
+                      backgroundSize: 'cover',
+                      backgroundPosition: 'center',
+                      opacity: 0.5
+                    } : undefined}
+                  >
+                    <div className="banner-left flex flex-col gap-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {zone.district_name && (
+                            <span className="px-2 py-1 bg-fuschia text-white text-xs font-bold uppercase rounded flex-shrink-0">
+                              {zone.district_name}
+                            </span>
+                          )}
+                        </div>
+                        <span className="pill-cloud-gray uppercase flex-shrink-0">{zone.zone_type_name || zone.zone_type}</span>
+                      </div>
+                      <div className="flex items-end justify-between gap-2">
+                        <div className="text-white font-bold uppercase text-lg flex items-center gap-2">
+                          {isCurrentLocation && (
+                            <span className="material-symbols-outlined text-cyan-400" style={{ fontSize: '20px' }}>location_on</span>
+                          )}
+                          {zone.name}
+                        </div>
+                        {/* POI Indicators */}
+                        {((zone.terminal_count || 0) > 0 || (zone.shop_count || 0) > 0) && (
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            {(zone.terminal_count || 0) > 0 && (
+                              <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-black/60 rounded text-xs">
+                                <span className="material-symbols-outlined text-cyan-400" style={{ fontSize: '14px' }}>terminal</span>
+                                <span className="text-cyan-400 font-semibold">{zone.terminal_count}</span>
+                              </div>
+                            )}
+                            {(zone.shop_count || 0) > 0 && (
+                              <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-black/60 rounded text-xs">
+                                <span className="material-symbols-outlined text-green-400" style={{ fontSize: '14px' }}>storefront</span>
+                                <span className="text-green-400 font-semibold">{zone.shop_count}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div className="card-title">{zone.name}</div>
-                </div>
-              </CxCard>
-            ))}
+                </a>
+              );
+            })}
           </div>
         )}
 

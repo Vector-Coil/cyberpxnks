@@ -459,7 +459,7 @@ export default function CityPage() {
                       backgroundImage: `url(${zone.image_url})`,
                       backgroundSize: 'cover',
                       backgroundPosition: 'center',
-                      opacity: 0.75
+                      opacity: 0.5
                     } : undefined}
                   >
                     <div className="banner-left flex flex-col gap-2">
