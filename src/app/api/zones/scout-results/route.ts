@@ -119,6 +119,14 @@ export async function POST(request: NextRequest) {
         [userId]
       );
 
+      logger.info('Item discovery rolled (Scout)', {
+        userId,
+        fid,
+        zoneId,
+        itemsFound: undiscoveredItemRows.length,
+        rewardType
+      });
+
       if (undiscoveredItemRows.length > 0) {
         discoveredItem = undiscoveredItemRows[0];
 

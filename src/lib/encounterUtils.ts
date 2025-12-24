@@ -20,7 +20,7 @@ export const DEFAULT_NEURAL_THERMAL_INCREASE = 10;
  * Discovery calculation:
  * - Explore (zone): 0.2% per undiscovered zone + arsenal discovery_zone bonus
  * - Scout (POI): 28.6% base + arsenal discovery_poi bonus
- * - Item: 20% base + arsenal discovery_item bonus
+ * - Item: 30% base + arsenal discovery_item bonus
  * - Nothing %: 35.7% reduced by total discovery bonuses
  * - Remainder: Encounter
  */
@@ -48,8 +48,8 @@ export function rollEncounterReward(
   primaryDiscoveryChance += primaryModifier;
   primaryDiscoveryChance = Math.max(0, Math.min(70, primaryDiscoveryChance));
   
-  // Calculate item discovery chance: 20% base + modifiers, clamped to 70%
-  let itemDiscoveryChance = 20 + itemModifier;
+  // Calculate item discovery chance: 30% base + modifiers, clamped to 70%
+  let itemDiscoveryChance = 30 + itemModifier;
   itemDiscoveryChance = Math.max(0, Math.min(70, itemDiscoveryChance));
   
   // Adjust Nothing threshold based on total discovery bonuses
