@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool, logActivity } from '../../../../lib/db';
 import { requireParams, handleApiError } from '../../../../lib/api/errors';
 import { logger } from '../../../../lib/logger';
+import { triggerJunkMessageWithProbability } from '../../../../lib/messageScheduler';
 
 export async function POST(request: NextRequest) {
   try {
@@ -231,6 +232,13 @@ export async function POST(request: NextRequest) {
       await connection.commit();
       connection.release();
       logger.info('[Shop Purchase] Success!');
+
+      // 3% chance to schedule a junk message after shopping
+      try {
+        await triggerJunkMessageWithProbability(user.id, 0.03, 'SHOP_PURCHASE');
+      } catch (err) {
+        logger.warn('[Shop Purchase] Failed to trigger junk message', { error: err });
+      }
 
       return NextResponse.json({
         success: true,

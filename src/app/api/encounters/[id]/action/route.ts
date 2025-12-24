@@ -5,6 +5,7 @@ import { calculateActionStatValue, calculateSuccessRate, calculateCreditCost, ca
 import { StatsService } from '../../../../../lib/statsService';
 import { requireParams, handleApiError } from '../../../../../lib/api/errors';
 import { logger } from '../../../../../lib/logger';
+import { triggerJunkMessageWithProbability } from '../../../../../lib/messageScheduler';
 
 export async function POST(
   request: NextRequest,
@@ -203,6 +204,13 @@ export async function POST(
 
       await connection.commit();
       connection.release();
+
+      // 4% chance to schedule a junk message after encounter action
+      try {
+        await triggerJunkMessageWithProbability(user.id, 0.04, 'ENCOUNTER_ACTION');
+      } catch (err) {
+        logger.warn('[Encounter Action] Failed to trigger junk message', { error: err });
+      }
 
       // Return results
       return NextResponse.json({

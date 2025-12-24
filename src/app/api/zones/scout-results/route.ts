@@ -7,6 +7,7 @@ import { validateFid, requireParams } from '~/lib/api/errors';
 import { getUserIdByFid } from '~/lib/api/userUtils';
 import { logger } from '~/lib/logger';
 import { handleApiError } from '~/lib/api/errors';
+import { triggerJunkMessageWithProbability } from '../../../../lib/messageScheduler';
 
 export async function POST(request: NextRequest) {
   try {
@@ -213,6 +214,13 @@ export async function POST(request: NextRequest) {
       }
     } catch (err) {
       logger.warn('Failed to check level up', { error: err });
+    }
+
+    // 5% chance to schedule a junk message after scouting
+    try {
+      await triggerJunkMessageWithProbability(userId, 0.05, 'SCOUT_COMPLETE');
+    } catch (err) {
+      logger.warn('[Scout Results] Failed to trigger junk message', { error: err });
     }
 
     return NextResponse.json({

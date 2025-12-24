@@ -6,6 +6,7 @@ import { validateFid, requireParams } from '~/lib/api/errors';
 import { getUserIdByFid } from '~/lib/api/userUtils';
 import { logger } from '~/lib/logger';
 import { handleApiError } from '~/lib/api/errors';
+import { triggerJunkMessageWithProbability } from '../../../../lib/messageScheduler';
 
 export async function POST(request: NextRequest) {
   try {
@@ -268,6 +269,13 @@ export async function POST(request: NextRequest) {
       'SELECT * FROM user_stats WHERE user_id = ? LIMIT 1',
       [userId]
     );
+
+    // 5% chance to schedule a junk message after breaching
+    try {
+      await triggerJunkMessageWithProbability(userId, 0.05, 'BREACH_COMPLETE');
+    } catch (err) {
+      logger.warn('[Breach Results] Failed to trigger junk message', { error: err });
+    }
 
     return NextResponse.json({
       success: true,

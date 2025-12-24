@@ -270,6 +270,13 @@ export async function POST(request: NextRequest) {
       logger.warn('Failed to check level up', { error: err });
     }
 
+    // 5% chance to schedule a junk message after exploring
+    try {
+      await triggerJunkMessageWithProbability(userId, 0.05, 'EXPLORE_COMPLETE');
+    } catch (err) {
+      logger.warn('[Explore Results] Failed to trigger junk message', { error: err });
+    }
+
     return NextResponse.json({
       success: true,
       xpGained: totalXp,

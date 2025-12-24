@@ -17,6 +17,25 @@ export async function GET(request: NextRequest) {
     
     console.log('[Messages API] User ID:', userId);
 
+    // First, unlock any scheduled messages that are due for delivery
+    try {
+      const [updateResult] = await pool.execute(
+        `UPDATE msg_history 
+         SET status = 'UNREAD', unlocked_at = NOW() 
+         WHERE user_id = ? 
+         AND status = 'SCHEDULED' 
+         AND scheduled_for <= NOW()`,
+        [userId]
+      );
+      const unlocked = (updateResult as any).affectedRows;
+      if (unlocked > 0) {
+        console.log(`[Messages API] Unlocked ${unlocked} scheduled message(s) for user ${userId}`);
+      }
+    } catch (unlockErr) {
+      console.error('[Messages API] Error unlocking scheduled messages:', unlockErr);
+      // Continue anyway - don't block message fetching
+    }
+
     // Build query based on sort/filter options
     // Union query to get both regular messages and junk messages
     let query = `
@@ -30,6 +49,7 @@ export async function GET(request: NextRequest) {
         m.image_url AS message_image_url,
         m.btn_1,
         m.btn_2,
+        m.msg_attachment,
         c.display_name AS contact_name,
         c.image_url AS contact_image_url,
         mh.status,
@@ -53,6 +73,7 @@ export async function GET(request: NextRequest) {
         NULL AS message_image_url,
         NULL AS btn_1,
         NULL AS btn_2,
+        NULL AS msg_attachment,
         mj.sent_from AS contact_name,
         NULL AS contact_image_url,
         mh2.status,
