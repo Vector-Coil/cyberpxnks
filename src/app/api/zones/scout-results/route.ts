@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     let discoveryBonus = 0;
 
     if (rewardType === 'discovery') {
-      // Try to unlock a POI (terminal or shop) in this zone
+      // Try to unlock a POI (terminal or shop) in this zone that hasn't been unlocked yet
       const [undiscoveredPOIRows] = await pool.execute<any[]>(
         `SELECT poi.id, poi.name, poi.poi_type, poi.image_url
          FROM points_of_interest poi
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
         // +10 XP bonus for POI discovery
         discoveryBonus = 10;
 
-        // Create POI unlock entry in user_zone_history
+        // Create POI unlock entry in user_zone_history to mark as discovered
         await pool.execute(
           `INSERT INTO user_zone_history 
            (user_id, zone_id, poi_id, action_type, timestamp, result_status) 

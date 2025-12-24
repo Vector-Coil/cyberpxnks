@@ -80,57 +80,14 @@ export async function POST(request: NextRequest) {
     const discoveryPoiBonus = arsenalBonus[0]?.discovery_poi_bonus || 0;
     const discoveryItemBonus = arsenalBonus[0]?.discovery_item_bonus || 0;
 
-    // Roll for reward type: POI discovery OR item OR encounter OR nothing
-    const rewardType = rollEncounterReward(0, 0, discoveryPoiBonus, discoveryItemBonus, 'poi');
+    // Roll for reward type: item (intel only) OR encounter OR nothing
+    // Note: No POI/terminal discovery during breach - terminals are discovered via Scout/Explore
+    const rewardType = rollEncounterReward(0, 0, 0, discoveryItemBonus, 'item');
     
-    let unlockedPOI = null;
     let discoveredItem = null;
     let discoveryBonus = 0;
 
-    if (rewardType === 'discovery') {
-      // Try to unlock a POI (terminal or shop) in this zone
-      const [undiscoveredPOIRows] = await pool.execute<any[]>(
-        `SELECT poi.id, poi.name, poi.poi_type, poi.image_url
-         FROM points_of_interest poi
-         WHERE poi.zone_id = ?
-           AND poi.id NOT IN (
-             SELECT DISTINCT poi_id 
-             FROM user_zone_history 
-             WHERE user_id = ? AND poi_id IS NOT NULL AND action_type = 'UnlockedPOI'
-           )
-         ORDER BY RAND()
-         LIMIT 1`,
-        [breach.zone_id, userId]
-      );
-
-      if (undiscoveredPOIRows.length > 0) {
-        unlockedPOI = undiscoveredPOIRows[0];
-
-        // +10 XP bonus for POI discovery
-        discoveryBonus = 10;
-
-        // Create POI unlock entry in user_zone_history
-        await pool.execute(
-          `INSERT INTO user_zone_history 
-           (user_id, zone_id, poi_id, action_type, timestamp, result_status) 
-           VALUES (?, ?, ?, 'UnlockedPOI', UTC_TIMESTAMP(), 'completed')`,
-          [userId, breach.zone_id, unlockedPOI.id]
-        );
-
-        // Determine POI type for logging
-        const poiTypeLabel = unlockedPOI.poi_type === 'shop' ? 'shop' : 'terminal';
-        
-        // Log POI unlock activity
-        await logActivity(
-          userId,
-          'discovery',
-          'poi_unlocked',
-          null,
-          unlockedPOI.id,
-          `Unlocked ${unlockedPOI.name} (${poiTypeLabel}) in zone ${breach.zone_id}`
-        );
-      }
-    } else if (rewardType === 'item') {
+    if (rewardType === 'item') {
       // Try to discover a discoverable item (intel only for Breach)
       const [undiscoveredItemRows] = await pool.execute<any[]>(
         `SELECT i.id, i.name, i.item_type, i.image_url, i.rarity
@@ -213,9 +170,7 @@ export async function POST(request: NextRequest) {
 
     // Build gains text
     let gainsText = `+${totalXp} XP`;
-    if (unlockedPOI) {
-      gainsText += ` (+10 discovery bonus), Unlocked ${unlockedPOI.name}`;
-    } else if (discoveredItem) {
+    if (discoveredItem) {
       gainsText += ` (+10 discovery bonus), Discovered ${discoveredItem.name}`;
     } else if (encounter) {
       gainsText += `, Encountered ${encounter.name}`;
@@ -282,12 +237,6 @@ export async function POST(request: NextRequest) {
       historyId: historyId,
       xpGained: totalXp,
       rewardType,
-      unlockedPOI: unlockedPOI ? {
-        id: unlockedPOI.id,
-        name: unlockedPOI.name,
-        type: unlockedPOI.poi_type,
-        imageUrl: unlockedPOI.image_url
-      } : null,
       discoveredItem: discoveredItem ? {
         id: discoveredItem.id,
         name: discoveredItem.name,
