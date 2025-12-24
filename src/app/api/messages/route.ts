@@ -10,8 +10,12 @@ export async function GET(request: NextRequest) {
     const sort = searchParams.get('sort') || 'newest';
     const contactId = searchParams.get('contact_id');
 
+    console.log('[Messages API] Request:', { fid, sort, contactId });
+
     const pool = await getDbPool();
     const userId = await getUserIdByFid(pool, fid);
+    
+    console.log('[Messages API] User ID:', userId);
 
     // Build query based on sort/filter options
     // Union query to get both regular messages and junk messages
@@ -79,7 +83,12 @@ export async function GET(request: NextRequest) {
 
     finalQuery += ' LIMIT 200';
 
+    console.log('[Messages API] Final query:', finalQuery);
+    console.log('[Messages API] Query params:', params);
+
     const [rows] = await pool.execute(finalQuery, params);
+    
+    console.log('[Messages API] Found messages:', (rows as any[]).length);
 
     return NextResponse.json({ 
       messages: rows,
@@ -87,6 +96,7 @@ export async function GET(request: NextRequest) {
       contactId: contactId || null
     });
   } catch (error: any) {
+    console.error('[Messages API] Error:', error);
     return handleApiError(error, 'Failed to fetch messages');
   }
 }

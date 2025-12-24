@@ -48,14 +48,22 @@ export default function MessagesPage() {
         let url = `/api/messages?fid=${userFid}&sort=${sortMode}`;
         if (contactFilter) url += `&contact_id=${contactFilter}`;
         
+        console.log('[Messages] Fetching from:', url);
         const response = await fetch(url);
-        if (!response.ok) throw new Error('Failed to fetch messages');
+        console.log('[Messages] Response status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('[Messages] Error response:', errorText);
+          throw new Error(`Failed to fetch messages: ${response.status}`);
+        }
         
         const data = await response.json();
+        console.log('[Messages] Received data:', data);
         setMessages(data.messages || []);
       } catch (err: any) {
+        console.error('[Messages] Error loading messages:', err);
         setError(err.message);
-        console.error('Error loading messages:', err);
       } finally {
         setLoading(false);
       }
@@ -97,6 +105,13 @@ export default function MessagesPage() {
         </div>
 
         <div className="frame-body">
+          {/* Error banner at top if there's an issue */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-900/30 border border-red-500 rounded text-red-400 text-sm">
+              {error}
+            </div>
+          )}
+
           {/* Sort controls */}
           <div className="flex gap-2 mb-4">
             <Link href={`/messages?sort=newest${contactFilter ? `&contact_id=${contactFilter}` : ''}`}>
@@ -119,13 +134,18 @@ export default function MessagesPage() {
           </div>
 
           {loading && <div className="p-4 text-gray-400">Loading messages...</div>}
-          {error && <div className="p-4 text-red-400">{error}</div>}
 
           {/* Message list */}
-          {sortMode === 'newest' && (
+          {!loading && sortMode === 'newest' && (
             <div className="space-y-2">
-              {messages.length === 0 && !loading && (
-                <div className="text-gray-400 p-4">No messages yet.</div>
+              {messages.length === 0 && (
+                <CxCard>
+                  <div className="text-center text-gray-400 py-8">
+                    <span className="material-symbols-outlined text-6xl mb-4 block">mail</span>
+                    <div className="text-lg">No messages yet</div>
+                    <div className="text-sm mt-2">Messages from contacts will appear here</div>
+                  </div>
+                </CxCard>
               )}
               {messages.map((msg) => (
                 <Link key={msg.id} href={`/messages/${msg.id}`}>
@@ -158,7 +178,19 @@ export default function MessagesPage() {
           )}
 
           {/* Grouped by contact */}
-          {sortMode === 'contact' && (() => {
+          {!loading && sortMode === 'contact' && (() => {
+            if (messages.length === 0) {
+              return (
+                <CxCard>
+                  <div className="text-center text-gray-400 py-8">
+                    <span className="material-symbols-outlined text-6xl mb-4 block">mail</span>
+                    <div className="text-lg">No messages yet</div>
+                    <div className="text-sm mt-2">Messages from contacts will appear here</div>
+                  </div>
+                </CxCard>
+              );
+            }
+
             const groups = new Map<string, Message[]>();
             for (const msg of messages) {
               const key = `${msg.contact_id}-${msg.contact_name}`;
