@@ -11,9 +11,10 @@ import { getRelativeTime } from '../../../lib/timeUtils';
 interface MessageDetailClientProps {
   message: any;
   navData: any;
+  userFid: number;
 }
 
-export default function MessageDetailClient({ message, navData }: MessageDetailClientProps) {
+export default function MessageDetailClient({ message, navData, userFid }: MessageDetailClientProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { stats: userStats } = useStats(300187);
 

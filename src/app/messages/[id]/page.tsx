@@ -97,7 +97,7 @@ export default async function MessageDetailPage({ params }: { params: any }) {
       message.status = 'READ';
     }
 
-    return <MessageDetailClient message={message} navData={{ ...navData, cxBalance: 0 }} />;
+    return <MessageDetailClient message={message} navData={{ ...navData, cxBalance: 0 }} userFid={300187} />;
   } catch (err: any) {
     console.error('Message detail error:', err);
     return (

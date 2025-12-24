@@ -9,10 +9,11 @@ interface ProfileLayoutProps {
   profileImage?: string;
   credits: number;
   cxBalance: number;
+  userFid: number;
   children: React.ReactNode;
 }
 
-export default function ProfileLayout({ username, profileImage, credits, cxBalance, children }: ProfileLayoutProps) {
+export default function ProfileLayout({ username, profileImage, credits, cxBalance, userFid, children }: ProfileLayoutProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   return (

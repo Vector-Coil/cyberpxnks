@@ -8,9 +8,10 @@ interface ContactDetailClientProps {
   gigs: any[];
   navData: any;
   messageInfo: { total: number; unread: number };
+  userFid: number;
 }
 
-export default function ContactDetailClient({ contact, gigs, navData, messageInfo }: ContactDetailClientProps) {
+export default function ContactDetailClient({ contact, gigs, navData, messageInfo, userFid }: ContactDetailClientProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   return (
