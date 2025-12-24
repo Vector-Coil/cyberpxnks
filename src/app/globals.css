@@ -690,7 +690,7 @@ body {
     line-height: 1;
     text-align: center;
     padding: 8px 12px;
-    min-width: 156px;
+    /*min-width: 156px;*/
     display: inline-flex; /* allow label + icon on one line */
     align-items: center;
     justify-content: center;

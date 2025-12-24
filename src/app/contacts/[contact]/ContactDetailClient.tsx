@@ -51,8 +51,8 @@ export default function ContactDetailClient({ contact, gigs, navData, messageInf
               {/* Messages section */}              
               {messageInfo.total > 0 ? (
                 <a href={`/messages?contact_id=${contact.id}`} className="inline-block">
-                  <button className="btn-cx btn-cx-secondary text-xs flex items-center gap-2">
-                    VIEW MESSAGES
+                  <button className="btn-cx btn-cx-full btn-cx-secondary text-xs flex items-center gap-2">
+                    MESSAGES
                     {messageInfo.unread > 0 && (
                       <span className="pill pill-alert text-xs">{messageInfo.unread}</span>
                     )}
