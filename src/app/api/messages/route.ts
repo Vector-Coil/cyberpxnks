@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
     // Union query to get both regular messages and junk messages
     let query = `
       SELECT 
+        mh.id as history_id,
         m.id,
         m.msg_code,
         m.msg_title AS subject,
@@ -34,32 +35,33 @@ export async function GET(request: NextRequest) {
         mh.status,
         mh.unlocked_at,
         mh.read_at,
-        mh.msg_type
+        'message' as msg_type
       FROM msg_history mh
-      JOIN messages m ON mh.msg_id = m.id AND mh.msg_type = 'message'
+      JOIN messages m ON mh.msg_id = m.id
       LEFT JOIN contacts c ON m.contact = c.id
-      WHERE mh.user_id = ?
+      WHERE mh.user_id = ? AND mh.msg_type = 'message'
       
       UNION ALL
       
       SELECT 
+        mh2.id as history_id,
         mj.id,
         mj.msg_code,
         mj.msg_title AS subject,
         mj.msg_body AS body,
         NULL AS contact_id,
-        mj.image_url AS message_image_url,
-        mj.btn_1,
-        mj.btn_2,
+        NULL AS message_image_url,
+        NULL AS btn_1,
+        NULL AS btn_2,
         mj.sent_from AS contact_name,
         NULL AS contact_image_url,
         mh2.status,
         mh2.unlocked_at,
         mh2.read_at,
-        mh2.msg_type
+        'junk' as msg_type
       FROM msg_history mh2
-      JOIN messages_junk mj ON mh2.msg_id = mj.id AND mh2.msg_type = 'junk'
-      WHERE mh2.user_id = ?
+      JOIN messages_junk mj ON mh2.msg_id = mj.id
+      WHERE mh2.user_id = ? AND mh2.msg_type = 'junk'
     `;
     
     const params: any[] = [userId, userId];
