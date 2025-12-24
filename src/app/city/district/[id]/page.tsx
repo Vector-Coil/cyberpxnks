@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { NavStrip, CxCard } from '../../../../components/CxShared';
 import NavDrawer from '../../../../components/NavDrawer';
+import ZoneCard from '../../../../components/ZoneCard';
 import { useNavData } from '../../../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../../../hooks/useAuthenticatedUser';
 
@@ -208,64 +209,14 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
           </div>
         ) : (
           <div className="space-y-1 mb-6">
-            {zones.map((zone) => {
-              const isCurrentLocation = zone.id === currentLocationId;
-              return (
-                <a 
-                  key={zone.id} 
-                  href={`/city/${zone.id}`} 
-                  className="block"
-                >
-                  <div 
-                    className={`cx-banner ${isCurrentLocation ? 'ring-2 ring-cyan-400 shadow-lg shadow-cyan-400/50' : ''}`}
-                    style={zone.image_url ? { 
-                      backgroundImage: `url(${zone.image_url})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                      opacity: 0.5
-                    } : undefined}
-                  >
-                    <div className="banner-left flex flex-col gap-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {zone.district_name && (
-                            <span className="px-2 py-1 bg-fuschia text-white text-xs font-bold uppercase rounded flex-shrink-0">
-                              {zone.district_name}
-                            </span>
-                          )}
-                        </div>
-                        <span className="pill-cloud-gray uppercase flex-shrink-0">{zone.zone_type_name || zone.zone_type}</span>
-                      </div>
-                      <div className="flex items-end justify-between gap-2">
-                        <div className="text-white font-bold uppercase text-lg flex items-center gap-2">
-                          {isCurrentLocation && (
-                            <span className="material-symbols-outlined text-cyan-400" style={{ fontSize: '20px' }}>location_on</span>
-                          )}
-                          {zone.name}
-                        </div>
-                        {/* POI Indicators */}
-                        {((zone.terminal_count || 0) > 0 || (zone.shop_count || 0) > 0) && (
-                          <div className="flex items-center gap-1.5 flex-shrink-0">
-                            {(zone.terminal_count || 0) > 0 && (
-                              <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-black/60 rounded text-xs">
-                                <span className="material-symbols-outlined text-cyan-400" style={{ fontSize: '14px' }}>terminal</span>
-                                <span className="text-cyan-400 font-semibold">{zone.terminal_count}</span>
-                              </div>
-                            )}
-                            {(zone.shop_count || 0) > 0 && (
-                              <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-black/60 rounded text-xs">
-                                <span className="material-symbols-outlined text-green-400" style={{ fontSize: '14px' }}>storefront</span>
-                                <span className="text-green-400 font-semibold">{zone.shop_count}</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </a>
-              );
-            })}
+            {zones.map((zone) => (
+              <ZoneCard
+                key={zone.id}
+                zone={zone}
+                isCurrentLocation={zone.id === currentLocationId}
+                href={`/city/${zone.id}`}
+              />
+            ))}
           </div>
         )}
 
