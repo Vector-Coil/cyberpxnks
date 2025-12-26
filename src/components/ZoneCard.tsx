@@ -42,7 +42,7 @@ export default function ZoneCard({ zone, isCurrentLocation = false, href, action
               <span className={`px-2 py-1 text-white text-xs font-bold uppercase rounded flex-shrink-0 ${
                 actionStatus.status === 'completed' ? 'bg-bright-green animate-pulse' : 'bg-yellow-500'
               }`}>
-                {actionStatus.status === 'completed' ? '✓ READY' : '⋯ IN PROGRESS'}
+                {actionStatus.status === 'completed' ? '\u2713' : '\u22ef'}
               </span>
             )}
           </div>
