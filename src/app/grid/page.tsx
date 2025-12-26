@@ -268,6 +268,27 @@ export default function GridPage() {
     }
     setScanResults(null);
     setActiveScan(null);
+    setShowScanResults(false);
+    
+    // Reload subnets and protocols to show newly discovered content
+    try {
+      const [subnetsRes, protocolsRes] = await Promise.all([
+        fetch(`/api/subnets?fid=${userFid}`),
+        fetch(`/api/protocols?fid=${userFid}`)
+      ]);
+
+      if (subnetsRes.ok) {
+        const subnetsData = await subnetsRes.json();
+        setSubnets(subnetsData);
+      }
+
+      if (protocolsRes.ok) {
+        const protocolsData = await protocolsRes.json();
+        setProtocols(protocolsData);
+      }
+    } catch (err) {
+      console.error('Failed to reload grid data:', err);
+    }
   };
 
   if (loading) {

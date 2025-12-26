@@ -229,12 +229,29 @@ export default function CityPage() {
     setExploreResults(null);
     setActiveExplore(null);
     
-    // Reload zones to show newly discovered zone
-    fetch(`/api/zones?fid=${userFid}`)
-      .then(res => res.json())
-      .then(zonesData => {
-        setZones(zonesData);
-      });
+    // Reload zones AND districts to show newly discovered content
+    const [zonesRes, districtsRes, alertsRes] = await Promise.all([
+      fetch(`/api/zones?fid=${userFid}`),
+      fetch(`/api/districts?fid=${userFid}`),
+      fetch(`/api/alerts?fid=${userFid}`)
+    ]);
+
+    if (zonesRes.ok) {
+      const zonesData = await zonesRes.json();
+      setZones(zonesData);
+    }
+
+    if (districtsRes.ok) {
+      const districtsData = await districtsRes.json();
+      setDistricts(districtsData);
+    }
+
+    if (alertsRes.ok) {
+      const alertsData = await alertsRes.json();
+      if (alertsData.location?.zoneId) {
+        setCurrentLocationId(alertsData.location.zoneId);
+      }
+    }
     
     // Reload history to show completed action
     fetch('/api/city/all-history')

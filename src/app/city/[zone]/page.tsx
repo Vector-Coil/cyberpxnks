@@ -356,9 +356,9 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
     
     setScoutResults(null);
     
-    // Reload zone data to refresh history
+    // Reload zone data to refresh history and newly discovered POIs
     try {
-      const zoneRes = await fetch(`/api/zones/${zoneId}?fid=300187`);
+      const zoneRes = await fetch(`/api/zones/${zoneId}?fid=${userFid}`);
       if (zoneRes.ok) {
         const zoneData = await zoneRes.json();
         setHistory(zoneData.history || []);
@@ -474,9 +474,9 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
     setBreachResults(null);
     setSelectedPoi(null);
     
-    // Reload zone data to refresh history
+    // Reload zone data to refresh history and POI
     try {
-      const zoneRes = await fetch(`/api/zones/${zoneId}?fid=300187`);
+      const zoneRes = await fetch(`/api/zones/${zoneId}?fid=${userFid}`);
       if (zoneRes.ok) {
         const zoneData = await zoneRes.json();
         setHistory(zoneData.history || []);
