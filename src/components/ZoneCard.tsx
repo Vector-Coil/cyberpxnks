@@ -13,9 +13,14 @@ interface ZoneCardProps {
   };
   isCurrentLocation?: boolean;
   href?: string;
+  actionStatus?: {
+    type: 'scout' | 'breach';
+    status: 'in_progress' | 'completed';
+    poiName?: string;
+  };
 }
 
-export default function ZoneCard({ zone, isCurrentLocation = false, href }: ZoneCardProps) {
+export default function ZoneCard({ zone, isCurrentLocation = false, href, actionStatus }: ZoneCardProps) {
   const card = (
     <div 
       className={`cx-banner ${isCurrentLocation ? 'ring-2 ring-cyan-400 shadow-lg shadow-cyan-400/50' : ''}`}
@@ -31,6 +36,13 @@ export default function ZoneCard({ zone, isCurrentLocation = false, href }: Zone
             {zone.district_name && (
               <span className="px-2 py-1 bg-fuschia text-white text-xs font-bold uppercase rounded flex-shrink-0">
                 {zone.district_name}
+              </span>
+            )}
+            {actionStatus && (
+              <span className={`px-2 py-1 text-white text-xs font-bold uppercase rounded flex-shrink-0 ${
+                actionStatus.status === 'completed' ? 'bg-bright-green animate-pulse' : 'bg-yellow-500'
+              }`}>
+                {actionStatus.status === 'completed' ? '✓ READY' : '⋯ IN PROGRESS'}
               </span>
             )}
           </div>

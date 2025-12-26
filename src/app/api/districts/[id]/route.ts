@@ -39,8 +39,10 @@ export async function GET(
 
     // Fetch discovered zones in this district
     const [zones]: any = await pool.execute(
-      `SELECT DISTINCT z.id, z.name, z.zone_type, zt.name as zone_type_name, z.description, z.image_url,
-              zd.name as district_name
+      `SELECT DISTINCT z.id, z.name, z.zone_type, zt.name as zone_type_name, z.description, zt.image_url,
+              zd.name as district_name,
+              (SELECT COUNT(*) FROM points_of_interest WHERE zone_id = z.id AND poi_type = 'terminal') as terminal_count,
+              (SELECT COUNT(*) FROM points_of_interest WHERE zone_id = z.id AND poi_type = 'shop') as shop_count
        FROM zones z
        INNER JOIN user_zone_history uzh ON z.id = uzh.zone_id
        LEFT JOIN zone_type zt ON z.zone_type = zt.id

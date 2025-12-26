@@ -47,6 +47,7 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [currentLocationId, setCurrentLocationId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeJobs, setActiveJobs] = useState<any[]>([]);
 
   useEffect(() => {
     params.then(({ id }) => {
@@ -60,9 +61,10 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
     async function loadData() {
       try {
         // Parallelize API calls
-        const [districtRes, alertsRes] = await Promise.all([
+        const [districtRes, alertsRes, jobsRes] = await Promise.all([
           fetch(`/api/districts/${districtId}?fid=${userFid}`),
-          fetch(`/api/alerts?fid=${userFid}`)
+          fetch(`/api/alerts?fid=${userFid}`),
+          fetch(`/api/active-jobs?fid=${userFid}`)
         ]);
 
         // Process district details
@@ -79,6 +81,12 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
           if (alertsData.location?.zoneId) {
             setCurrentLocationId(alertsData.location.zoneId);
           }
+        }
+
+        // Process active jobs
+        if (jobsRes.ok) {
+          const jobsData = await jobsRes.json();
+          setActiveJobs(jobsData.jobs || []);
         }
       } catch (err) {
         console.error('Failed to load district data:', err);
@@ -192,7 +200,7 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-white uppercase mb-2">{district.name}</h1>
           {district.description && (
-          <p className="text-gray-300">{district.description || 'No description available.'}</p>
+          <p className="text-gray-300 text-left">{district.description || 'No description available.'}</p>
           )}
         </div>
 
@@ -209,14 +217,46 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
           </div>
         ) : (
           <div className="space-y-1 mb-6">
-            {zones.map((zone) => (
-              <ZoneCard
-                key={zone.id}
-                zone={zone}
-                isCurrentLocation={zone.id === currentLocationId}
-                href={`/city/${zone.id}`}
-              />
-            ))}
+            {zones.map((zone) => {
+              // Check if zone has active or completed actions
+              const zoneJobs = activeJobs.filter(job => 
+                job.zone_id === zone.id && 
+                (job.action_type === 'Scouted' || job.action_type === 'Breached')
+              );
+              const hasCompleted = zoneJobs.some(job => 
+                new Date(job.end_time) <= new Date() && !job.result_status
+              );
+              const hasInProgress = zoneJobs.some(job => 
+                new Date(job.end_time) > new Date()
+              );
+              
+              let actionStatus = undefined;
+              if (hasCompleted) {
+                const completedJob = zoneJobs.find(job => new Date(job.end_time) <= new Date() && !job.result_status);
+                actionStatus = {
+                  type: completedJob.action_type === 'Scouted' ? 'scout' : 'breach',
+                  status: 'completed',
+                  poiName: completedJob.poi_name
+                };
+              } else if (hasInProgress) {
+                const inProgressJob = zoneJobs.find(job => new Date(job.end_time) > new Date());
+                actionStatus = {
+                  type: inProgressJob.action_type === 'Scouted' ? 'scout' : 'breach',
+                  status: 'in_progress',
+                  poiName: inProgressJob.poi_name
+                };
+              }
+
+              return (
+                <ZoneCard
+                  key={zone.id}
+                  zone={zone}
+                  isCurrentLocation={zone.id === currentLocationId}
+                  href={`/city/${zone.id}`}
+                  actionStatus={actionStatus}
+                />
+              );
+            })}
           </div>
         )}
 

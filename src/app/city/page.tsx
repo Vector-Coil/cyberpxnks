@@ -61,6 +61,7 @@ export default function CityPage() {
   const [newLevel, setNewLevel] = useState(0);
   const [cityHistory, setCityHistory] = useState<any[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [activeJobs, setActiveJobs] = useState<any[]>([]);
   
   // Use countdown timer hook for active explore
   const { timeRemaining, isComplete } = useCountdownTimer(activeExplore?.end_time || null);
@@ -71,13 +72,14 @@ export default function CityPage() {
       
       try {
         // Parallelize all independent API calls for faster loading
-        const [statsRes, zonesRes, exploreRes, historyRes, districtsRes, alertsRes] = await Promise.all([
+        const [statsRes, zonesRes, exploreRes, historyRes, districtsRes, alertsRes, jobsRes] = await Promise.all([
           fetch(`/api/stats?fid=${userFid}`),
           fetch(`/api/zones?fid=${userFid}`),
           fetch(`/api/city/explore-status?fid=${userFid}`),
           fetch('/api/city/all-history'),
           fetch(`/api/districts?fid=${userFid}`),
-          fetch(`/api/alerts?fid=${userFid}`)
+          fetch(`/api/alerts?fid=${userFid}`),
+          fetch(`/api/active-jobs?fid=${userFid}`)
         ]);
 
         // Process user stats
@@ -126,6 +128,12 @@ export default function CityPage() {
             setCurrentLocationId(alertsData.location.zoneId);
             console.log('Current location:', alertsData.location);
           }
+        }
+
+        // Process active jobs
+        if (jobsRes.ok) {
+          const jobsData = await jobsRes.json();
+          setActiveJobs(jobsData.jobs || []);
         }
       } catch (err) {
         console.error('Failed to load city data:', err);
@@ -463,14 +471,46 @@ export default function CityPage() {
           </div>
         ) : (
           <div className="space-y-1">
-            {zones.map((zone) => (
-              <ZoneCard
-                key={zone.id}
-                zone={zone}
-                isCurrentLocation={zone.id === currentLocationId}
-                href={`/city/${zone.id}`}
-              />
-            ))}
+            {zones.map((zone) => {
+              // Check if zone has active or completed actions
+              const zoneJobs = activeJobs.filter(job => 
+                job.zone_id === zone.id && 
+                (job.action_type === 'Scouted' || job.action_type === 'Breached')
+              );
+              const hasCompleted = zoneJobs.some(job => 
+                new Date(job.end_time) <= new Date() && !job.result_status
+              );
+              const hasInProgress = zoneJobs.some(job => 
+                new Date(job.end_time) > new Date()
+              );
+              
+              let actionStatus = undefined;
+              if (hasCompleted) {
+                const completedJob = zoneJobs.find(job => new Date(job.end_time) <= new Date() && !job.result_status);
+                actionStatus = {
+                  type: completedJob.action_type === 'Scouted' ? 'scout' : 'breach',
+                  status: 'completed',
+                  poiName: completedJob.poi_name
+                };
+              } else if (hasInProgress) {
+                const inProgressJob = zoneJobs.find(job => new Date(job.end_time) > new Date());
+                actionStatus = {
+                  type: inProgressJob.action_type === 'Scouted' ? 'scout' : 'breach',
+                  status: 'in_progress',
+                  poiName: inProgressJob.poi_name
+                };
+              }
+
+              return (
+                <ZoneCard
+                  key={zone.id}
+                  zone={zone}
+                  isCurrentLocation={zone.id === currentLocationId}
+                  href={`/city/${zone.id}`}
+                  actionStatus={actionStatus}
+                />
+              );
+            })}
           </div>
         )}
 
