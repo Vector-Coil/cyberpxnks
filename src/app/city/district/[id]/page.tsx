@@ -230,19 +230,19 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
                 new Date(job.end_time) > new Date()
               );
               
-              let actionStatus = undefined;
+              let actionStatus: { type: "scout" | "breach"; status: "completed" | "in_progress"; poiName?: string } | undefined = undefined;
               if (hasCompleted) {
                 const completedJob = zoneJobs.find(job => new Date(job.end_time) <= new Date() && !job.result_status);
                 actionStatus = {
-                  type: completedJob.action_type === 'Scouted' ? 'scout' : 'breach',
-                  status: 'completed',
+                  type: completedJob.action_type === 'Scouted' ? 'scout' as const : 'breach' as const,
+                  status: 'completed' as const,
                   poiName: completedJob.poi_name
                 };
               } else if (hasInProgress) {
                 const inProgressJob = zoneJobs.find(job => new Date(job.end_time) > new Date());
                 actionStatus = {
-                  type: inProgressJob.action_type === 'Scouted' ? 'scout' : 'breach',
-                  status: 'in_progress',
+                  type: inProgressJob.action_type === 'Scouted' ? 'scout' as const : 'breach' as const,
+                  status: 'in_progress' as const,
                   poiName: inProgressJob.poi_name
                 };
               }
