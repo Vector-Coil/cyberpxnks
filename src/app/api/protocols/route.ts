@@ -12,8 +12,7 @@ export async function GET(request: NextRequest) {
     const pool = await getDbPool();
     const userId = await getUserIdByFid(pool, fid);
 
-    // Fetch protocols the user has access to
-    // For now, showing all protocols - will add access checks based on reputation/gigs later
+    // Fetch protocols the user has unlocked access to
     const [protocolRows] = await pool.execute<any[]>(
       `SELECT 
         p.id,
@@ -23,15 +22,16 @@ export async function GET(request: NextRequest) {
         p.access_rep_id,
         p.access_gig_id,
         p.image_url,
-        a.name as alignment_name
+        a.name as alignment_name,
+        upa.unlocked_at,
+        upa.unlock_method
        FROM protocols p
+       INNER JOIN user_protocol_access upa ON p.id = upa.protocol_id
        LEFT JOIN alignments a ON p.controlling_alignment_id = a.id
-       ORDER BY p.name`,
-      []
+       WHERE upa.user_id = ?
+       ORDER BY upa.unlocked_at DESC`,
+      [userId]
     );
-
-    // TODO: Filter protocols based on user's completed gigs and reputation levels
-    // For now, return all protocols as placeholders
 
     logger.info('Retrieved protocols', { fid, count: protocolRows.length });
     return NextResponse.json(protocolRows);

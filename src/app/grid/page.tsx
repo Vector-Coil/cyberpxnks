@@ -28,6 +28,8 @@ interface Protocol {
   access_gig_id?: number;
   image_url?: string;
   alignment_name?: string;
+  unlocked_at: string;
+  unlock_method: string;
 }
 
 interface SlimsoftEffect {
