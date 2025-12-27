@@ -548,7 +548,7 @@ export default function GridPage() {
             <>
               <div className="space-y-3 mb-3">
                 {protocols.map((protocol) => (
-                  <CxCard key={protocol.id}>
+                  <CxCard key={protocol.id} href={`/grid/protocol/${protocol.id}`}>
                     <div className="flex items-center justify-between">
                       <h3 className="text-white font-bold uppercase text-lg">{protocol.name}</h3>
                       {protocol.alignment_name && (
