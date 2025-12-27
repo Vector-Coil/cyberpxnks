@@ -13,18 +13,21 @@ export async function GET(request: NextRequest) {
     const userId = await getUserIdByFid(pool, fid);
 
     // Fetch discovered subnets for this user
+    // Include both:
+    // 1. Subnets user has explicitly unlocked (user_subnet_access)
+    // 2. Subnets with default access (is_default_access = 1)
     const [subnetRows] = await pool.execute<any[]>(
       `SELECT 
         s.id,
         s.name,
         s.description,
         s.image_url,
-        usa.unlocked_at,
-        usa.unlock_method
+        COALESCE(usa.unlocked_at, NOW()) as unlocked_at,
+        COALESCE(usa.unlock_method, 'default_access') as unlock_method
        FROM subnets s
-       INNER JOIN user_subnet_access usa ON s.id = usa.subnet_id
-       WHERE usa.user_id = ?
-       ORDER BY usa.unlocked_at DESC`,
+       LEFT JOIN user_subnet_access usa ON s.id = usa.subnet_id AND usa.user_id = ?
+       WHERE usa.user_id IS NOT NULL OR s.is_default_access = 1
+       ORDER BY unlocked_at DESC`,
       [userId]
     );
 

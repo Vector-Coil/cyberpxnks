@@ -22,25 +22,14 @@ export async function GET(
     const pool = await getDbPool();
     const userId = await getUserIdByFid(pool, fid);
 
-    // Verify user has access to this subnet
-    const [accessRows] = await pool.execute<any[]>(
-      `SELECT usa.unlocked_at, usa.unlock_method
-       FROM user_subnet_access usa
-       WHERE usa.user_id = ? AND usa.subnet_id = ?`,
-      [userId, subnetId]
-    );
-
-    if (accessRows.length === 0) {
-      return NextResponse.json({ error: 'Subnet not unlocked' }, { status: 403 });
-    }
-
-    // Get subnet details
+    // Get subnet details first to check if it has default access
     const [subnetRows] = await pool.execute<any[]>(
       `SELECT 
         s.id,
         s.name,
         s.description,
-        s.image_url
+        s.image_url,
+        s.is_default_access
        FROM subnets s
        WHERE s.id = ?
        LIMIT 1`,
@@ -52,6 +41,24 @@ export async function GET(
     }
 
     const subnet = subnetRows[0];
+
+    // Check if user has access (either explicit access or default access)
+    const [accessRows] = await pool.execute<any[]>(
+      `SELECT usa.unlocked_at, usa.unlock_method
+       FROM user_subnet_access usa
+       WHERE usa.user_id = ? AND usa.subnet_id = ?`,
+      [userId, subnetId]
+    );
+
+    // If no explicit access and not default access, deny
+    if (accessRows.length === 0 && subnet.is_default_access !== 1) {
+      return NextResponse.json({ error: 'Subnet not unlocked' }, { status: 403 });
+    }
+
+    // Use access data if available, otherwise create default access object
+    const accessData = accessRows.length > 0 
+      ? accessRows[0] 
+      : { unlocked_at: new Date(), unlock_method: 'default_access' };
 
     // Get unlocked terminals/access points (POIs) for this subnet
     const [poiRows] = await pool.execute<any[]>(
@@ -150,7 +157,7 @@ export async function GET(
       terminals: poiRows,
       history: historyRows,
       allHistory,
-      access: accessRows[0]
+      access: accessData
     });
   } catch (err: any) {
     console.error('Subnet API error:', err);
