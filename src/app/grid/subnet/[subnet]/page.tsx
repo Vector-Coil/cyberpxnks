@@ -27,6 +27,15 @@ interface Terminal {
   unlocked_at: string;
 }
 
+interface Protocol {
+  id: number;
+  name: string;
+  description?: string;
+  image_url?: string;
+  alignment_name?: string;
+  unlocked_at: string;
+}
+
 interface SubnetHistory {
   id: number;
   action_type: string;
@@ -67,6 +76,7 @@ export default function SubnetDetailPage({ params }: { params: Promise<{ subnet:
 
   const [subnet, setSubnet] = useState<Subnet | null>(null);
   const [terminals, setTerminals] = useState<Terminal[]>([]);
+  const [protocols, setProtocols] = useState<Protocol[]>([]);
   const [history, setHistory] = useState<SubnetHistory[]>([]);
   const [allHistory, setAllHistory] = useState<any[]>([]);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
@@ -96,6 +106,7 @@ export default function SubnetDetailPage({ params }: { params: Promise<{ subnet:
           const subnetData = await subnetRes.json();
           setSubnet(subnetData.subnet);
           setTerminals(subnetData.terminals || []);
+          setProtocols(subnetData.protocols || []);
           setHistory(subnetData.history || []);
           setAllHistory(subnetData.allHistory || []);
         } else if (subnetRes.status === 403) {
@@ -228,16 +239,16 @@ export default function SubnetDetailPage({ params }: { params: Promise<{ subnet:
           {/* Subnet Info */}
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold text-white uppercase mb-2">{subnet.name}</h1>
-            <p className="text-gray-300">{subnet.description || 'No description available.'}</p>
+            <p className="text-gray-300 text-left">{subnet.description || 'No description available.'}</p>
           </div>
 
           {/* Unlocked Terminals/Access Points */}
           <div className="mb-12">
-            <h2 className="text-white font-bold uppercase text-lg mb-3">UNLOCKED ACCESS POINTS</h2>
+            <h2 className="text-white font-bold uppercase text-lg mb-3">ACCESS POINTS</h2>
             {terminals.length === 0 ? (
               <CxCard>
                 <div className="text-center text-gray-400 text-sm py-4">
-                  No access points unlocked yet. Scout zones to discover terminals.
+                  Scout zones and run Overnet Scans to discover access points connected to this subnet.
                 </div>
               </CxCard>
             ) : (
@@ -258,6 +269,45 @@ export default function SubnetDetailPage({ params }: { params: Promise<{ subnet:
                           </span>
                           <span className="text-gray-500 text-xs">in {terminal.zone_name}</span>
                         </div>
+                      </div>
+                      <div className="flex-shrink-0">
+                        <span className="material-symbols-outlined text-gray-400">arrow_forward</span>
+                      </div>
+                    </div>
+                  </CxCard>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Protocols Section */}
+          <div className="mb-12">
+            <h2 className="text-white font-bold uppercase text-lg mb-3">PROTOCOLS</h2>
+            {protocols.length === 0 ? (
+              <CxCard>
+                <div className="text-center text-gray-400 text-sm py-4">
+                  Complete gigs and unlock protocols related to this subnet.
+                </div>
+              </CxCard>
+            ) : (
+              <div className="space-y-3">
+                {protocols.map((protocol) => (
+                  <CxCard key={protocol.id} href={`/grid/protocol/${protocol.id}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <h3 className="text-white font-bold uppercase text-base mb-1">
+                          {protocol.name}
+                        </h3>
+                        {protocol.description && (
+                          <div className="text-gray-400 text-sm mb-2">
+                            {protocol.description}
+                          </div>
+                        )}
+                        {protocol.alignment_name && (
+                          <span className="pill-cloud-gray text-xs">
+                            {protocol.alignment_name}
+                          </span>
+                        )}
                       </div>
                       <div className="flex-shrink-0">
                         <span className="material-symbols-outlined text-gray-400">arrow_forward</span>

@@ -60,6 +60,24 @@ export async function GET(
       ? accessRows[0] 
       : { unlocked_at: new Date(), unlock_method: 'default_access' };
 
+    // Get unlocked protocols for this subnet
+    const [protocolRows] = await pool.execute<any[]>(
+      `SELECT 
+        p.id,
+        p.name,
+        p.description,
+        p.image_url,
+        a.name as alignment_name,
+        upa.unlocked_at
+       FROM protocols p
+       INNER JOIN user_protocol_access upa ON p.id = upa.protocol_id
+       LEFT JOIN alignments a ON p.controlling_alignment_id = a.id
+       WHERE p.subnet_id = ?
+         AND upa.user_id = ?
+       ORDER BY upa.unlocked_at DESC`,
+      [subnetId, userId]
+    );
+
     // Get unlocked terminals/access points (POIs) for this subnet
     const [poiRows] = await pool.execute<any[]>(
       `SELECT DISTINCT
@@ -154,6 +172,7 @@ export async function GET(
     
     return NextResponse.json({
       subnet,
+      protocols: protocolRows,
       terminals: poiRows,
       history: historyRows,
       allHistory,
