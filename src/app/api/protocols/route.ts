@@ -22,12 +22,13 @@ export async function GET(request: NextRequest) {
         p.access_rep_id,
         p.access_gig_id,
         p.image_url,
-        a.name as alignment_name,
+        p.subnet_id,
+        s.name as subnet_name,
         upa.unlocked_at,
         upa.unlock_method
        FROM protocols p
        INNER JOIN user_protocol_access upa ON p.id = upa.protocol_id
-       LEFT JOIN alignments a ON p.controlling_alignment_id = a.id
+       LEFT JOIN subnets s ON p.subnet_id = s.id
        WHERE upa.user_id = ?
        ORDER BY upa.unlocked_at DESC`,
       [userId]

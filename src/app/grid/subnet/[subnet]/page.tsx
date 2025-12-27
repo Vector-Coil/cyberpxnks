@@ -32,7 +32,7 @@ interface Protocol {
   name: string;
   description?: string;
   image_url?: string;
-  alignment_name?: string;
+  subnet_name?: string;
   unlocked_at: string;
 }
 
@@ -299,14 +299,9 @@ export default function SubnetDetailPage({ params }: { params: Promise<{ subnet:
                           {protocol.name}
                         </h3>
                         {protocol.description && (
-                          <div className="text-gray-400 text-sm mb-2">
+                          <div className="text-gray-400 text-sm">
                             {protocol.description}
                           </div>
-                        )}
-                        {protocol.alignment_name && (
-                          <span className="pill-cloud-gray text-xs">
-                            {protocol.alignment_name}
-                          </span>
                         )}
                       </div>
                       <div className="flex-shrink-0">

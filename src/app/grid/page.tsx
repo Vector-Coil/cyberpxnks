@@ -27,7 +27,8 @@ interface Protocol {
   access_rep_id?: number;
   access_gig_id?: number;
   image_url?: string;
-  alignment_name?: string;
+  subnet_id?: number;
+  subnet_name?: string;
   unlocked_at: string;
   unlock_method: string;
 }
@@ -551,8 +552,8 @@ export default function GridPage() {
                   <CxCard key={protocol.id} href={`/grid/protocol/${protocol.id}`}>
                     <div className="flex items-center justify-between">
                       <h3 className="text-white font-bold uppercase text-lg">{protocol.name}</h3>
-                      {protocol.alignment_name && (
-                        <span className="pill-cloud-gray text-xs">{protocol.alignment_name}</span>
+                      {protocol.subnet_name && (
+                        <span className="pill-cyan text-xs">{protocol.subnet_name}</span>
                       )}
                     </div>
                   </CxCard>

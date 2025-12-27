@@ -67,11 +67,11 @@ export async function GET(
         p.name,
         p.description,
         p.image_url,
-        a.name as alignment_name,
+        s.name as subnet_name,
         upa.unlocked_at
        FROM protocols p
        INNER JOIN user_protocol_access upa ON p.id = upa.protocol_id
-       LEFT JOIN alignments a ON p.controlling_alignment_id = a.id
+       LEFT JOIN subnets s ON p.subnet_id = s.id
        WHERE p.subnet_id = ?
          AND upa.user_id = ?
        ORDER BY upa.unlocked_at DESC`,
