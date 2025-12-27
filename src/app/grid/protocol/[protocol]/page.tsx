@@ -224,7 +224,7 @@ export default function ProtocolDetailPage({ params }: { params: Promise<{ proto
           {/* Protocol Info */}
           <div className="text-center mb-6">
             <h1 className="text-2xl font-bold text-white uppercase mb-2">{protocol.name}</h1>
-            <p className="text-gray-300">{protocol.description || 'No description available.'}</p>
+            <p className="text-gray-300 text-left">{protocol.description || 'No description available.'}</p>
           </div>
 
           {/* Actions Section - Conditional and Dynamic */}

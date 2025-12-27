@@ -225,7 +225,7 @@ body {
 }
 
 .frame-grid::before {
-  background-image: url('/images/Cyberspace.png');
+  background-image: url('https://vectorcoil.com/cx/images/Cyberspace.png');
 }
 
 .frame-landing::before {
