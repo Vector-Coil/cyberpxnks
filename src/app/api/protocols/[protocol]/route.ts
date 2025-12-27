@@ -84,8 +84,7 @@ export async function GET(
         uph.id,
         uph.action_type,
         uph.timestamp,
-        u.username,
-        u.secret_name
+        u.username
        FROM user_protocol_history uph
        INNER JOIN users u ON uph.user_id = u.id
        WHERE uph.protocol_id = ?
@@ -96,7 +95,7 @@ export async function GET(
 
     // Format all history messages
     const allHistory = allHistoryRows.map((row: any) => {
-      const alias = row.secret_name || row.username;
+      const alias = row.username;
       let message = `[${alias}] performed ${row.action_type} on ${protocol.name}`;
       
       return {
@@ -116,6 +115,8 @@ export async function GET(
       access: accessRows[0]
     });
   } catch (err: any) {
+    console.error('Protocol API error:', err);
+    logger.error('Protocol API error', { error: err.message, stack: err.stack, protocolId });
     return handleApiError(err, '/api/protocols/[protocol]');
   }
 }
