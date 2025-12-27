@@ -116,7 +116,7 @@ export async function GET(
     });
   } catch (err: any) {
     console.error('Protocol API error:', err);
-    logger.error('Protocol API error', { error: err.message, stack: err.stack, protocolId });
+    logger.error('Protocol API error', { error: err.message, stack: err.stack });
     return handleApiError(err, '/api/protocols/[protocol]');
   }
 }
