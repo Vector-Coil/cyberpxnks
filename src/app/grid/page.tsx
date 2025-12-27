@@ -358,7 +358,7 @@ export default function GridPage() {
                 </div>
               )}
               <div className="flex-1 text-center text-white">
-                MIRROR: Digital identity is obfuscated.
+                MIRROR: Digital identity is obfuscated by an Echo persona.
               </div>
             </div>
           )}
@@ -455,7 +455,7 @@ export default function GridPage() {
           {/* Slimsoft Actions */}
           {slimsoftEffects.length === 0 ? (
             <div className="text-center text-gray-400 py-4 mb-3">
-              No equipped slimsoft
+              Equip slimsoft with active functionality to enable additional actions.
             </div>
           ) : slimsoftEffects.length === 1 ? (
             // Single action: full width button with left-aligned image and centered text
