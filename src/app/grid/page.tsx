@@ -357,7 +357,7 @@ export default function GridPage() {
               No identity obfuscation utility detected
             </div>
           ) : (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
               {mirrorItem?.image_url && (
                 <div className="w-[50px] h-[50px] flex-shrink-0">
                   <img 
@@ -368,7 +368,7 @@ export default function GridPage() {
                 </div>
               )}
               <div className="flex-1 text-center text-white">
-                Digital identity obfuscation running, active Echo persona: <span className="font-bold text-fuschia">{mirrorName}</span>
+                Digital identity obfuscation utility is active. Your public Echo persona: <span className="font-bold text-fuschia">{mirrorName}</span>
               </div>
             </div>
           )}
