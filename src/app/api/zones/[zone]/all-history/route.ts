@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../../../lib/db';
 import { handleApiError } from '../../../../../lib/api/errors';
 import { logger } from '../../../../../lib/logger';
+import { isMirrorEquipped } from '../../../../../lib/mirrorUtils';
 
 export async function GET(
   request: NextRequest,
@@ -16,7 +17,7 @@ export async function GET(
 
     const pool = await getDbPool();
 
-    // Fetch all users' history for this zone with their secret names and subnet info
+    // Fetch all users' history for this zone with their usernames, mirror_names, and subnet info
     const [historyRows] = await pool.execute<any[]>(
       `SELECT 
         uzh.id,
@@ -25,6 +26,7 @@ export async function GET(
         uzh.timestamp,
         uzh.poi_id,
         u.username,
+        u.mirror_name,
         u.rednet_id,
         u.subversive_id,
         poi.name as poi_name,
@@ -41,32 +43,46 @@ export async function GET(
       [zoneId]
     );
 
-    // Format each history entry into a public message
-    const formattedHistory = historyRows.map((row: any) => {
+    // Check Mirror equipped status for each unique user and format history
+    const userMirrorStatus = new Map<number, boolean>();
+    
+    const formattedHistory = await Promise.all(historyRows.map(async (row: any) => {
+      // Check if we've already looked up this user's Mirror status
+      let mirrorEquipped = userMirrorStatus.get(row.user_id);
+      if (mirrorEquipped === undefined) {
+        mirrorEquipped = await isMirrorEquipped(pool, row.user_id);
+        userMirrorStatus.set(row.user_id, mirrorEquipped);
+      }
+
+      // Determine display name based on Mirror equipped status
       let alias = row.username || 'Unknown';
+      if (mirrorEquipped && row.mirror_name) {
+        alias = row.mirror_name;
+      }
+
       let message = '';
 
       switch (row.action_type) {
         case 'Breached':
-          // Use username for breaches
+          // Use display name for breaches
           const subnetName = row.subnet_id ? `subnet ${row.subnet_id}` : 'an';
           const poiName = row.poi_name || 'terminal';
           message = `[${alias}] breached the ${subnetName} access point ${poiName}`;
           break;
 
         case 'Discovered':
-          // Use username for discoveries
+          // Use display name for discoveries
           const discoveredZone = row.discovered_zone_name || 'a new zone';
           message = `[${alias}] discovered ${discoveredZone}`;
           break;
 
         case 'Scouted':
-          // Use username for scouts
+          // Use display name for scouts
           message = `[${alias}] scouted the area`;
           break;
 
         case 'Explored':
-          // Use username for explores
+          // Use display name for explores
           message = `[${alias}] explored the city`;
           break;
 
@@ -76,6 +92,8 @@ export async function GET(
           message = `[${alias}] performed reconnaissance`;
           break;
 
+        case 'Fortify':
+          // Use subversive_id for Fortify actions (Subversive faction)
         case 'Fortify':
           // Use subversive_id for Fortify actions (Subversive faction)
           alias = row.subversive_id || 'Subversive';
@@ -91,7 +109,7 @@ export async function GET(
         message,
         timestamp: row.timestamp
       };
-    });
+    }));
 
     return NextResponse.json({ history: formattedHistory });
   } catch (err: any) {

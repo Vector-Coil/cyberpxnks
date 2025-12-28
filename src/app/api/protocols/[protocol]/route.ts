@@ -4,6 +4,7 @@ import { validateFid } from '~/lib/api/errors';
 import { getUserIdByFid } from '~/lib/api/userUtils';
 import { logger } from '~/lib/logger';
 import { handleApiError } from '~/lib/api/errors';
+import { isMirrorEquipped } from '~/lib/mirrorUtils';
 
 export async function GET(
   request: NextRequest,
@@ -82,9 +83,11 @@ export async function GET(
     const [allHistoryRows] = await pool.execute<any[]>(
       `SELECT 
         uph.id,
+        uph.user_id,
         uph.action_type,
         uph.timestamp,
-        u.username
+        u.username,
+        u.mirror_name
        FROM user_protocol_history uph
        INNER JOIN users u ON uph.user_id = u.id
        WHERE uph.protocol_id = ?
@@ -93,10 +96,24 @@ export async function GET(
       [protocolId]
     );
 
-    // Format all history messages
-    const allHistory = allHistoryRows.map((row: any) => {
-      const alias = row.username;
-      let message = `[${alias}] performed ${row.action_type} on ${protocol.name}`;
+    // Check Mirror equipped status for each unique user and format history
+    const userMirrorStatus = new Map<number, boolean>();
+    
+    const allHistory = await Promise.all(allHistoryRows.map(async (row: any) => {
+      // Check if we've already looked up this user's Mirror status
+      let mirrorEquipped = userMirrorStatus.get(row.user_id);
+      if (mirrorEquipped === undefined) {
+        mirrorEquipped = await isMirrorEquipped(pool, row.user_id);
+        userMirrorStatus.set(row.user_id, mirrorEquipped);
+      }
+
+      // Determine display name based on Mirror equipped status
+      let alias = row.username || 'Unknown';
+      if (mirrorEquipped && row.mirror_name) {
+        alias = row.mirror_name;
+      }
+
+      const message = `[${alias}] performed ${row.action_type} on ${protocol.name}`;
       
       return {
         id: row.id,
@@ -104,7 +121,7 @@ export async function GET(
         timestamp: row.timestamp,
         action_type: row.action_type
       };
-    });
+    }));
 
     logger.info('Retrieved protocol details', { fid, protocolId });
     
