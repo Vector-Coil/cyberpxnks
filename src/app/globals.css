@@ -83,6 +83,9 @@
 .bg-fuschia {
     background: var(--fuschia);
 }
+.text-fuschia {
+    color: var(--fuschia);
+}
 .text-bright-blue {
     color: var(--bright-blue);
 }

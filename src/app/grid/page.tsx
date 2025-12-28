@@ -77,6 +77,7 @@ export default function GridPage() {
   const [equippedSlimsoft, setEquippedSlimsoft] = useState<HardwareItem[]>([]);
   const [hasMirror, setHasMirror] = useState(false);
   const [mirrorItem, setMirrorItem] = useState<HardwareItem | null>(null);
+  const [mirrorName, setMirrorName] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [activeScan, setActiveScan] = useState<ScanAction | null>(null);
@@ -98,19 +99,28 @@ export default function GridPage() {
       
       try {
         // Parallelize all independent API calls
-        const [subnetsRes, protocolsRes, hardwareRes, effectsRes, statsRes, scanStatusRes] = await Promise.all([
+        const [subnetsRes, protocolsRes, hardwareRes, effectsRes, statsRes, scanStatusRes, userRes] = await Promise.all([
           fetch(`/api/subnets?fid=${userFid}`),
           fetch(`/api/protocols?fid=${userFid}`),
           fetch(`/api/hardware?fid=${userFid}`),
           fetch(`/api/slimsoft/effects?fid=${userFid}`),
           fetch(`/api/stats?fid=${userFid}`),
-          fetch(`/api/grid/scan-status?fid=${userFid}`)
+          fetch(`/api/grid/scan-status?fid=${userFid}`),
+          fetch(`/api/user?fid=${userFid}`)
         ]);
 
         // Process user stats
         if (statsRes.ok) {
           const stats = await statsRes.json();
           setUserStats(stats);
+        }
+
+        // Process user data for mirror_name
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          if (userData.mirror_name) {
+            setMirrorName(userData.mirror_name);
+          }
         }
 
         // Process scan status
@@ -358,7 +368,7 @@ export default function GridPage() {
                 </div>
               )}
               <div className="flex-1 text-center text-white">
-                MIRROR: Digital identity is obfuscated by an Echo persona.
+                Digital identity is obfuscated for Echo persona <span className="font-bold text-fuschia">{mirrorName}</span>
               </div>
             </div>
           )}
@@ -517,7 +527,7 @@ export default function GridPage() {
           
           {subnets.length === 0 ? (
             <div className="text-center text-gray-400 text-xs py-4">
-              Explore the Net to discover more
+              Explore the overnet to discover new subnets
             </div>
           ) : (
             <>
@@ -531,7 +541,7 @@ export default function GridPage() {
                 ))}
               </div>
               <div className="text-center text-gray-400 text-xs">
-                Explore the Net to discover more
+                Explore the overnet to discover new subnets
               </div>
             </>
           )}
