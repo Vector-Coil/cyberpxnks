@@ -368,7 +368,7 @@ export default function GridPage() {
                 </div>
               )}
               <div className="flex-1 text-center text-white">
-                Digital identity obfuscation utilty running. Active Echo persona: <span className="font-bold text-fuschia">{mirrorName}</span>
+                Digital identity obfuscation running, active Echo persona: <span className="font-bold text-fuschia">{mirrorName}</span>
               </div>
             </div>
           )}

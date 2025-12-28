@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
       id: user.id,
       fid: user.fid,
       username: user.username,
+      mirror_name: user.mirror_name,
       admin: user.admin
     });
   } catch (error) {
