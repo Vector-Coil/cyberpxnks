@@ -64,6 +64,10 @@ export async function POST(request: NextRequest) {
           [user.id, item.id]
         );
 
+        await connection.commit();
+        connection.release();
+
+        // Log activity AFTER transaction is complete
         try {
           await logActivity(
             user.id,
@@ -77,9 +81,6 @@ export async function POST(request: NextRequest) {
           logger.warn('[Shop Purchase] Admin logActivity failed:', logErr.message);
           // Continue - activity log is optional
         }
-
-        await connection.commit();
-        connection.release();
 
         return NextResponse.json({
           success: true,
@@ -211,7 +212,12 @@ export async function POST(request: NextRequest) {
         // Continue - transaction history is optional
       }
 
-      // Log activity
+      logger.info('[Shop Purchase] Committing transaction');
+      await connection.commit();
+      connection.release();
+      logger.info('[Shop Purchase] Transaction committed and connection released');
+
+      // Log activity AFTER transaction is complete
       try {
         logger.info('[Shop Purchase] Logging activity');
         await logActivity(
@@ -228,9 +234,6 @@ export async function POST(request: NextRequest) {
         // Continue - activity log is optional
       }
 
-      logger.info('[Shop Purchase] Committing transaction');
-      await connection.commit();
-      connection.release();
       logger.info('[Shop Purchase] Success!');
 
       // 3% chance to schedule a junk message after shopping
