@@ -350,7 +350,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
                           ) : (
                             <>
                               <span className="text-white font-bold">{item.price}</span>
-                              <img src="/images/credits-currency.png" alt="Credits" className="w-4 h-4" />
+                              <img src="/images/credits-currency.svg" alt="Credits" className="w-4 h-4" />
                             </>
                           )}
                         </div>
@@ -386,9 +386,9 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
               <span className="inline-flex items-center gap-1">
                 <span className="text-white font-bold">{selectedItem.price}</span>
                 {selectedItem.currency === 'credits' ? (
-                  <img src="/images/credits-currency.png" alt="Credits" className="w-4 h-4" />
+                  <img src="/images/credits-currency.svg" alt="Credits" className="w-4 h-4" />
                 ) : (
-                  <span className="text-yellow-400">SC</span>
+                  <span className="text-yellow-400">Credits</span>
                 )}
               </span>?
             </p>
