@@ -65,15 +65,25 @@ export async function GET(
       switch (row.action_type) {
         case 'Breached':
           // Use display name for breaches
-          const subnetName = row.subnet_id ? `subnet ${row.subnet_id}` : 'an';
           const poiName = row.poi_name || 'terminal';
-          message = `[${alias}] breached the ${subnetName} access point ${poiName}`;
+          message = `[${alias}] breached ${poiName}`;
           break;
 
         case 'Discovered':
           // Use display name for discoveries
-          const discoveredZone = row.discovered_zone_name || 'a new zone';
+          const discoveredZone = row.discovered_zone_name || 'an unknown zone';
           message = `[${alias}] discovered ${discoveredZone}`;
+          break;
+
+        case 'UnlockedPOI':
+          // POI discovery
+          const unlockedPoiName = row.poi_name || 'a terminal';
+          message = `[${alias}] discovered ${unlockedPoiName}`;
+          break;
+
+        case 'Traveled':
+          // Travel action
+          message = `[${alias}] traveled here`;
           break;
 
         case 'Scouted':

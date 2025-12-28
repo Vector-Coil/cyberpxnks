@@ -173,8 +173,10 @@ export async function GET(
         message = `[${alias}] breached ${row.poi_name} in ${row.zone_name}`;
       } else if (row.action_type === 'RemoteBreach') {
         message = `[${alias}] remotely breached ${row.poi_name} in ${row.zone_name}`;
+      } else if (row.action_type === 'Traveled') {
+        message = `[${alias}] traveled to ${row.zone_name}`;
       } else {
-        message = `[${alias}] performed ${row.action_type} on ${row.poi_name}`;
+        message = `[${alias}] ${row.action_type.toLowerCase()} ${row.poi_name}`;
       }
       
       return {
