@@ -82,8 +82,7 @@ export async function GET(
     const items = await Promise.all((inventoryRows as any[]).map(async (item) => {
       // Skip calculation if no user or no replenishment period set
       if (!userId || !item.stock_replenish || item.stock === -1) {
-        // Filter out items with 0 stock (no replenishment)
-        if (item.stock === 0) return null;
+        // Keep items visible even with 0 stock
         return item;
       }
 
@@ -125,17 +124,15 @@ export async function GET(
       const purchasedInWindow = (windowPurchases as any[])[0]?.count || 0;
       const remainingStock = Math.max(0, item.stock - purchasedInWindow);
 
-      // Filter out if stock depleted
-      if (remainingStock === 0) return null;
-
+      // Keep item visible but show 0 stock if depleted
       return {
         ...item,
         stock: remainingStock
       };
     }));
 
-    // Filter out null items (depleted stock)
-    const availableItems = items.filter(item => item !== null);
+    // Keep all items visible (don't filter out items with 0 stock)
+    const availableItems = items;
 
     return NextResponse.json({
       items: availableItems

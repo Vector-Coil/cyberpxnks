@@ -49,12 +49,15 @@ export async function GET(
       return NextResponse.json({ error: 'Item not found' }, { status: 404 });
     }
 
-    // Check if user owns this item
+    // Check if user owns this item and sum quantities across all rows
     const [inventoryRows] = await pool.execute<any[]>(
-      `SELECT quantity, acquired_at, upgrade
+      `SELECT 
+        SUM(quantity) as quantity, 
+        MIN(acquired_at) as acquired_at, 
+        MAX(upgrade) as upgrade
        FROM user_inventory
        WHERE user_id = ? AND item_id = ?
-       LIMIT 1`,
+       GROUP BY user_id, item_id`,
       [userId, itemId]
     );
     const inventoryItem = (inventoryRows as any[])[0];

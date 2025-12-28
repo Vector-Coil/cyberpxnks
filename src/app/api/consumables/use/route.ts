@@ -26,12 +26,13 @@ export async function POST(request: NextRequest) {
     await connection.beginTransaction();
 
     try {
-      // Verify user owns the item
+      // Verify user owns the item - get first row with quantity > 0
       const [inventoryRows] = await connection.execute<any[]>(
-        `SELECT ui.quantity, i.name, i.item_type
+        `SELECT ui.id, ui.quantity, i.name, i.item_type
          FROM user_inventory ui
          INNER JOIN items i ON ui.item_id = i.id
-         WHERE ui.user_id = ? AND ui.item_id = ?
+         WHERE ui.user_id = ? AND ui.item_id = ? AND ui.quantity > 0
+         ORDER BY ui.acquired_at ASC
          LIMIT 1`,
         [userId, itemId]
       );
@@ -41,7 +42,10 @@ export async function POST(request: NextRequest) {
       logger.info('Consumable use - inventory check', { 
         userId, 
         itemId, 
-        quantity: inventoryItem?.quantity,
+        inventoryRowId: inventoryItem?.id,
+        quantityRaw: inventoryItem?.quantity,
+        quantityParsed: parseInt(inventoryItem?.quantity, 10),
+        quantityType: typeof inventoryItem?.quantity,
         name: inventoryItem?.name 
       });
 
@@ -51,7 +55,9 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Item not found in inventory' }, { status: 404 });
       }
 
-      if (inventoryItem.quantity < 1) {
+      const currentQuantity = parseInt(inventoryItem.quantity, 10);
+
+      if (currentQuantity < 1) {
         await connection.rollback();
         connection.release();
         return NextResponse.json({ error: 'No items available to use' }, { status: 400 });
@@ -131,18 +137,18 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Decrement quantity
-      if (inventoryItem.quantity === 1) {
-        // Remove from inventory
+      // Decrement quantity from the specific inventory row
+      if (currentQuantity === 1) {
+        // Remove this specific row if it's the last item in it
         await connection.execute(
-          'DELETE FROM user_inventory WHERE user_id = ? AND item_id = ?',
-          [userId, itemId]
+          'DELETE FROM user_inventory WHERE id = ?',
+          [inventoryItem.id]
         );
       } else {
-        // Decrement quantity
+        // Decrement quantity by 1 in this specific row
         await connection.execute(
-          'UPDATE user_inventory SET quantity = quantity - 1 WHERE user_id = ? AND item_id = ?',
-          [userId, itemId]
+          'UPDATE user_inventory SET quantity = quantity - 1 WHERE id = ?',
+          [inventoryItem.id]
         );
       }
 
@@ -162,16 +168,16 @@ export async function POST(request: NextRequest) {
       logger.info('Consumable used successfully', {
         userId,
         itemId,
-        quantityBefore: parseInt(inventoryItem.quantity, 10),
-        quantityAfter: parseInt(inventoryItem.quantity, 10) - 1
+        quantityBefore: currentQuantity,
+        quantityAfter: currentQuantity - 1
       });
 
       return NextResponse.json({
         success: true,
         item: inventoryItem.name,
         effects: appliedEffects,
-        remainingQuantity: parseInt(inventoryItem.quantity, 10) - 1,
-        quantityBefore: parseInt(inventoryItem.quantity, 10)
+        remainingQuantity: currentQuantity - 1,
+        quantityBefore: currentQuantity
       });
 
     } catch (err) {
