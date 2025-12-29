@@ -44,6 +44,31 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
+    // Check for active physical presence actions (Scout or Physical Breach)
+    // These actions represent the user's physical in-game presence and conflict with Explore
+    const [physicalPresenceRows] = await dbPool.query<RowDataPacket[]>(
+      `SELECT uzh.id, uzh.action_type, uzh.end_time, u.location, uzh.zone_id
+       FROM user_zone_history uzh
+       JOIN users u ON uzh.user_id = u.id
+       WHERE uzh.user_id = ?
+         AND (
+           (uzh.action_type = 'Scouted' AND uzh.end_time > UTC_TIMESTAMP())
+           OR (uzh.action_type = 'Breached' AND u.location = uzh.zone_id AND uzh.end_time > UTC_TIMESTAMP())
+         )
+         AND (uzh.result_status IS NULL OR uzh.result_status = '')
+       LIMIT 1`,
+      [userId]
+    );
+
+    if (physicalPresenceRows.length > 0) {
+      const conflictingAction = physicalPresenceRows[0];
+      const actionName = conflictingAction.action_type === 'Scouted' ? 'Scout' : 'Physical Breach';
+      logger.warn('Blocked by physical presence action', { userId, conflictingAction });
+      return NextResponse.json({
+        error: `Cannot explore while ${actionName} is in progress. Only one physical action can be active at a time.`
+      }, { status: 400 });
+    }
+
     // Get user stats using StatsService
     const statsService = new StatsService(dbPool, userId);
     const stats = await statsService.getStats();

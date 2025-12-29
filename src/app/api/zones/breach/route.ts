@@ -97,6 +97,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Already breaching this terminal' }, { status: 400 });
     }
 
+    // Check for active physical presence actions (Explore or Scout) - ONLY for physical breaches
+    // Remote breaches don't require physical presence and can run alongside other actions
+    if (isPhysicalBreach) {
+      const [physicalPresenceRows] = await pool.execute<any[]>(
+        `SELECT id, action_type, end_time
+         FROM user_zone_history
+         WHERE user_id = ?
+           AND action_type IN ('Exploring', 'Scouted')
+           AND end_time > UTC_TIMESTAMP()
+           AND (result_status IS NULL OR result_status = '')
+         LIMIT 1`,
+        [user.id]
+      );
+
+      if (physicalPresenceRows.length > 0) {
+        const conflictingAction = physicalPresenceRows[0];
+        const actionName = conflictingAction.action_type === 'Exploring' ? 'Explore' : 'Scout';
+        logger.warn('Blocked by physical presence action', { userId: user.id, conflictingAction });
+        return NextResponse.json({
+          error: `Cannot perform physical breach while ${actionName} is in progress. Only one physical action can be active at a time.`
+        }, { status: 400 });
+      }
+    }
+
     // Deduct resources using StatsService
     const statChanges: any = {
       charge: -chargeCost,

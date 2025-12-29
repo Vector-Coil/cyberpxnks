@@ -71,6 +71,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Scout already in progress for this zone' }, { status: 400 });
     }
 
+    // Check for active physical presence actions (Explore or Physical Breach)
+    // These actions represent the user's physical in-game presence and conflict with Scout
+    const [physicalPresenceRows] = await pool.execute<any[]>(
+      `SELECT uzh.id, uzh.action_type, uzh.end_time, u.location, uzh.zone_id
+       FROM user_zone_history uzh
+       JOIN users u ON uzh.user_id = u.id
+       WHERE uzh.user_id = ?
+         AND (
+           (uzh.action_type = 'Exploring' AND uzh.end_time > UTC_TIMESTAMP())
+           OR (uzh.action_type = 'Breached' AND u.location = uzh.zone_id AND uzh.end_time > UTC_TIMESTAMP())
+         )
+         AND (uzh.result_status IS NULL OR uzh.result_status = '')
+       LIMIT 1`,
+      [user.id]
+    );
+
+    if (physicalPresenceRows.length > 0) {
+      const conflictingAction = physicalPresenceRows[0];
+      const actionName = conflictingAction.action_type === 'Exploring' ? 'Explore' : 'Physical Breach';
+      logger.warn('Blocked by physical presence action', { userId: user.id, conflictingAction });
+      return NextResponse.json({
+        error: `Cannot scout while ${actionName} is in progress. Only one physical action can be active at a time.`
+      }, { status: 400 });
+    }
+
     // Deduct costs using StatsService
     await statsService.modifyStats({
       stamina: -staminaCost,
