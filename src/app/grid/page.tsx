@@ -5,6 +5,10 @@ import NavDrawer from '../../components/NavDrawer';
 import ConfirmModal from '../../components/ConfirmModal';
 import LevelUpModal from '../../components/LevelUpModal';
 import CompactMeterStrip from '../../components/CompactMeterStrip';
+import { ActionResultsSummary } from '../../components/ActionResultsSummary';
+import { DiscoveryCard } from '../../components/DiscoveryCard';
+import { EncounterAlert } from '../../components/EncounterAlert';
+import { ActionDismissButtons } from '../../components/ActionDismissButtons';
 import { useNavData } from '../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../hooks/useAuthenticatedUser';
 import { useCountdownTimer } from '../../hooks/useCountdownTimer';
@@ -382,63 +386,34 @@ export default function GridPage() {
           <div className="mb-3">
             {scanResults ? (
               <div>
-                <div className="modal-base mb-2">
-                  <div className="modal-title mb-2">SCAN RESULTS</div>
-                  <div className="modal-body-data space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-300">Gained XP</span>
-                      <span className="pill-cloud-gray">{scanResults.xpGained} XP</span>
-                    </div>
-                    {scanResults.discoveredSubnet && (
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-300">Discovered Subnet</span>
-                        <span className="text-green-400 font-semibold">{scanResults.discoveredSubnet.name}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <ActionResultsSummary
+                  actionName="Overnet Scan"
+                  xpGained={scanResults.xpGained}
+                  discovery={
+                    scanResults.discoveredSubnet ? {
+                      type: 'subnet' as const,
+                      name: scanResults.discoveredSubnet.name
+                    } : undefined
+                  }
+                />
+                
+                {scanResults.discoveredSubnet && (
+                  <DiscoveryCard
+                    discovery={{
+                      type: 'subnet',
+                      name: scanResults.discoveredSubnet.name
+                    }}
+                  />
+                )}
                 
                 {scanResults.encounter && (
-                  <div className="modal-base mb-2 border-2 border-yellow-500/50">
-                    <div className="modal-title mb-2 text-yellow-400">⚠ ENCOUNTER DETECTED</div>
-                    <div className="modal-body-data space-y-2">
-                      <div className="text-gray-300 text-sm">
-                        You've encountered <span className="text-white font-semibold">{scanResults.encounter.name}</span>, 
-                        a <span className="text-cyan-400">{scanResults.encounter.type}</span> with {' '}
-                        <span className={`font-semibold ${
-                          scanResults.encounter.sentiment === 'attack' ? 'text-red-500' :
-                          scanResults.encounter.sentiment === 'hostile' ? 'text-orange-500' :
-                          scanResults.encounter.sentiment === 'neutral' ? 'text-yellow-400' :
-                          'text-green-400'
-                        }`}>{scanResults.encounter.sentiment}</span> intentions.
-                      </div>
-                    </div>
-                  </div>
+                  <EncounterAlert encounter={scanResults.encounter} />
                 )}
 
-                {scanResults.encounter ? (
-                  <div className="space-y-2">
-                    <button 
-                      className="btn-cx btn-cx-primary btn-cx-full"
-                      onClick={() => window.location.href = `/encounters/${scanResults.encounter.id}`}
-                    >
-                      OPEN ENCOUNTER
-                    </button>
-                    <button 
-                      className="btn-cx btn-cx-secondary btn-cx-full"
-                      onClick={handleBackFromScanResults}
-                    >
-                      RUN AWAY (DISMISS)
-                    </button>
-                  </div>
-                ) : (
-                  <button 
-                    className="btn-cx btn-cx-secondary btn-cx-full"
-                    onClick={handleBackFromScanResults}
-                  >
-                    DISMISS
-                  </button>
-                )}
+                <ActionDismissButtons
+                  encounter={scanResults.encounter}
+                  onDismiss={handleBackFromScanResults}
+                />
               </div>
             ) : activeScan ? (
               <div>

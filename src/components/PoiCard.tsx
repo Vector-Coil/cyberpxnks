@@ -1,6 +1,10 @@
 "use client";
 import React from 'react';
 import { CxCard } from './CxShared';
+import { ActionResultsSummary } from './ActionResultsSummary';
+import { DiscoveryCard } from './DiscoveryCard';
+import { EncounterAlert } from './EncounterAlert';
+import { ActionDismissButtons } from './ActionDismissButtons';
 
 interface POI {
   id: number;
@@ -91,17 +95,14 @@ export default function PoiCard({
           </div>
         )}
         
-        {/* Right side: Title and Button stacked */}
+        {/* Right side: Title and Status */}
         <div className="flex-1 flex flex-col justify-center gap-2">
           <h3 className="text-white font-bold uppercase text-sm">{poiItem.name}</h3>
           
           {breachResults && selectedPoi?.id === poiItem.id ? (
-            <button 
-              className="btn-cx btn-cx-secondary btn-cx-full"
-              onClick={onBackFromBreachResults}
-            >
-              DISMISS
-            </button>
+            <div className="text-fuschia text-xs font-semibold uppercase">
+              Viewing Results ↓
+            </div>
           ) : activeBreach ? (
             <>
               <button 
@@ -113,7 +114,7 @@ export default function PoiCard({
                 }}
                 disabled={!isBreachComplete}
               >
-                {isBreachComplete ? 'RESULTS' : 'IN PROGRESS'}
+                {isBreachComplete ? 'VIEW RESULTS' : 'IN PROGRESS'}
               </button>
               <div className="text-white text-center text-xs">{timeLeft}</div>
             </>
@@ -132,89 +133,56 @@ export default function PoiCard({
       {/* Results Row - Full Width Below */}
       {breachResults && selectedPoi?.id === poiItem.id && (
         <div className="mt-4 pt-4 border-t border-gray-700">
-          <div className="mb-3">
-            <div className="text-fuschia font-bold uppercase text-sm mb-2">Breach Results</div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-gray-300 text-sm">XP Gained</span>
-                <span className="pill-cloud-gray">{breachResults.xpGained} XP</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-gray-300 text-sm">Terminal</span>
-                <span className="text-white text-sm">{poiItem.name}</span>
-              </div>
-              {(breachResults.unlockedPOI || breachResults.discoveredItem) && (
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-300 text-sm">Discovery</span>
-                  <span className="pill-bright-green text-xs">
-                    {breachResults.unlockedPOI?.name || breachResults.discoveredItem?.name}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
+          <ActionResultsSummary
+            actionName="Breach"
+            xpGained={breachResults.xpGained}
+            discovery={
+              breachResults.unlockedPOI ? {
+                type: 'poi' as const,
+                name: breachResults.unlockedPOI.name
+              } : breachResults.discoveredItem ? {
+                type: 'item' as const,
+                name: breachResults.discoveredItem.name
+              } : undefined
+            }
+            className="border-0 p-0"
+          />
           
           {breachResults.unlockedPOI && (
-            <div className="mb-3 border-2 border-bright-green/50 rounded p-3 bg-green-900/10">
-              <div className="text-bright-green font-bold uppercase text-sm mb-2">✨ Discovery</div>
-              <div className="text-gray-300 text-sm">
-                You discovered <span className="text-white font-semibold">{breachResults.unlockedPOI.name}</span>, a new{' '}
-                <span className="text-cyan-400">{breachResults.unlockedPOI.type === 'shop' ? 'shop' : 'terminal'}</span> in this zone!
-              </div>
-            </div>
+            <DiscoveryCard
+              discovery={{
+                type: 'poi',
+                name: breachResults.unlockedPOI.name,
+                poiType: breachResults.unlockedPOI.type
+              }}
+              className="rounded p-3 bg-green-900/10"
+            />
           )}
           
           {breachResults.discoveredItem && (
-            <div className="mb-3 border-2 border-bright-green/50 rounded p-3 bg-green-900/10">
-              <div className="text-bright-green font-bold uppercase text-sm mb-2">✨ Item Discovery</div>
-              <div className="text-gray-300 text-sm">
-                You discovered <span className="text-white font-semibold">{breachResults.discoveredItem.name}</span>, a{' '}
-                <span className="text-cyan-400">{breachResults.discoveredItem.rarity}</span>{' '}
-                <span className="text-purple-400">{breachResults.discoveredItem.type}</span>!
-              </div>
-            </div>
+            <DiscoveryCard
+              discovery={{
+                type: 'item',
+                name: breachResults.discoveredItem.name,
+                rarity: breachResults.discoveredItem.rarity,
+                itemType: breachResults.discoveredItem.type
+              }}
+              className="rounded p-3 bg-green-900/10"
+            />
           )}
           
-          {/* Encounter Card */}
           {breachResults.encounter && (
-            <div className="mb-3 border-2 border-yellow-500/50 rounded p-3 bg-yellow-900/10">
-              <div className="text-yellow-400 font-bold uppercase text-sm mb-2">⚠ Encounter Detected</div>
-              <div className="text-gray-300 text-sm mb-3">
-                You've encountered <span className="text-white font-semibold">{breachResults.encounter.name}</span>, 
-                a <span className="text-cyan-400">{breachResults.encounter.type}</span> with{' '}
-                <span className={`font-semibold ${
-                  breachResults.encounter.sentiment === 'attack' ? 'text-red-500' :
-                  breachResults.encounter.sentiment === 'hostile' ? 'text-orange-500' :
-                  breachResults.encounter.sentiment === 'neutral' ? 'text-yellow-400' :
-                  'text-green-400'
-                }`}>{breachResults.encounter.sentiment}</span> intentions.
-              </div>
-              <div className="flex gap-2">
-                <button 
-                  className="btn-cx btn-cx-primary flex-1 text-sm py-2"
-                  onClick={() => window.location.href = `/encounters/${breachResults.encounter.id}`}
-                >
-                  OPEN ENCOUNTER
-                </button>
-                <button 
-                  className="btn-cx btn-cx-secondary flex-1 text-sm py-2"
-                  onClick={onBackFromBreachResults}
-                >
-                  RUN AWAY
-                </button>
-              </div>
-            </div>
+            <EncounterAlert
+              encounter={breachResults.encounter}
+              className="rounded p-3 bg-yellow-900/10"
+            />
           )}
           
-          {/* Dismiss button (only show if no encounter or after handling encounter) */}
-          {!breachResults.encounter && (
-            <button 
-              className="btn-cx btn-cx-secondary btn-cx-auto"
-              onClick={onBackFromBreachResults}
-            >
-              DISMISS
-            </button>
-          )}
+          <ActionDismissButtons
+            encounter={breachResults.encounter}
+            onDismiss={onBackFromBreachResults}
+            className="mt-3"
+          />
         </div>
       )}
     </CxCard>

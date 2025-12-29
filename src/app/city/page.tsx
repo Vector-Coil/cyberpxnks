@@ -6,6 +6,10 @@ import LevelUpModal from '../../components/LevelUpModal';
 import ConfirmModal from '../../components/ConfirmModal';
 import CompactMeterStrip from '../../components/CompactMeterStrip';
 import ZoneCard from '../../components/ZoneCard';
+import { ActionResultsSummary } from '../../components/ActionResultsSummary';
+import { DiscoveryCard, type Discovery } from '../../components/DiscoveryCard';
+import { EncounterAlert, type Encounter } from '../../components/EncounterAlert';
+import { ActionDismissButtons } from '../../components/ActionDismissButtons';
 import { useNavData } from '../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../hooks/useAuthenticatedUser';
 import { useCountdownTimer } from '../../hooks/useCountdownTimer';
@@ -340,95 +344,50 @@ export default function CityPage() {
 
               {showResults && exploreResults && (
                 <div>
-                  <div className="modal-base mb-2">
-                    <div className="modal-title mb-2">EXPLORE RESULTS</div>
-                    <div className="modal-body-data space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-gray-300">Gained XP</span>
-                        <span className="pill-cloud-gray">{exploreResults.xpGained} XP</span>
-                      </div>
-                      {(exploreResults.discoveredZone || exploreResults.discoveredItem) && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-gray-300">Discovery</span>
-                          <span className="pill-bright-green">
-                            {exploreResults.discoveredZone?.name || exploreResults.discoveredItem?.name}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <ActionResultsSummary
+                    actionName="Explore"
+                    xpGained={exploreResults.xpGained}
+                    discovery={
+                      exploreResults.discoveredZone ? {
+                        type: 'zone' as const,
+                        name: exploreResults.discoveredZone.name
+                      } : exploreResults.discoveredItem ? {
+                        type: 'item' as const,
+                        name: exploreResults.discoveredItem.name
+                      } : undefined
+                    }
+                  />
                   
                   {exploreResults.discoveredZone && (
-                    <div className="modal-base mb-2 border-2 border-bright-green/50">
-                      <div className="modal-title mb-2 text-bright-green">✨ DISCOVERY</div>
-                      <div className="modal-body-data space-y-2">
-                        <div className="text-gray-300 text-sm">
-                          You discovered <span className="text-white font-semibold">{exploreResults.discoveredZone.name}</span> in{' '}
-                          <span className="text-cyan-400">{exploreResults.discoveredZone.districtName}</span>!
-                          {exploreResults.discoveredZone.poiCount > 0 && (
-                            <span className="block mt-1 text-gray-400 text-xs">
-                              This zone contains {exploreResults.discoveredZone.poiCount} point{exploreResults.discoveredZone.poiCount !== 1 ? 's' : ''} of interest.
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                    <DiscoveryCard
+                      discovery={{
+                        type: 'zone',
+                        name: exploreResults.discoveredZone.name,
+                        districtName: exploreResults.discoveredZone.districtName,
+                        poiCount: exploreResults.discoveredZone.poiCount
+                      }}
+                    />
                   )}
                   
                   {exploreResults.discoveredItem && (
-                    <div className="modal-base mb-2 border-2 border-bright-green/50">
-                      <div className="modal-title mb-2 text-bright-green">✨ ITEM DISCOVERY</div>
-                      <div className="modal-body-data space-y-2">
-                        <div className="text-gray-300 text-sm">
-                          You discovered <span className="text-white font-semibold">{exploreResults.discoveredItem.name}</span>, a{' '}
-                          <span className="text-cyan-400">{exploreResults.discoveredItem.rarity}</span>{' '}
-                          <span className="text-purple-400">{exploreResults.discoveredItem.type}</span>!
-                        </div>
-                      </div>
-                    </div>
+                    <DiscoveryCard
+                      discovery={{
+                        type: 'item',
+                        name: exploreResults.discoveredItem.name,
+                        rarity: exploreResults.discoveredItem.rarity,
+                        itemType: exploreResults.discoveredItem.type
+                      }}
+                    />
                   )}
                   
                   {exploreResults.encounter && (
-                    <div className="modal-base mb-2 border-2 border-yellow-500/50">
-                      <div className="modal-title mb-2 text-yellow-400">⚠ ENCOUNTER DETECTED</div>
-                      <div className="modal-body-data space-y-2">
-                        <div className="text-gray-300 text-sm">
-                          You've encountered <span className="text-white font-semibold">{exploreResults.encounter.name}</span>, 
-                          a <span className="text-cyan-400">{exploreResults.encounter.type}</span> with {' '}
-                          <span className={`font-semibold ${
-                            exploreResults.encounter.sentiment === 'attack' ? 'text-red-500' :
-                            exploreResults.encounter.sentiment === 'hostile' ? 'text-orange-500' :
-                            exploreResults.encounter.sentiment === 'neutral' ? 'text-yellow-400' :
-                            'text-green-400'
-                          }`}>{exploreResults.encounter.sentiment}</span> intentions.
-                        </div>
-                      </div>
-                    </div>
+                    <EncounterAlert encounter={exploreResults.encounter} />
                   )}
 
-                  {exploreResults.encounter ? (
-                    <div className="space-y-2">
-                      <button 
-                        className="btn-cx btn-cx-primary btn-cx-full"
-                        onClick={() => window.location.href = `/encounters/${exploreResults.encounter.id}`}
-                      >
-                        OPEN ENCOUNTER
-                      </button>
-                      <button 
-                        className="btn-cx btn-cx-secondary btn-cx-full"
-                        onClick={handleBackFromResults}
-                      >
-                        RUN AWAY (DISMISS)
-                      </button>
-                    </div>
-                  ) : (
-                    <button 
-                      className="btn-cx btn-cx-secondary btn-cx-full"
-                      onClick={handleBackFromResults}
-                    >
-                      DISMISS
-                    </button>
-                  )}
+                  <ActionDismissButtons
+                    encounter={exploreResults.encounter}
+                    onDismiss={handleBackFromResults}
+                  />
                 </div>
               )}
             </CxCard>

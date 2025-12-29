@@ -7,6 +7,10 @@ import ConfirmModal from '../../../components/ConfirmModal';
 import NavDrawer from '../../../components/NavDrawer';
 import PoiCard from '../../../components/PoiCard';
 import CompactMeterStrip from '../../../components/CompactMeterStrip';
+import { ActionResultsSummary } from '../../../components/ActionResultsSummary';
+import { DiscoveryCard } from '../../../components/DiscoveryCard';
+import { EncounterAlert } from '../../../components/EncounterAlert';
+import { ActionDismissButtons } from '../../../components/ActionDismissButtons';
 import { useNavData } from '../../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../../hooks/useAuthenticatedUser';
 import { useCountdownTimer } from '../../../hooks/useCountdownTimer';
@@ -721,92 +725,49 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
                   <>
                     {scoutResults ? (
                       <div>
-                        <div className="modal-base mb-2">
-                          <div className="modal-title mb-2">SCOUT RESULTS</div>
-                          <div className="modal-body">
-                              <div className="modal-body-data space-y-2">
-                              <div className="flex items-center justify-between">
-                                  <span className="text-gray-300">Gained XP</span>
-                                  <span className="pill-cloud-gray">{scoutResults.xpGained} XP</span>
-                              </div>
-                              {(scoutResults.unlockedPOI || scoutResults.discoveredItem) && (
-                                <div className="flex items-center justify-between">
-                                  <span className="text-gray-300">Discovery</span>
-                                  <span className="pill-bright-green">
-                                    {scoutResults.unlockedPOI?.name || scoutResults.discoveredItem?.name}
-                                  </span>
-                                </div>
-                              )}
-                              </div>
-                          </div>
-                        </div>
+                        <ActionResultsSummary
+                          actionName="Scout"
+                          xpGained={scoutResults.xpGained}
+                          discovery={
+                            scoutResults.unlockedPOI ? {
+                              type: 'poi' as const,
+                              name: scoutResults.unlockedPOI.name
+                            } : scoutResults.discoveredItem ? {
+                              type: 'item' as const,
+                              name: scoutResults.discoveredItem.name
+                            } : undefined
+                          }
+                        />
                         
                         {scoutResults.unlockedPOI && (
-                          <div className="modal-base mb-2 border-2 border-bright-green/50">
-                            <div className="modal-title mb-2 text-bright-green">✨ DISCOVERY</div>
-                            <div className="modal-body-data space-y-2">
-                              <div className="text-gray-300 text-sm">
-                                You discovered <span className="text-white font-semibold">{scoutResults.unlockedPOI.name}</span>, a new{' '}
-                                <span className="text-cyan-400">{scoutResults.unlockedPOI.type === 'shop' ? 'shop' : 'terminal'}</span> in this zone!
-                              </div>
-                            </div>
-                          </div>
+                          <DiscoveryCard
+                            discovery={{
+                              type: 'poi',
+                              name: scoutResults.unlockedPOI.name,
+                              poiType: scoutResults.unlockedPOI.type
+                            }}
+                          />
                         )}
                         
                         {scoutResults.discoveredItem && (
-                          <div className="modal-base mb-2 border-2 border-bright-green/50">
-                            <div className="modal-title mb-2 text-bright-green">✨ ITEM DISCOVERY</div>
-                            <div className="modal-body-data space-y-2">
-                              <div className="text-gray-300 text-sm">
-                                You discovered <span className="text-white font-semibold">{scoutResults.discoveredItem.name}</span>, a{' '}
-                                <span className="text-cyan-400">{scoutResults.discoveredItem.rarity}</span>{' '}
-                                <span className="text-purple-400">{scoutResults.discoveredItem.type}</span>!
-                              </div>
-                            </div>
-                          </div>
+                          <DiscoveryCard
+                            discovery={{
+                              type: 'item',
+                              name: scoutResults.discoveredItem.name,
+                              rarity: scoutResults.discoveredItem.rarity,
+                              itemType: scoutResults.discoveredItem.type
+                            }}
+                          />
                         )}
                         
                         {scoutResults.encounter && (
-                          <div className="modal-base mb-2 border-2 border-yellow-500/50">
-                            <div className="modal-title mb-2 text-yellow-400">⚠ ENCOUNTER DETECTED</div>
-                            <div className="modal-body-data space-y-2">
-                              <div className="text-gray-300 text-sm">
-                                You've encountered <span className="text-white font-semibold">{scoutResults.encounter.name}</span>, 
-                                a <span className="text-cyan-400">{scoutResults.encounter.type}</span> with {' '}
-                                <span className={`font-semibold ${
-                                  scoutResults.encounter.sentiment === 'attack' ? 'text-red-500' :
-                                  scoutResults.encounter.sentiment === 'hostile' ? 'text-orange-500' :
-                                  scoutResults.encounter.sentiment === 'neutral' ? 'text-yellow-400' :
-                                  'text-green-400'
-                                }`}>{scoutResults.encounter.sentiment}</span> intentions.
-                              </div>
-                            </div>
-                          </div>
+                          <EncounterAlert encounter={scoutResults.encounter} />
                         )}
 
-                        {scoutResults.encounter ? (
-                          <div className="space-y-2">
-                            <button 
-                              className="btn-cx btn-cx-primary btn-cx-full"
-                              onClick={() => window.location.href = `/encounters/${scoutResults.encounter.id}`}
-                            >
-                              OPEN ENCOUNTER
-                            </button>
-                            <button 
-                              className="btn-cx btn-cx-secondary btn-cx-full"
-                              onClick={handleBackFromResults}
-                            >
-                              RUN AWAY (DISMISS)
-                            </button>
-                          </div>
-                        ) : (
-                          <button 
-                            className="btn-cx btn-cx-secondary btn-cx-full"
-                            onClick={handleBackFromResults}
-                          >
-                            DISMISS
-                          </button>
-                        )}
+                        <ActionDismissButtons
+                          encounter={scoutResults.encounter}
+                          onDismiss={handleBackFromResults}
+                        />
                       </div>
                     ) : activeScout ? (
                       <div>
