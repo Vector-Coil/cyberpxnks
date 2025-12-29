@@ -59,7 +59,7 @@ export function DiscoveryCard({ discovery, className = '' }: DiscoveryCardProps)
             {discovery.districtName && (
               <> in <span className="text-cyan-400">{discovery.districtName}</span></>
             )}!
-            {discovery.poiCount && discovery.poiCount > 0 && (
+            {(discovery.poiCount ?? 0) > 0 && (
               <span className="block mt-1 text-gray-400 text-xs">
                 This zone contains {discovery.poiCount} point{discovery.poiCount !== 1 ? 's' : ''} of interest.
               </span>
