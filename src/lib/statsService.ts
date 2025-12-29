@@ -624,15 +624,16 @@ export class StatsService {
   }
 
   /**
-   * Proportionally scale current meter values when max values increase from equipment
-   * For Consciousness, Stamina, Charge, and Bandwidth only
+   * Proportionally scale current meter values when max values change from equipment
+   * For Consciousness, Stamina, Charge, Bandwidth (scale up/down)
+   * For Thermal and Neural (inverse scaling - when max goes up, current should stay at same proportion)
    * - If at max (or old max was 0), fill to new max
    * - If partially filled, scale proportionally
    * 
-   * Call this AFTER updating equipment but AFTER stats have been recalculated
+   * Call this AFTER updating equipment stats
    * Requires passing in the old max values from before equipment change
    */
-  async scaleCurrentOnEquip(oldMaxValues: { consciousness: number; stamina: number; charge: number; bandwidth: number }): Promise<CompleteStats> {
+  async scaleCurrentOnEquip(oldMaxValues: { consciousness: number; stamina: number; charge: number; bandwidth: number; thermal?: number; neural?: number }): Promise<CompleteStats> {
     // Get current stats (after equipment change, so max values are new)
     const statsAfter = await this.getStats();
     
@@ -647,8 +648,20 @@ export class StatsService {
       return Math.ceil(proportion * newMax);
     };
     
+    // For inverse meters (thermal/neural), we want to maintain the same "usage percentage"
+    // So if you were at 20/50 thermal (40% used), and max goes to 60, you should be at 24/60 (still 40%)
+    const calculateInverseScaled = (currentVal: number, oldMax: number, newMax: number): number => {
+      if (oldMax === 0) {
+        return 0; // If old max was 0, start at 0
+      }
+      // Maintain the same proportion of usage
+      const proportion = currentVal / oldMax;
+      return Math.floor(proportion * newMax);
+    };
+    
     const [currentRows] = await this.pool.execute<any[]>(
-      `SELECT current_consciousness, current_stamina, current_charge, current_bandwidth
+      `SELECT current_consciousness, current_stamina, current_charge, current_bandwidth,
+              current_thermal, current_neural
        FROM user_stats WHERE user_id = ? LIMIT 1`,
       [this.userId]
     );
@@ -679,12 +692,34 @@ export class StatsService {
       statsAfter.max.bandwidth
     );
 
+    // Handle thermal and neural with inverse scaling if old values provided
+    let newThermal = current.current_thermal || 0;
+    let newNeural = current.current_neural || 0;
+    
+    if (oldMaxValues.thermal !== undefined) {
+      newThermal = calculateInverseScaled(
+        current.current_thermal || 0,
+        oldMaxValues.thermal,
+        statsAfter.max.thermal
+      );
+    }
+    
+    if (oldMaxValues.neural !== undefined) {
+      newNeural = calculateInverseScaled(
+        current.current_neural || 0,
+        oldMaxValues.neural,
+        statsAfter.max.neural
+      );
+    }
+
     await this.pool.execute(
       `UPDATE user_stats 
        SET current_consciousness = ?,
            current_stamina = ?,
            current_charge = ?,
            current_bandwidth = ?,
+           current_thermal = ?,
+           current_neural = ?,
            updated_at = NOW()
        WHERE user_id = ?`,
       [
@@ -692,6 +727,8 @@ export class StatsService {
         newStamina,
         newCharge,
         newBandwidth,
+        newThermal,
+        newNeural,
         this.userId
       ]
     );

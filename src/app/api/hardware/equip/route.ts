@@ -303,8 +303,24 @@ export async function POST(request: NextRequest) {
             `Unequipped ${inventoryItem.name}`
           );
         } else if (slotType === 'arsenal') {
+          // Capture old max values BEFORE unequipping
+          const statsService = new StatsService(pool, userId);
+          const oldStats = await statsService.getStats();
+          const oldMaxValues = {
+            consciousness: oldStats.max.consciousness,
+            stamina: oldStats.max.stamina,
+            charge: oldStats.max.charge,
+            bandwidth: oldStats.max.bandwidth,
+            thermal: oldStats.max.thermal,
+            neural: oldStats.max.neural
+          };
+
           // Update combat stats after unequipping arsenal
           await updateCombatStats(pool, userId);
+          
+          // Proportionally scale current values based on new max values
+          await statsService.scaleCurrentOnEquip(oldMaxValues);
+          
           // Log to activity ledger for arsenal
           await logActivity(
             userId,
@@ -507,6 +523,18 @@ export async function POST(request: NextRequest) {
     if (slotType === 'arsenal') {
       logger.info('Arsenal equip attempt', { userId, itemId });
       
+      // Capture old max values BEFORE equipping
+      const statsService = new StatsService(pool, userId);
+      const oldStats = await statsService.getStats();
+      const oldMaxValues = {
+        consciousness: oldStats.max.consciousness,
+        stamina: oldStats.max.stamina,
+        charge: oldStats.max.charge,
+        bandwidth: oldStats.max.bandwidth,
+        thermal: oldStats.max.thermal,
+        neural: oldStats.max.neural
+      };
+      
       // Get currently used arsenal slots
       const [equippedRows] = await pool.execute<any[]>(
         `SELECT slot_name FROM user_loadout 
@@ -568,6 +596,9 @@ export async function POST(request: NextRequest) {
 
       // Update combat stats after equipping arsenal
       await updateCombatStats(pool, userId);
+
+      // Proportionally scale current values based on new max values
+      await statsService.scaleCurrentOnEquip(oldMaxValues);
 
       // Log to activity ledger
       await logActivity(
