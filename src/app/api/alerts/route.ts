@@ -12,6 +12,27 @@ export async function GET(req: Request) {
     const pool = await getDbPool();
     const userId = await getUserIdByFid(pool, fid);
 
+    // First, unlock any scheduled messages that are due for delivery
+    // This ensures junk messages and other scheduled messages are delivered
+    // when the user loads any page (dashboard, city, etc.), not just the messages page
+    try {
+      const [updateResult] = await pool.execute(
+        `UPDATE msg_history 
+         SET status = 'UNREAD', unlocked_at = NOW() 
+         WHERE user_id = ? 
+         AND status = 'SCHEDULED' 
+         AND scheduled_for <= NOW()`,
+        [userId]
+      );
+      const unlocked = (updateResult as any).affectedRows;
+      if (unlocked > 0) {
+        logger.info(`Unlocked ${unlocked} scheduled message(s) for user ${userId}`);
+      }
+    } catch (unlockErr) {
+      logger.error('Error unlocking scheduled messages in alerts endpoint:', unlockErr);
+      // Continue anyway - don't block alert fetching
+    }
+
     const contactQuery = `
       SELECT COUNT(*) AS cnt FROM contact_history ch
       WHERE ch.user_id = ?
