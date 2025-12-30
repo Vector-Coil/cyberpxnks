@@ -136,24 +136,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Already breaching this terminal' }, { status: 400 });
     }
 
-    // Check for active cooldown from previous failed breach
-    const [cooldownRows] = await pool.execute<any[]>(
-      `SELECT cooldown_until FROM user_zone_history 
-       WHERE user_id = ? AND poi_id = ? 
-       AND cooldown_until > UTC_TIMESTAMP() 
-       ORDER BY cooldown_until DESC 
-       LIMIT 1`,
-      [user.id, poiId]
-    );
-
-    if (cooldownRows.length > 0) {
-      const cooldownUntil = new Date(cooldownRows[0].cooldown_until);
-      const minutesRemaining = Math.ceil((cooldownUntil.getTime() - Date.now()) / 60000);
-      return NextResponse.json({ 
-        error: `Terminal on cooldown after failed breach. Try again in ${minutesRemaining} minutes.` 
-      }, { status: 400 });
-    }
-
     // Check for active physical presence actions (Explore or Scout) - ONLY for physical breaches
     // Remote breaches don't require physical presence and can run alongside other actions
     if (isPhysicalBreach) {
