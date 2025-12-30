@@ -30,6 +30,7 @@ interface CollapsibleDistrictCardProps {
   currentLocationId: number | null;
   activeJobs: any[];
   storageKey: string;
+  key?: string | number;
 }
 
 function getDistrictLevelBadge(districtLevel: number, userLevel: number) {
@@ -82,6 +83,16 @@ export default function CollapsibleDistrictCard({
     return false;
   });
 
+  // Re-read from localStorage when component updates (for expand/collapse all)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem(storageKey);
+      if (stored !== null) {
+        setIsCollapsed(JSON.parse(stored));
+      }
+    }
+  }, [storageKey, district.id]);
+
   // Save collapse state to localStorage
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -132,9 +143,6 @@ export default function CollapsibleDistrictCard({
               <h3 className="text-white font-bold uppercase text-lg">{district.name}</h3>
               <span className={`px-2 py-1 ${badge.color} ${badge.textColor} text-xs font-bold uppercase rounded`}>
                 {badge.content}
-              </span>
-              <span className="text-gray-400 text-sm">
-                ({district.zones.length} {district.zones.length === 1 ? 'zone' : 'zones'})
               </span>
             </div>
           </div>

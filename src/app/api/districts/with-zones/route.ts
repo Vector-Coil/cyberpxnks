@@ -11,16 +11,17 @@ export async function GET(req: NextRequest) {
     const pool = await getDbPool();
     const userId = await getUserIdByFid(pool, fid);
 
-    // Fetch districts where user has discovered zones, include level
+    // Fetch districts where user has discovered zones, include level (fallback to phase if level doesn't exist)
     logger.debug('Fetching districts with zones', { fid, userId });
     
     const [districts] = await pool.execute<any[]>(
-      `SELECT DISTINCT zd.id, zd.name, zd.description, zd.phase, zd.level, zd.image_url
+      `SELECT DISTINCT zd.id, zd.name, zd.description, zd.phase, 
+              COALESCE(zd.level, zd.phase, 1) as level, zd.image_url
        FROM zone_districts zd
        INNER JOIN zones z ON z.district = zd.id
        INNER JOIN user_zone_history uzh ON uzh.zone_id = z.id
        WHERE uzh.user_id = ? AND uzh.action_type = 'Discovered'
-       ORDER BY zd.level ASC, zd.name ASC`,
+       ORDER BY COALESCE(zd.level, zd.phase, 1) ASC, zd.name ASC`,
       [userId]
     );
 

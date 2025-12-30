@@ -70,12 +70,26 @@ export default function CityPage() {
   const [cityHistory, setCityHistory] = useState<any[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [activeJobs, setActiveJobs] = useState<any[]>([]);
+  const [allCollapsed, setAllCollapsed] = useState(false);
+  const [renderKey, setRenderKey] = useState(0);
   
   // Use countdown timer hook for active explore
   const { timeRemaining, isComplete } = useCountdownTimer(activeExplore?.end_time || null);
 
   // Calculate total zones discovered across all districts
   const totalZonesDiscovered = districts.reduce((sum, district) => sum + district.zones.length, 0);
+
+  // Handle expand/collapse all
+  const handleToggleAll = () => {
+    const newState = !allCollapsed;
+    setAllCollapsed(newState);
+    // Update localStorage for all districts
+    districts.forEach(district => {
+      localStorage.setItem(`district-collapse-${district.id}`, JSON.stringify(newState));
+    });
+    // Force re-render
+    setRenderKey(prev => prev + 1);
+  };
 
   useEffect(() => {
     async function loadData() {
@@ -105,6 +119,8 @@ export default function CityPage() {
         if (districtsRes.ok) {
           const districtsData = await districtsRes.json();
           console.log('Districts with zones:', districtsData);
+          console.log('Total districts:', districtsData.length);
+          console.log('Total zones:', districtsData.reduce((sum: number, d: any) => sum + (d.zones?.length || 0), 0));
           setDistricts(districtsData);
         } else {
           console.error('Failed to fetch districts:', districtsRes.status, await districtsRes.text());
@@ -403,10 +419,28 @@ export default function CityPage() {
           )}
 
           {/* Districts with Nested Zones Section */}
-          <div className="mb-4">
+          <div className="mb-4 flex items-center justify-between">
             <h2 className="text-white font-bold uppercase text-lg mb-1">
               DISCOVERED ZONES ({totalZonesDiscovered})
             </h2>
+            {districts.length > 0 && (
+              <button
+                onClick={handleToggleAll}
+                className="text-cyan-400 hover:text-cyan-300 text-sm font-semibold uppercase flex items-center gap-1 transition-colors"
+              >
+                {allCollapsed ? (
+                  <>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>expand_more</span>
+                    EXPAND ALL
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>expand_less</span>
+                    COLLAPSE ALL
+                  </>
+                )}
+              </button>
+            )}
           </div>
 
           {loading ? (
@@ -421,7 +455,7 @@ export default function CityPage() {
             <div className="space-y-0">
               {districts.map((district) => (
                 <CollapsibleDistrictCard
-                  key={district.id}
+                  key={`${district.id}-${renderKey}`}
                   district={district}
                   userLevel={userStats?.level || 1}
                   currentLocationId={currentLocationId}

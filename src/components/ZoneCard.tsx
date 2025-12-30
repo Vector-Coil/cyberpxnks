@@ -31,13 +31,9 @@ export default function ZoneCard({ zone, isCurrentLocation = false, href, action
       } : undefined}
     >
       <div className="banner-left flex flex-col gap-2">
+        {/* First row: Action status, POI indicators, and zone type */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-1.5 flex-wrap">
-            {zone.district_name && (
-              <span className="px-2 py-1 bg-fuschia text-white text-xs font-bold uppercase rounded flex-shrink-0">
-                {zone.district_name}
-              </span>
-            )}
             {actionStatus && (
               <span className={`px-2 py-1 text-white text-xs font-bold uppercase rounded flex-shrink-0 ${
                 actionStatus.status === 'completed' ? 'bg-bright-green animate-pulse' : 'bg-yellow-500'
@@ -45,9 +41,23 @@ export default function ZoneCard({ zone, isCurrentLocation = false, href, action
                 {actionStatus.status === 'completed' ? '\u2713' : '\u22ef'}
               </span>
             )}
+            {/* POI Indicators */}
+            {(zone.terminal_count || 0) > 0 && (
+              <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-black/60 rounded text-xs">
+                <span className="material-symbols-outlined text-cyan-400" style={{ fontSize: '14px' }}>terminal</span>
+                <span className="text-cyan-400 font-semibold">{zone.terminal_count}</span>
+              </div>
+            )}
+            {(zone.shop_count || 0) > 0 && (
+              <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-black/60 rounded text-xs">
+                <span className="material-symbols-outlined text-green-400" style={{ fontSize: '14px' }}>storefront</span>
+                <span className="text-green-400 font-semibold">{zone.shop_count}</span>
+              </div>
+            )}
           </div>
           <span className="pill-cloud-gray uppercase flex-shrink-0">{zone.zone_type_name || zone.zone_type}</span>
         </div>
+        {/* Second row: Zone name and location indicator */}
         <div className="flex items-end justify-between gap-2">
           <div className="text-white font-bold uppercase text-lg flex items-center gap-2">
             {isCurrentLocation && (
@@ -55,23 +65,6 @@ export default function ZoneCard({ zone, isCurrentLocation = false, href, action
             )}
             {zone.name}
           </div>
-          {/* POI Indicators */}
-          {((zone.terminal_count || 0) > 0 || (zone.shop_count || 0) > 0) && (
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              {(zone.terminal_count || 0) > 0 && (
-                <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-black/60 rounded text-xs">
-                  <span className="material-symbols-outlined text-cyan-400" style={{ fontSize: '14px' }}>terminal</span>
-                  <span className="text-cyan-400 font-semibold">{zone.terminal_count}</span>
-                </div>
-              )}
-              {(zone.shop_count || 0) > 0 && (
-                <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-black/60 rounded text-xs">
-                  <span className="material-symbols-outlined text-green-400" style={{ fontSize: '14px' }}>storefront</span>
-                  <span className="text-green-400 font-semibold">{zone.shop_count}</span>
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </div>
