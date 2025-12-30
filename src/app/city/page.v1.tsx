@@ -5,7 +5,7 @@ import NavDrawer from '../../components/NavDrawer';
 import LevelUpModal from '../../components/LevelUpModal';
 import ConfirmModal from '../../components/ConfirmModal';
 import CompactMeterStrip from '../../components/CompactMeterStrip';
-import CollapsibleDistrictCard from '../../components/CollapsibleDistrictCard';
+import ZoneCard from '../../components/ZoneCard';
 import { ActionResultsSummary } from '../../components/ActionResultsSummary';
 import { DiscoveryCard, type Discovery } from '../../components/DiscoveryCard';
 import { EncounterAlert, type Encounter } from '../../components/EncounterAlert';
@@ -25,16 +25,12 @@ interface Zone {
   image_url?: string;
   shop_count?: number;
   terminal_count?: number;
-  discovery_time?: string;
 }
 
 interface District {
   id: number;
   name: string;
   description?: string;
-  level: number;
-  image_url?: string;
-  zones: Zone[];
 }
 
 interface UserStats {
@@ -42,7 +38,6 @@ interface UserStats {
   max_consciousness: number;
   current_stamina: number;
   current_bandwidth: number;
-  level: number;
 }
 
 interface ExploreAction {
@@ -55,6 +50,7 @@ interface ExploreAction {
 export default function CityPage() {
   const { userFid, isLoading: isAuthLoading } = useAuthenticatedUser();
   const navData = useNavData(userFid || 0);
+  const [zones, setZones] = useState<Zone[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [currentLocationId, setCurrentLocationId] = useState<number | null>(null);
@@ -74,20 +70,18 @@ export default function CityPage() {
   // Use countdown timer hook for active explore
   const { timeRemaining, isComplete } = useCountdownTimer(activeExplore?.end_time || null);
 
-  // Calculate total zones discovered across all districts
-  const totalZonesDiscovered = districts.reduce((sum, district) => sum + district.zones.length, 0);
-
   useEffect(() => {
     async function loadData() {
       if (!userFid || isAuthLoading) return;
       
       try {
         // Parallelize all independent API calls for faster loading
-        const [statsRes, districtsRes, exploreRes, historyRes, alertsRes, jobsRes] = await Promise.all([
+        const [statsRes, zonesRes, exploreRes, historyRes, districtsRes, alertsRes, jobsRes] = await Promise.all([
           fetch(`/api/stats?fid=${userFid}`),
-          fetch(`/api/districts/with-zones?fid=${userFid}`),
+          fetch(`/api/zones?fid=${userFid}`),
           fetch(`/api/city/explore-status?fid=${userFid}`),
           fetch('/api/city/all-history'),
+          fetch(`/api/districts?fid=${userFid}`),
           fetch(`/api/alerts?fid=${userFid}`),
           fetch(`/api/active-jobs?fid=${userFid}`)
         ]);
@@ -101,13 +95,11 @@ export default function CityPage() {
           console.error('Failed to fetch stats:', statsRes.status, await statsRes.text());
         }
 
-        // Process districts with zones
-        if (districtsRes.ok) {
-          const districtsData = await districtsRes.json();
-          console.log('Districts with zones:', districtsData);
-          setDistricts(districtsData);
-        } else {
-          console.error('Failed to fetch districts:', districtsRes.status, await districtsRes.text());
+        // Process discovered zones
+        if (zonesRes.ok) {
+          const zonesData = await zonesRes.json();
+          console.log('Zones data:', zonesData);
+          setZones(zonesData);
         }
 
         // Process active explore action
@@ -122,6 +114,15 @@ export default function CityPage() {
         if (historyRes.ok) {
           const historyData = await historyRes.json();
           setCityHistory(historyData.history || []);
+        }
+
+        // Process districts
+        if (districtsRes.ok) {
+          const districtsData = await districtsRes.json();
+          console.log('Districts data:', districtsData);
+          setDistricts(districtsData);
+        } else {
+          console.error('Failed to fetch districts:', districtsRes.status, await districtsRes.text());
         }
 
         // Process user location
@@ -240,11 +241,17 @@ export default function CityPage() {
     setExploreResults(null);
     setActiveExplore(null);
     
-    // Reload districts with zones to show newly discovered content
-    const [districtsRes, alertsRes] = await Promise.all([
-      fetch(`/api/districts/with-zones?fid=${userFid}`),
+    // Reload zones AND districts to show newly discovered content
+    const [zonesRes, districtsRes, alertsRes] = await Promise.all([
+      fetch(`/api/zones?fid=${userFid}`),
+      fetch(`/api/districts?fid=${userFid}`),
       fetch(`/api/alerts?fid=${userFid}`)
     ]);
+
+    if (zonesRes.ok) {
+      const zonesData = await zonesRes.json();
+      setZones(zonesData);
+    }
 
     if (districtsRes.ok) {
       const districtsData = await districtsRes.json();
@@ -288,85 +295,69 @@ export default function CityPage() {
           />
         </div>
         <CompactMeterStrip meters={getMeterData(userStats)} />
-        
-        <div className="frame-body">
-          {/* Explore CTA Button */}
-          <div className="mb-6">
-            <button 
-              className={`btn-cx ${canExplore ? 'btn-cx-primary' : 'btn-cx-disabled'} w-full text-center`}
-              onClick={handleExploreClick}
-              disabled={!canExplore}
-            >
-              {activeExplore ? 'EXPLORATION IN PROGRESS' : 'EXPLORE THE CITY'}
-            </button>
-            {!canExplore && !activeExplore && userStats && (
-              <p className="text-gray-400 text-sm mt-2 text-center">
-                {userStats.current_consciousness < (userStats.max_consciousness * 0.5) && 'Consciousness too low. '}
-                {userStats.current_bandwidth < 1 && 'Need at least 1 Bandwidth. '}
-                {userStats.current_stamina < staminaCost && `Need ${staminaCost} Stamina.`}
-              </p>
-            )}
+
+      <div className="pt-5 pb-2 px-6 flex flex-row gap-3 items-center">
+        <a href="/dashboard" className="w-[25px] h-[25px] rounded-full overflow-hidden bg-gray-700 flex items-center justify-center cursor-pointer hover:bg-gray-600 transition-colors">
+          <span className="material-symbols-outlined text-white text-xl">chevron_left</span>
+        </a>
+        <div className="masthead">THE CITY</div>
+      </div>
+
+      <div className="frame-body">
+
+        {/* City Map with Overlaid Explore Card */}
+        <div className="relative mb-6">
+          {/* City Map */}
+          <div className="city-map" style={{
+            backgroundImage: 'url(https://vectorcoil.com/cx/images/city-map/City_-_Downsize.png)'
+          }}>
           </div>
 
-          {/* Active Explore Timer */}
-          {activeExplore && !showResults && (
-            <CxCard className="mb-6">
-              <div className="text-center">
-                <h3 className="text-white font-bold uppercase mb-2">Exploring the City</h3>
-                {!isComplete ? (
-                  <>
-                    <p className="text-gray-300 mb-4">Time Remaining: {timeRemaining}</p>
-                    <div className="w-full bg-gray-700 rounded-full h-2">
-                      <div 
-                        className="bg-fuschia h-2 rounded-full transition-all duration-1000"
-                        style={{
-                          width: `${Math.max(0, Math.min(100, 
-                            ((new Date().getTime() - new Date(activeExplore.timestamp).getTime()) / 
-                            (new Date(activeExplore.end_time).getTime() - new Date(activeExplore.timestamp).getTime())) * 100
-                          ))}%`
-                        }}
-                      />
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-green-400 mb-4">Exploration Complete!</p>
-                    <button 
-                      className="btn-cx btn-cx-primary"
-                      onClick={handleViewResults}
-                      disabled={isLoadingResults}
-                    >
-                      {isLoadingResults ? 'LOADING...' : 'VIEW RESULTS'}
-                    </button>
-                  </>
-                )}
-              </div>
-            </CxCard>
-          )}
-
-          {/* Explore Results */}
-          {showResults && exploreResults && (
-            <div className="mb-6">
-              <CxCard>
-                <div className="text-center mb-4">
-                  <h3 className="text-white font-bold uppercase mb-2">Exploration Results</h3>
+          {/* Explore Card Overlay */}
+          <div className="absolute top-5 left-5 right-5" style={{ opacity: 0.95 }}>
+            <CxCard>
+              {!showResults && !activeExplore && (
+                <div className="flex flex-col justify-between">
+                  <button 
+                    className={`btn-cx btn-cx-primary ${!canExplore ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={handleExploreClick}
+                    disabled={!canExplore}
+                  >
+                    EXPLORE
+                  </button>
+                  <div className="modal-body-data text-center mt-1">Go out into the city and discover new zones.</div>
                 </div>
-                
-                <ActionResultsSummary
-                  actionName="Explore"
-                  xpGained={exploreResults.xpGained || 0}
-                  discovery={
-                    exploreResults.discoveredZone ? {
-                      type: 'zone' as const,
-                      name: exploreResults.discoveredZone.name
-                    } : exploreResults.discoveredItem ? {
-                      type: 'item' as const,
-                      name: exploreResults.discoveredItem.name
-                    } : undefined
-                  }
-                />
-                
-                <div className="space-y-4 mt-4">
+              )}
+
+              {activeExplore && !showResults && (
+                <div className="flex flex-col justify-between gap-1">
+                  <button 
+                    className={`btn-cx btn-cx-pause btn-cx-full mb-2 ${!isComplete || isLoadingResults ? 'cursor-default opacity-75' : ''}`}
+                    onClick={handleViewResults}
+                    disabled={!isComplete || isLoadingResults}
+                  >
+                    {isLoadingResults ? 'LOADING RESULTS...' : isComplete ? 'VIEW RESULTS' : 'EXPLORING IN PROGRESS'}
+                  </button>
+                  <div className="text-white text-center text-xs">{timeRemaining}</div>
+                </div>
+              )}
+
+              {showResults && exploreResults && (
+                <div>
+                  <ActionResultsSummary
+                    actionName="Explore"
+                    xpGained={exploreResults.xpGained}
+                    discovery={
+                      exploreResults.discoveredZone ? {
+                        type: 'zone' as const,
+                        name: exploreResults.discoveredZone.name
+                      } : exploreResults.discoveredItem ? {
+                        type: 'item' as const,
+                        name: exploreResults.discoveredItem.name
+                      } : undefined
+                    }
+                  />
+                  
                   {exploreResults.discoveredZone && (
                     <DiscoveryCard
                       discovery={{
@@ -398,100 +389,111 @@ export default function CityPage() {
                     onDismiss={handleBackFromResults}
                   />
                 </div>
-              </CxCard>
-            </div>
-          )}
-
-          {/* Districts with Nested Zones Section */}
-          <div className="mb-4">
-            <h2 className="text-white font-bold uppercase text-lg mb-1">
-              DISCOVERED ZONES ({totalZonesDiscovered})
-            </h2>
+              )}
+            </CxCard>
           </div>
+        </div>
 
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin w-12 h-12 border-4 border-gray-600 border-t-fuschia rounded-full"></div>
+        {/* Districts Section */}
+        {districts.length > 0 && (
+          <>
+            <div className="mb-4">
+              <h2 className="text-white font-bold uppercase text-lg mb-1">DISTRICTS</h2>
             </div>
-          ) : districts.length === 0 ? (
-            <div className="text-center text-gray-400 py-12">
-              No zones explored yet.
-            </div>
-          ) : (
-            <div className="space-y-0">
+
+            <div className="grid grid-cols-2 gap-3 mb-6">
               {districts.map((district) => (
-                <CollapsibleDistrictCard
+                <a
                   key={district.id}
-                  district={district}
-                  userLevel={userStats?.level || 1}
-                  currentLocationId={currentLocationId}
-                  activeJobs={activeJobs}
-                  storageKey={`district-collapse-${district.id}`}
-                />
+                  href={`/city/district/${district.id}`}
+                  className="btn-cx btn-cx-primary text-center"
+                >
+                  {district.name}
+                </a>
               ))}
             </div>
-          )}
+          </>
+        )}
 
-          {/* City-wide Activity */}
-          <div className="mt-8 mb-4">
-            <h2 className="text-white font-bold uppercase text-lg mb-3">CITY ACTIVITY</h2>
+        {/* Zones Section */}
+        <div className="mb-4">
+          <h2 className="text-white font-bold uppercase text-lg mb-1">DISCOVERED ZONES ({zones.length})</h2>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin w-12 h-12 border-4 border-gray-600 border-t-fuschia rounded-full"></div>
           </div>
+        ) : zones.length === 0 ? (
+          <div className="text-center text-gray-400 py-12">
+            No zones explored yet.
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {zones.map((zone) => {
+              // Check if zone has active or completed actions
+              const zoneJobs = activeJobs.filter(job => 
+                job.zone_id === zone.id && 
+                (job.action_type === 'Scouted' || job.action_type === 'Breached')
+              );
+              const hasCompleted = zoneJobs.some(job => 
+                new Date(job.end_time) <= new Date() && !job.result_status
+              );
+              const hasInProgress = zoneJobs.some(job => 
+                new Date(job.end_time) > new Date()
+              );
+              
+              let actionStatus: { type: "scout" | "breach"; status: "completed" | "in_progress"; poiName?: string } | undefined = undefined;
+              if (hasCompleted) {
+                const completedJob = zoneJobs.find(job => new Date(job.end_time) <= new Date() && !job.result_status);
+                actionStatus = {
+                  type: completedJob.action_type === 'Scouted' ? 'scout' as const : 'breach' as const,
+                  status: 'completed' as const,
+                  poiName: completedJob.poi_name
+                };
+              } else if (hasInProgress) {
+                const inProgressJob = zoneJobs.find(job => new Date(job.end_time) > new Date());
+                actionStatus = {
+                  type: inProgressJob.action_type === 'Scouted' ? 'scout' as const : 'breach' as const,
+                  status: 'in_progress' as const,
+                  poiName: inProgressJob.poi_name
+                };
+              }
 
-          <CxCard>
-            {cityHistory.length === 0 ? (
-              <div className="text-gray-400 text-sm text-center py-4">
-                No activity in the city yet.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {cityHistory.map((entry) => {
-                  // Parse message to make zone name clickable
-                  let messageContent = entry.message;
+              return (
+                <ZoneCard
+                  key={zone.id}
+                  zone={zone}
+                  isCurrentLocation={zone.id === currentLocationId}
+                  href={`/city/${zone.id}`}
+                  actionStatus={actionStatus}
+                />
+              );
+            })}
+          </div>
+        )}
+
+        {/* City-wide Activity */}
+        <div className="mt-8 mb-4">
+          <h2 className="text-white font-bold uppercase text-lg mb-3">CITY ACTIVITY</h2>
+        </div>
+
+        <CxCard>
+          {cityHistory.length === 0 ? (
+            <div className="text-gray-400 text-sm text-center py-4">
+              No activity in the city yet.
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {cityHistory.map((entry) => {
+                // Parse message to make zone name clickable
+                let messageContent = entry.message;
+                
+                // Replace zone name with link if present
+                if (entry.zone_name && entry.zone_id) {
+                  const zoneLinkRegex = new RegExp(`(at )(${entry.zone_name})`, 'g');
+                  const parts = messageContent.split(zoneLinkRegex);
                   
-                  // Replace zone name with link if present
-                  if (entry.zone_name && entry.zone_id) {
-                    const zoneLinkRegex = new RegExp(`(at )(${entry.zone_name})`, 'g');
-                    const parts = messageContent.split(zoneLinkRegex);
-                    
-                    return (
-                      <div key={entry.id} className="flex items-start gap-3 text-gray-300 border-b border-gray-700 last:border-0 pb-3 last:pb-0">
-                        <div className="flex-shrink-0">
-                          <svg className="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
-                            <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" stroke="currentColor" strokeWidth="2"/>
-                          </svg>
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-sm text-gray-300 mb-1">
-                            {parts.map((part: string, idx: number) => {
-                              if (part === entry.zone_name && idx > 0 && parts[idx - 1] === 'at ') {
-                                return (
-                                  <a 
-                                    key={idx}
-                                    href={`/city/${entry.zone_id}`}
-                                    className="text-fuschia hover:text-cyan-400 underline"
-                                  >
-                                    {part}
-                                  </a>
-                                );
-                              }
-                              return <span key={idx}>{part}</span>;
-                            })}
-                          </div>
-                          <span className="text-xs text-gray-500">
-                            {new Date(entry.timestamp).toLocaleDateString('en-US', {
-                              month: 'short',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  }
-                  
-                  // Default rendering without zone link
                   return (
                     <div key={entry.id} className="flex items-start gap-3 text-gray-300 border-b border-gray-700 last:border-0 pb-3 last:pb-0">
                       <div className="flex-shrink-0">
@@ -502,7 +504,20 @@ export default function CityPage() {
                       </div>
                       <div className="flex-1">
                         <div className="text-sm text-gray-300 mb-1">
-                          {entry.message}
+                          {parts.map((part: string, idx: number) => {
+                            if (part === entry.zone_name && idx > 0 && parts[idx - 1] === 'at ') {
+                              return (
+                                <a 
+                                  key={idx}
+                                  href={`/city/${entry.zone_id}`}
+                                  className="text-fuschia hover:text-cyan-400 underline"
+                                >
+                                  {part}
+                                </a>
+                              );
+                            }
+                            return <span key={idx}>{part}</span>;
+                          })}
                         </div>
                         <span className="text-xs text-gray-500">
                           {new Date(entry.timestamp).toLocaleDateString('en-US', {
@@ -515,12 +530,37 @@ export default function CityPage() {
                       </div>
                     </div>
                   );
-                })}
-              </div>
-            )}
-          </CxCard>
+                }
+                
+                // Default rendering without zone link
+                return (
+                  <div key={entry.id} className="flex items-start gap-3 text-gray-300 border-b border-gray-700 last:border-0 pb-3 last:pb-0">
+                    <div className="flex-shrink-0">
+                      <svg className="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/>
+                        <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" stroke="currentColor" strokeWidth="2"/>
+                      </svg>
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-sm text-gray-300 mb-1">
+                        {entry.message}
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {new Date(entry.timestamp).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CxCard>
 
-        </div>
       </div>
 
       {/* Explore Confirmation Modal */}
@@ -541,6 +581,7 @@ export default function CityPage() {
         newLevel={newLevel} 
         onDismiss={() => setShowLevelUpModal(false)} 
       />
+    </div>
     </>
   );
 }
