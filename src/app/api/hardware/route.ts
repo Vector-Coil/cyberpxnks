@@ -109,6 +109,54 @@ export async function GET(request: NextRequest) {
       [userId]
     );
 
+    // Fetch arsenal items with equipped status and modifiers
+    const [arsenalRows] = await pool.execute<any[]>(
+      `SELECT 
+        i.id,
+        i.name,
+        i.item_type,
+        i.description,
+        i.tier,
+        i.image_url,
+        i.model,
+        SUM(ui.quantity) as quantity,
+        MIN(ui.acquired_at) as acquired_at,
+        MAX(ui.upgrade) as upgrade,
+        MAX(CASE WHEN ul.item_id IS NOT NULL THEN 1 ELSE 0 END) as is_equipped,
+        am.tactical,
+        am.smart_tech,
+        am.offense,
+        am.defense,
+        am.evasion,
+        am.stealth,
+        am.consciousness,
+        am.stamina,
+        am.charge,
+        am.neural,
+        am.thermal,
+        am.discovery_zone,
+        am.discovery_poi,
+        am.discovery_item
+      FROM user_inventory ui
+      INNER JOIN items i ON ui.item_id = i.id
+      LEFT JOIN user_loadout ul ON ul.user_id = ui.user_id AND ul.item_id = i.id AND ul.slot_type = 'arsenal'
+      LEFT JOIN arsenal_modifiers am ON i.id = am.item_id
+      WHERE ui.user_id = ? AND i.item_type IN ('weapon', 'accessory', 'relic')
+      GROUP BY i.id, i.name, i.item_type, i.description, i.tier, i.image_url, i.model, 
+               am.tactical, am.smart_tech, am.offense, am.defense, am.evasion, am.stealth,
+               am.consciousness, am.stamina, am.charge, am.neural, am.thermal,
+               am.discovery_zone, am.discovery_poi, am.discovery_item
+      ORDER BY is_equipped DESC, i.name ASC`,
+      [userId]
+    );
+
+    // Get equipped arsenal count
+    const [arsenalCount] = await pool.execute<any[]>(
+      `SELECT COUNT(*) as count FROM user_loadout 
+       WHERE user_id = ? AND slot_type = 'arsenal'`,
+      [userId]
+    );
+
     // Get equipped cyberdeck tier for compatibility checks
     const equippedDeck = (cyberdeckRows as any[]).find((d: any) => d.is_equipped === 1);
     const equippedDeckTier = equippedDeck?.tier || 0;
@@ -117,16 +165,19 @@ export async function GET(request: NextRequest) {
       fid, 
       cyberdecks: cyberdeckRows.length,
       peripherals: peripheralRows.length,
-      slimsoft: slimsoftRows.length
+      slimsoft: slimsoftRows.length,
+      arsenal: arsenalRows.length
     });
 
     return NextResponse.json({
       cyberdecks: cyberdeckRows,
       peripherals: peripheralRows,
       slimsoft: slimsoftRows,
+      arsenal: arsenalRows,
       equippedCounts: {
         cyberdeck: (hardwareCount as any[])[0].count,
-        slimsoft: (slimsoftCount as any[])[0].count
+        slimsoft: (slimsoftCount as any[])[0].count,
+        arsenal: (arsenalCount as any[])[0].count
       },
       equippedDeckTier
     });

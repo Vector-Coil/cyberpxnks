@@ -130,6 +130,32 @@ export default function HardwarePage() {
   const [selectedArsenalId, setSelectedArsenalId] = useState<number | null>(null);
   const [previewArsenalId, setPreviewArsenalId] = useState<number | null>(null);
 
+  // Helper function to format arsenal modifiers for display
+  const formatArsenalModifiers = (item: HardwareItem) => {
+    const mods: string[] = [];
+    
+    // Combat stats
+    if (item.tactical) mods.push(`+${item.tactical} Tactical`);
+    if (item.smart_tech) mods.push(`+${item.smart_tech} Smart Tech`);
+    if (item.offense) mods.push(`+${item.offense} Offense`);
+    if (item.defense) mods.push(`+${item.defense} Defense`);
+    if (item.evasion) mods.push(`+${item.evasion} Evasion`);
+    if (item.stealth) mods.push(`+${item.stealth} Stealth`);
+    
+    // Meters
+    if (item.consciousness) mods.push(`+${item.consciousness} Consciousness`);
+    if (item.stamina) mods.push(`+${item.stamina} Stamina`);
+    if (item.charge) mods.push(`+${item.charge} Charge`);
+    if (item.neural) mods.push(`${item.neural > 0 ? '+' : ''}${item.neural} Neural`);
+    if (item.thermal) mods.push(`${item.thermal > 0 ? '+' : ''}${item.thermal} Thermal`);
+    
+    // Discovery bonuses (percentages)
+    if (item.discovery_zone) mods.push(`+${item.discovery_zone}% Zone Discovery`);
+    if (item.discovery_item) mods.push(`+${item.discovery_item}% Item Discovery`);
+    
+    return mods;
+  };
+
   useEffect(() => {
     if (userFid && !isAuthLoading) {
       loadData();
@@ -191,22 +217,13 @@ export default function HardwarePage() {
         setCyberdecks(data.cyberdecks || []);
         setPeripherals(data.peripherals || []);
         setSlimsoft(data.slimsoft || []);
+        setArsenalItems(data.arsenal || []);
         setEquippedDeckTier(data.equippedDeckTier || 0);
       }
 
       if (statsRes.ok) {
         const stats = await statsRes.json();
         setUserStats(stats);
-      }
-
-      if (inventoryRes.ok) {
-        const inv = await inventoryRes.json();
-        // Filter for weapons, accessories, and relics
-        const arsenalTypes = ['weapon', 'accessory', 'relic'];
-        const arsenalFiltered = (inv.items || []).filter((item: any) => 
-          arsenalTypes.includes(item.item_type.toLowerCase())
-        );
-        setArsenalItems(arsenalFiltered);
       }
 
       // Fetch slimsoft effects
@@ -1200,7 +1217,29 @@ export default function HardwarePage() {
                     {/* Active Arsenal Effects */}
                     <div className="mt-4 p-3 bg-charcoal-75 rounded">
                       <div className="font-bold text-sm mb-2" style={{ color: 'var(--fuschia)' }}>Active Arsenal Effects</div>
-                      <div className="text-sm text-gray-400 italic">Arsenal effects coming soon...</div>
+                      {(() => {
+                        const equippedArsenalItems = equippedArsenal;
+                        const allEffects: string[] = [];
+                        
+                        equippedArsenalItems.forEach(item => {
+                          const itemEffects = formatArsenalModifiers(item);
+                          allEffects.push(...itemEffects);
+                        });
+                        
+                        if (allEffects.length === 0) {
+                          return <div className="text-sm text-gray-400 italic">No active effects</div>;
+                        }
+                        
+                        return (
+                          <div className="space-y-1">
+                            {allEffects.map((effect, idx) => (
+                              <div key={idx} className="text-sm text-cyan-400">
+                                {effect}
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </>
                 );
