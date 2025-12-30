@@ -40,14 +40,14 @@ function getDistrictLevelBadge(districtLevel: number, userLevel: number) {
     // District at or below user level - blue badge with number
     return {
       color: 'bg-cyan-500',
-      content: `LVL ${districtLevel}`,
+      content: `${districtLevel}`,
       textColor: 'text-white'
     };
   } else if (levelDiff === 1) {
     // District 1 level above - yellow badge with number
     return {
       color: 'bg-yellow-500',
-      content: `LVL ${districtLevel}`,
+      content: `${districtLevel}`,
       textColor: 'text-gray-900'
     };
   } else if (levelDiff === 2) {
@@ -139,21 +139,21 @@ export default function CollapsibleDistrictCard({
           </button>
 
           <div className="flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-white font-bold uppercase text-lg">{district.name}</h3>
-              <span className={`px-2 py-1 ${badge.color} ${badge.textColor} text-xs font-bold uppercase rounded`}>
-                {badge.content}
-              </span>
-            </div>
+            <h3 className="text-white font-bold uppercase text-lg">{district.name}</h3>
           </div>
 
-          <a
-            href={`/city/district/${district.id}`}
-            className="px-4 py-2 bg-fuschia hover:bg-fuschia/80 text-white text-xs font-bold uppercase rounded transition-colors whitespace-nowrap"
-            onClick={(e) => e.stopPropagation()}
-          >
-            VIEW DISTRICT
-          </a>
+          <div className="flex items-center gap-2">
+            <span className={`px-2 py-1 ${badge.color} ${badge.textColor} text-xs font-bold uppercase rounded`}>
+              {badge.content}
+            </span>
+            <a
+              href={`/city/district/${district.id}`}
+              className="px-3 py-2 bg-fuschia hover:bg-fuschia/80 text-white text-xs font-bold uppercase rounded transition-colors whitespace-nowrap"
+              onClick={(e) => e.stopPropagation()}
+            >
+              VIEW
+            </a>
+          </div>
         </div>
       </div>
 
