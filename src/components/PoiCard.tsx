@@ -40,6 +40,7 @@ interface PoiCardProps {
   breachResults?: any;
   selectedPoi?: POI | null;
   hasPhysicalActionInProgress?: boolean;
+  isLoadingResults?: boolean;
   onBreachClick: (poi: POI) => void;
   onViewBreachResults: (poi: POI) => void;
   onBackFromBreachResults: () => void;
@@ -54,6 +55,7 @@ export default function PoiCard({
   breachResults,
   selectedPoi,
   hasPhysicalActionInProgress = false,
+  isLoadingResults = false,
   onBreachClick,
   onViewBreachResults,
   onBackFromBreachResults
@@ -106,15 +108,15 @@ export default function PoiCard({
           ) : activeBreach ? (
             <>
               <button 
-                className={`btn-cx btn-cx-pause btn-cx-full ${!isBreachComplete ? 'cursor-default opacity-75' : ''}`}
+                className={`btn-cx btn-cx-pause btn-cx-full ${!isBreachComplete || isLoadingResults ? 'cursor-default opacity-75' : ''}`}
                 onClick={() => {
-                  if (isBreachComplete) {
+                  if (isBreachComplete && !isLoadingResults) {
                     onViewBreachResults(poiItem);
                   }
                 }}
-                disabled={!isBreachComplete}
+                disabled={!isBreachComplete || isLoadingResults}
               >
-                {isBreachComplete ? 'VIEW RESULTS' : 'IN PROGRESS'}
+                {isLoadingResults ? 'LOADING RESULTS...' : isBreachComplete ? 'VIEW RESULTS' : 'IN PROGRESS'}
               </button>
               <div className="text-white text-center text-xs">{timeLeft}</div>
             </>

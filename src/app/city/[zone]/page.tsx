@@ -102,6 +102,7 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
   const [activeBreaches, setActiveBreaches] = useState<Map<number, any>>(new Map());
   const [breachTimeRemaining, setBreachTimeRemaining] = useState<Map<number, string>>(new Map());
   const [isBreachConfirming, setIsBreachConfirming] = useState(false);
+  const [isBreachLoadingResults, setIsBreachLoadingResults] = useState(false);
   const [showBreachResults, setShowBreachResults] = useState(false);
   const [breachResults, setBreachResults] = useState<any>(null);
   
@@ -318,6 +319,9 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
   };
 
   const handleViewResults = async () => {
+    if (isLoadingResults) return; // Prevent double-click
+    
+    setIsLoadingResults(true);
     try {
       const res = await fetch(`/api/zones/scout-results?fid=${userFid}`, {
         method: 'POST',
@@ -344,6 +348,8 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
       }
     } catch (err) {
       console.error('Failed to get scout results:', err);
+    } finally {
+      setIsLoadingResults(false);
     }
   };
 
@@ -419,12 +425,15 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
   };
 
   const handleViewBreachResults = async (poiItem: POI) => {
+    if (isBreachLoadingResults) return; // Prevent double-click
+    
     const activeBreach = activeBreaches.get(poiItem.id);
     if (!activeBreach) {
       console.error('No active breach found for POI', poiItem.id);
       return;
     }
 
+    setIsBreachLoadingResults(true);
     try {
       console.log('Fetching breach results:', { historyId: activeBreach.id, poiId: poiItem.id });
       const res = await fetch(`/api/zones/breach-results?fid=${userFid}`, {
@@ -462,6 +471,8 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
     } catch (err) {
       console.error('Failed to get breach results:', err);
       alert('Failed to get breach results: ' + (err as Error).message);
+    } finally {
+      setIsBreachLoadingResults(false);
     }
   };
 
@@ -849,6 +860,7 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
                       breachResults={breachResults}
                       selectedPoi={selectedPoi}
                       hasPhysicalActionInProgress={hasPhysicalActionInProgress}
+                      isLoadingResults={isBreachLoadingResults}
                       onBreachClick={handleBreachClick}
                       onViewBreachResults={handleViewBreachResults}
                       onBackFromBreachResults={handleBackFromBreachResults}
