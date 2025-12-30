@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
       if (isCriticalFailure) {
         // Determine encounter type based on location
         const isPhysicalBreach = userLocation === breach.zone_id;
-        const encounterType = isPhysicalBreach ? 'city' : 'overnet';
+        const encounterType = isPhysicalBreach ? 'city' : 'grid';
         
         // Get user's street cred for encounter filtering
         const [userDataRows] = await pool.execute<RowDataPacket[]>(
