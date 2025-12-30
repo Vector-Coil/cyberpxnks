@@ -120,7 +120,7 @@ export default function PoiCard({
             </>
           ) : (
             <button 
-              className={`btn-cx btn-cx-full btn-cx-harsh ${canBreach ? '' : 'btn-cx-disabled'}`}
+              className={`btn-cx btn-cx-full ${canBreach ? 'btn-cx-harsh' : 'btn-cx-disabled'}`}
               onClick={() => onBreachClick(poiItem)}
               disabled={!canBreach}
             >

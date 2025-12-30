@@ -734,6 +734,20 @@ body {
   .btn-cx-disabled {
     background: var(--slate-gray);
     color: var(--cloud-gray);
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  /* Ensure disabled buttons don't respond to hover */
+  .btn-cx:disabled,
+  .btn-cx.btn-cx-disabled {
+    cursor: not-allowed;
+    pointer-events: auto;
+  }
+
+  .btn-cx:disabled:hover,
+  .btn-cx.btn-cx-disabled:hover {
+    opacity: 0.6;
   }
 
   .btn-cx-break {
