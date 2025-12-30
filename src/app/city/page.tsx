@@ -77,7 +77,7 @@ export default function CityPage() {
   const { timeRemaining, isComplete } = useCountdownTimer(activeExplore?.end_time || null);
 
   // Calculate total zones discovered across all districts
-  const totalZonesDiscovered = districts.reduce((sum, district) => sum + district.zones.length, 0);
+  const totalZonesDiscovered = districts.reduce((sum, district) => sum + (district.zones?.length || 0), 0);
 
   // Handle expand/collapse all
   const handleToggleAll = () => {
@@ -343,7 +343,7 @@ export default function CityPage() {
                 {!isComplete ? (
                   <>
                     <h3 className="text-white font-bold uppercase mb-2">Exploring the City</h3>
-                    <p className="text-gray-300 mb-4">{timeRemaining} to completion</p>
+                    <p className="text-gray-300 mb-4">{timeRemaining}</p>
                     <div className="w-full bg-gray-700 rounded-full h-2">
                       <div 
                         className="bg-fuschia h-2 rounded-full transition-all duration-1000"
