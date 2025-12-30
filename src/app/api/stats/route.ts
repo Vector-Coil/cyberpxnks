@@ -29,6 +29,13 @@ export async function GET(req: Request) {
     );
     const baseStats = (userStatsRows as any[])[0] || {};
 
+    // Get user level from users table
+    const [userRows] = await pool.execute(
+      `SELECT level FROM users WHERE id = ?`,
+      [userId]
+    );
+    const userLevel = (userRows as any[])[0]?.level || 1;
+
     // Transform to match old API format for backward compatibility
     return NextResponse.json({
       // User attributes (base stats)
@@ -39,6 +46,8 @@ export async function GET(req: Request) {
       resilience: stats.attributes.resilience,
       agility: stats.attributes.agility,
       unallocated_points: stats.attributes.unallocated_points,
+      // User level
+      level: userLevel,
       // Current stats
       current_consciousness: stats.current.consciousness,
       current_stamina: stats.current.stamina,
