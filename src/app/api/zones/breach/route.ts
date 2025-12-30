@@ -6,6 +6,7 @@ import { validateFid, handleApiError, requireParams } from '../../../../lib/api/
 import { validateResources } from '../../../../lib/game/resourceValidator';
 import { ACTION_COSTS, COOLDOWNS } from '../../../../lib/game/constants';
 import { logger } from '../../../../lib/logger';
+import { calculateBreachSuccessRate } from '../../../../lib/game/breachUtils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -49,9 +50,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'POI not unlocked' }, { status: 403 });
     }
 
-    // Get POI details
+    // Get POI details including breach_difficulty
     const [poiRows] = await pool.execute<any[]>(
-      'SELECT id, name, zone_id FROM points_of_interest WHERE id = ? LIMIT 1',
+      'SELECT id, name, zone_id, breach_difficulty FROM points_of_interest WHERE id = ? LIMIT 1',
       [poiId]
     );
     const poi = (poiRows as any[])[0];
@@ -59,6 +60,44 @@ export async function POST(request: NextRequest) {
     if (!poi) {
       return NextResponse.json({ error: 'POI not found' }, { status: 404 });
     }
+
+    // Check for active cooldown on this POI
+    const [cooldownRows] = await pool.execute<any[]>(
+      `SELECT cooldown_until FROM user_zone_history
+       WHERE user_id = ? AND poi_id = ?
+       AND cooldown_until IS NOT NULL
+       AND cooldown_until > UTC_TIMESTAMP()
+       ORDER BY cooldown_until DESC
+       LIMIT 1`,
+      [user.id, poiId]
+    );
+
+    if (cooldownRows.length > 0) {
+      const cooldownUntil = new Date(cooldownRows[0].cooldown_until);
+      return NextResponse.json({ 
+        error: 'Terminal on cooldown after failed breach',
+        cooldown_until: cooldownUntil.toISOString()
+      }, { status: 400 });
+    }
+
+    // Get zone district level for success rate calculation
+    const [zoneRows] = await pool.execute<any[]>(
+      `SELECT z.id, z.district, COALESCE(zd.level, zd.phase, 1) as district_level
+       FROM zones z
+       LEFT JOIN zone_districts zd ON z.district = zd.id
+       WHERE z.id = ?
+       LIMIT 1`,
+      [zoneId]
+    );
+    const zone = (zoneRows as any[])[0];
+    const districtLevel = zone?.district_level || 1;
+
+    // Get user level
+    const [userLevelRows] = await pool.execute<any[]>(
+      'SELECT level FROM users WHERE id = ? LIMIT 1',
+      [user.id]
+    );
+    const userLevel = userLevelRows[0]?.level || 1;
 
     // Get user stats using StatsService
     const statsService = new StatsService(pool, user.id);
@@ -97,6 +136,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Already breaching this terminal' }, { status: 400 });
     }
 
+    // Check for active cooldown from previous failed breach
+    const [cooldownRows] = await pool.execute<any[]>(
+      `SELECT cooldown_until FROM user_zone_history 
+       WHERE user_id = ? AND poi_id = ? 
+       AND cooldown_until > UTC_TIMESTAMP() 
+       ORDER BY cooldown_until DESC 
+       LIMIT 1`,
+      [user.id, poiId]
+    );
+
+    if (cooldownRows.length > 0) {
+      const cooldownUntil = new Date(cooldownRows[0].cooldown_until);
+      const minutesRemaining = Math.ceil((cooldownUntil.getTime() - Date.now()) / 60000);
+      return NextResponse.json({ 
+        error: `Terminal on cooldown after failed breach. Try again in ${minutesRemaining} minutes.` 
+      }, { status: 400 });
+    }
+
     // Check for active physical presence actions (Explore or Scout) - ONLY for physical breaches
     // Remote breaches don't require physical presence and can run alongside other actions
     if (isPhysicalBreach) {
@@ -131,10 +188,20 @@ export async function POST(request: NextRequest) {
     }
     await statsService.modifyStats(statChanges);
 
+    // Calculate breach success rate for client display
+    const successRateData = calculateBreachSuccessRate({
+      decryption: stats.tech.decryption || 0,
+      interfaceStat: stats.attributes.interface || 0,
+      cache: stats.tech.cache || 0,
+      userLevel,
+      districtLevel,
+      breachDifficulty: poi.breach_difficulty || 0
+    });
+
     // Create breach action
     const endTime = new Date(Date.now() + COOLDOWNS.ZONE_BREACH);
     const breachType = isPhysicalBreach ? 'Breached' : 'RemoteBreach';
-    logger.info('Creating breach', { userId: user.id, zoneId, poiId, breachType, isPhysicalBreach });
+    logger.info('Creating breach', { userId: user.id, zoneId, poiId, breachType, isPhysicalBreach, successRate: successRateData.successRate });
     const [insertResult] = await pool.execute<any>(
       `INSERT INTO user_zone_history (user_id, zone_id, action_type, timestamp, end_time, poi_id)
        VALUES (?, ?, ?, UTC_TIMESTAMP(), ?, ?)`,
@@ -179,6 +246,7 @@ export async function POST(request: NextRequest) {
         action_type: 'Breached',
         end_time: endTime.toISOString()
       },
+      successRate: successRateData,
       updatedStats
     });
   } catch (error) {

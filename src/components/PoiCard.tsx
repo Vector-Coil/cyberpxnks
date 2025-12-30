@@ -136,6 +136,9 @@ export default function PoiCard({
           <ActionResultsSummary
             actionName="Breach"
             xpGained={breachResults.xpGained}
+            failed={breachResults.failed || false}
+            criticalFailure={breachResults.criticalFailure || false}
+            penalties={breachResults.penalties}
             discovery={
               breachResults.unlockedPOI ? {
                 type: 'poi' as const,

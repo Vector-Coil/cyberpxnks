@@ -7,6 +7,14 @@ import { getUserIdByFid } from '~/lib/api/userUtils';
 import { logger } from '~/lib/logger';
 import { handleApiError } from '~/lib/api/errors';
 import { triggerJunkMessageWithProbability } from '../../../../lib/messageScheduler';
+import { StatsService } from '../../../../lib/statsService';
+import { 
+  calculateBreachSuccessRate, 
+  rollBreachSuccess, 
+  rollCriticalFailure,
+  getBreachFailurePenalties,
+  calculateFailureXP
+} from '../../../../lib/game/breachUtils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -62,6 +70,172 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Breach not yet complete' }, { status: 400 });
     }
 
+    // Get POI details including breach_difficulty
+    const [poiDetailsRows] = await pool.execute<any[]>(
+      'SELECT id, name, zone_id, breach_difficulty FROM points_of_interest WHERE id = ? LIMIT 1',
+      [poiId]
+    );
+    const poiDetails = poiDetailsRows[0];
+
+    // Get zone district level and user level for success calculation
+    const [zoneRows] = await pool.execute<any[]>(
+      `SELECT z.id, z.district, COALESCE(zd.level, zd.phase, 1) as district_level
+       FROM zones z
+       LEFT JOIN zone_districts zd ON z.district = zd.id
+       WHERE z.id = ?
+       LIMIT 1`,
+      [breach.zone_id]
+    );
+    const districtLevel = zoneRows[0]?.district_level || 1;
+
+    const [userRows] = await pool.execute<any[]>(
+      'SELECT id, level, location FROM users WHERE id = ? LIMIT 1',
+      [userId]
+    );
+    const userLevel = userRows[0]?.level || 1;
+    const userLocation = userRows[0]?.location;
+
+    // Get user stats for success calculation
+    const statsService = new StatsService(pool, userId);
+    const fullStats = await statsService.getStats();
+
+    // Calculate breach success rate
+    const successRateData = calculateBreachSuccessRate({
+      decryption: fullStats.tech.decryption || 0,
+      interfaceStat: fullStats.attributes.interface || 0,
+      cache: fullStats.tech.cache || 0,
+      userLevel,
+      districtLevel,
+      breachDifficulty: poiDetails?.breach_difficulty || 0
+    });
+
+    // Roll for success/failure
+    const isSuccess = rollBreachSuccess(successRateData.successRate);
+    logger.info('Breach success roll', { 
+      historyId, 
+      userId, 
+      successRate: successRateData.successRate, 
+      isSuccess 
+    });
+
+    // === FAILURE PATH ===
+    if (!isSuccess) {
+      const isCriticalFailure = rollCriticalFailure();
+      const penalties = getBreachFailurePenalties();
+      
+      // Calculate reduced XP (25% of base)
+      const xpOptions = [30, 35, 40, 45, 50];
+      const baseXp = xpOptions[Math.floor(Math.random() * xpOptions.length)];
+      const failureXp = calculateFailureXP(baseXp);
+
+      // Apply XP
+      await pool.execute(
+        'UPDATE users SET xp = xp + ? WHERE id = ?',
+        [failureXp, userId]
+      );
+
+      // Apply failure penalties via StatsService
+      await statsService.modifyStats({
+        stamina: penalties.stamina,
+        consciousness: penalties.consciousness,
+        charge: penalties.charge,
+        neural: penalties.neural,
+        thermal: penalties.thermal
+      });
+
+      // Set cooldown (60 minutes)
+      const cooldownUntil = new Date(Date.now() + 60 * 60 * 1000);
+      
+      // Mark breach as failed with cooldown
+      await pool.execute(
+        `UPDATE user_zone_history 
+         SET result_status = 'failed', xp_data = ?, gains_data = ?, cooldown_until = ?
+         WHERE id = ?`,
+        [failureXp, `+${failureXp} XP (25% for failure)`, cooldownUntil, historyId]
+      );
+
+      // Restore bandwidth
+      await pool.execute(
+        'UPDATE user_stats SET current_bandwidth = current_bandwidth + 1 WHERE user_id = ?',
+        [userId]
+      );
+
+      // Log failure
+      await logActivity(
+        userId,
+        'action',
+        'breach_failed',
+        failureXp,
+        poiId || null,
+        `Failed breach of ${poiDetails?.name || 'terminal'}, gained ${failureXp} XP`
+      );
+
+      // Handle critical failure - trigger encounter
+      let encounter = null;
+      if (isCriticalFailure) {
+        // Determine encounter type based on location
+        const isPhysicalBreach = userLocation === breach.zone_id;
+        const encounterType = isPhysicalBreach ? 'city' : 'overnet';
+        
+        // Get user's street cred for encounter filtering
+        const [userDataRows] = await pool.execute<RowDataPacket[]>(
+          'SELECT street_cred FROM users WHERE id = ? LIMIT 1',
+          [userId]
+        );
+        const userStreetCred = userDataRows[0]?.street_cred || 0;
+
+        // Get encounter
+        encounter = await getRandomEncounter(pool, breach.zone_id, encounterType, userStreetCred);
+        
+        if (encounter) {
+          await logActivity(
+            userId,
+            'encounter',
+            'triggered',
+            null,
+            encounter.id,
+            `Critical breach failure triggered ${encounter.name}`
+          );
+        }
+      }
+
+      // Get updated stats
+      const updatedStatsService = new StatsService(pool, userId);
+      const updatedFullStats = await updatedStatsService.getStats();
+
+      return NextResponse.json({
+        success: false,
+        failed: true,
+        criticalFailure: isCriticalFailure,
+        historyId,
+        xpGained: failureXp,
+        penalties,
+        cooldownUntil: cooldownUntil.toISOString(),
+        encounter: encounter ? {
+          id: encounter.id,
+          name: encounter.name,
+          type: encounter.encounter_type,
+          sentiment: encounter.default_sentiment,
+          imageUrl: encounter.image_url
+        } : null,
+        updatedStats: {
+          current_consciousness: updatedFullStats.current.consciousness,
+          max_consciousness: updatedFullStats.max.consciousness,
+          current_stamina: updatedFullStats.current.stamina,
+          max_stamina: updatedFullStats.max.stamina,
+          current_bandwidth: updatedFullStats.current.bandwidth,
+          max_bandwidth: updatedFullStats.max.bandwidth,
+          current_charge: updatedFullStats.current.charge,
+          max_charge: updatedFullStats.max.charge,
+          current_thermal: updatedFullStats.current.thermal,
+          max_thermal: updatedFullStats.max.thermal,
+          current_neural: updatedFullStats.current.neural,
+          max_neural: updatedFullStats.max.neural
+        }
+      });
+    }
+
+    // === SUCCESS PATH (existing logic) ===
     // Award random XP (30-50 in increments of 5)
     // Note: Thermal/neural load increases are handled automatically by the regeneration system during breach
     const xpOptions = [30, 35, 40, 45, 50];

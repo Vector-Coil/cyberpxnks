@@ -98,6 +98,7 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
   // Breach-related state
   const [showBreachModal, setShowBreachModal] = useState(false);
   const [selectedPoi, setSelectedPoi] = useState<POI | null>(null);
+  const [breachSuccessRate, setBreachSuccessRate] = useState<any>(null);
   const [activeBreaches, setActiveBreaches] = useState<Map<number, any>>(new Map());
   const [breachTimeRemaining, setBreachTimeRemaining] = useState<Map<number, string>>(new Map());
   const [isBreachConfirming, setIsBreachConfirming] = useState(false);
@@ -396,6 +397,7 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
         newActiveBreaches.set(selectedPoi.id, data.breachAction);
         setActiveBreaches(newActiveBreaches);
         setUserStats(data.updatedStats);
+        setBreachSuccessRate(data.successRate); // Store for later display
         setShowBreachModal(false);
         setSelectedPoi(null);
       } else {
