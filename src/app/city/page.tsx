@@ -111,6 +111,12 @@ export default function CityPage() {
           const stats = await statsRes.json();
           console.log('Fetched user stats:', stats);
           setUserStats(stats);
+          
+          // Check if user leveled up
+          if (stats.levelUp && stats.levelUp.leveledUp) {
+            setNewLevel(stats.levelUp.newLevel);
+            setShowLevelUpModal(true);
+          }
         } else {
           console.error('Failed to fetch stats:', statsRes.status, await statsRes.text());
         }
@@ -324,14 +330,20 @@ export default function CityPage() {
             )}
           </div>
 
+          {/* City Map */}
+          <div className="mb-6 city-map" style={{
+            backgroundImage: 'url(https://vectorcoil.com/cx/images/city-map/City_-_Downsize.png)'
+          }}>
+          </div>
+
           {/* Active Explore Timer */}
           {activeExplore && !showResults && (
             <CxCard className="mb-6">
               <div className="text-center">
-                <h3 className="text-white font-bold uppercase mb-2">Exploring the City</h3>
                 {!isComplete ? (
                   <>
-                    <p className="text-gray-300 mb-4">Time Remaining: {timeRemaining}</p>
+                    <h3 className="text-white font-bold uppercase mb-2">Exploring the City</h3>
+                    <p className="text-gray-300 mb-4">{timeRemaining} to completion</p>
                     <div className="w-full bg-gray-700 rounded-full h-2">
                       <div 
                         className="bg-fuschia h-2 rounded-full transition-all duration-1000"
@@ -346,7 +358,7 @@ export default function CityPage() {
                   </>
                 ) : (
                   <>
-                    <p className="text-green-400 mb-4">Exploration Complete!</p>
+                    <p className="text-green-400 mb-4">Exploration Complete</p>
                     <button 
                       className="btn-cx btn-cx-primary"
                       onClick={handleViewResults}
@@ -365,7 +377,7 @@ export default function CityPage() {
             <div className="mb-6">
               <CxCard>
                 <div className="text-center mb-4">
-                  <h3 className="text-white font-bold uppercase mb-2">Exploration Results</h3>
+                  <h3 className="text-white font-bold uppercase mb-2">Results Summary</h3>
                 </div>
                 
                 <ActionResultsSummary

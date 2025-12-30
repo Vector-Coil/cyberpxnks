@@ -139,6 +139,12 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
           if (stats.level) {
             setUserLevel(stats.level);
           }
+          
+          // Check if user leveled up
+          if (stats.levelUp && stats.levelUp.leveledUp) {
+            setNewLevel(stats.levelUp.newLevel);
+            setShowLevelUpModal(true);
+          }
         }
 
         // Process hardware data to get equipped slimsoft item IDs

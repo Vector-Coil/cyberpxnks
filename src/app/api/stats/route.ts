@@ -15,6 +15,23 @@ export async function GET(req: Request) {
 
     const pool = await getDbPool();
     
+    // Check for level up first (before getting stats)
+    // This ensures the user levels up if they have enough XP
+    let levelUpData = null;
+    try {
+      const levelUpRes = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/check-level-up?fid=${fid}`, {
+        method: 'POST'
+      });
+      if (levelUpRes.ok) {
+        levelUpData = await levelUpRes.json();
+        if (levelUpData.leveledUp) {
+          logger.info('User leveled up during stats check', { fid, ...levelUpData });
+        }
+      }
+    } catch (err) {
+      logger.warn('Failed to check level up during stats fetch', { error: err });
+    }
+    
     // Use StatsService for centralized stat management
     const stats = await StatsService.getStatsByFid(pool, fid);
 
@@ -117,7 +134,9 @@ export async function GET(req: Request) {
       // Metadata
       _source: 'StatsService',
       lastRegeneration: stats.lastRegeneration,
-      updatedAt: stats.updatedAt
+      updatedAt: stats.updatedAt,
+      // Level up data (if user just leveled up)
+      levelUp: levelUpData?.leveledUp ? levelUpData : null
     });
   } catch (error) {
     return handleApiError(error, 'GET /api/stats');

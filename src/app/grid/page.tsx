@@ -117,6 +117,12 @@ export default function GridPage() {
         if (statsRes.ok) {
           const stats = await statsRes.json();
           setUserStats(stats);
+          
+          // Check if user leveled up
+          if (stats.levelUp && stats.levelUp.leveledUp) {
+            setNewLevel(stats.levelUp.newLevel);
+            setShowLevelUpModal(true);
+          }
         }
 
         // Process user data for mirror_name

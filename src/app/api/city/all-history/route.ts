@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
         uzh.action_type,
         uzh.timestamp,
         uzh.poi_id,
+        uzh.discovered,
         u.username,
         u.mirror_name,
         u.rednet_id,
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
       JOIN zones z ON uzh.zone_id = z.id
       LEFT JOIN zone_districts zd ON z.district = zd.id
       LEFT JOIN points_of_interest poi ON uzh.poi_id = poi.id
-      LEFT JOIN zones discovered_zone ON uzh.gains_data LIKE CONCAT('%', discovered_zone.name, '%') AND uzh.action_type = 'Discovered'
+      LEFT JOIN zones discovered_zone ON uzh.discovered = discovered_zone.id
       WHERE uzh.result_status IN ('completed', 'success', 'Complete')
       AND z.zone_type = 1
       ORDER BY uzh.timestamp DESC

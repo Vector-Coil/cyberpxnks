@@ -28,8 +28,8 @@ export async function POST(request: NextRequest) {
     );
     const userStreetCred = userDataRows[0]?.street_cred || 0;
 
-    // Award base XP (random 20-40)
-    const baseXpOptions = [20, 25, 30, 35, 40];
+    // Award base XP (random 10-25)
+    const baseXpOptions = [10, 15, 20, 25];
     const baseXp = baseXpOptions[Math.floor(Math.random() * baseXpOptions.length)];
 
     // Get user's discovery progress for dynamic probability
