@@ -52,6 +52,7 @@ export async function GET(
       if (mirrorEquipped === undefined) {
         mirrorEquipped = await isMirrorEquipped(pool, row.user_id);
         userMirrorStatus.set(row.user_id, mirrorEquipped);
+        logger.debug('Checked Mirror status for user', { userId: row.user_id, mirrorEquipped, username: row.username, mirrorName: row.mirror_name });
       }
 
       // Determine display name based on Mirror equipped status
@@ -59,6 +60,8 @@ export async function GET(
       if (mirrorEquipped && row.mirror_name) {
         alias = row.mirror_name;
       }
+      
+      logger.debug('Display name determined', { userId: row.user_id, username: row.username, mirrorName: row.mirror_name, mirrorEquipped, alias, actionType: row.action_type, timestamp: row.timestamp });
 
       let message = '';
 
