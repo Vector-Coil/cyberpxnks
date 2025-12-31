@@ -42,10 +42,12 @@ const NavDrawer: React.FC<NavDrawerProps> = ({ isOpen, onClose, username, profil
     if (!userFid) return;
     
     try {
+      console.log('[NavDrawer] Fetching alerts for fid:', userFid);
       const res = await fetch(`/api/alerts?fid=${userFid}`);
       if (res.ok) {
         const data = await res.json();
-        console.log('NavDrawer alerts data:', data);
+        console.log('[NavDrawer] Alerts data received:', data);
+        console.log('[NavDrawer] Location data:', data.location);
         setAlerts({
           contacts: data.contacts || 0,
           gigs: data.gigs || 0,
@@ -53,9 +55,11 @@ const NavDrawer: React.FC<NavDrawerProps> = ({ isOpen, onClose, username, profil
           unallocatedPoints: data.unallocatedPoints || 0,
           location: data.location || null,
         });
+      } else {
+        console.error('[NavDrawer] Failed to fetch alerts:', res.status);
       }
     } catch (error) {
-      console.error('Failed to fetch alerts:', error);
+      console.error('[NavDrawer] Error fetching alerts:', error);
     }
   };
 
@@ -143,7 +147,7 @@ const NavDrawer: React.FC<NavDrawerProps> = ({ isOpen, onClose, username, profil
                     <img src="/icon_crest.png" alt="Location" />
                   </div>
                   <div className="tab-label text-white" style={{ textShadow: '1px 1px 3px black' }}>
-                    Location
+                    {alerts.location.zoneName || 'Location'}
                   </div>
                 </div>
               </Link>
@@ -152,7 +156,11 @@ const NavDrawer: React.FC<NavDrawerProps> = ({ isOpen, onClose, username, profil
                 <div className="tab-icon">
                   <img src="/icon_crest.png" alt="Location" />
                 </div>
-                <div className="tab-label text-white">Location</div>
+                <div className="tab-label text-white">No Location</div>
+                <div className="text-xs text-gray-500 mt-1">
+                  {!userFid && 'No user ID'}
+                  {userFid && !alerts.location && 'Loading...'}
+                </div>
               </div>
             )}
 

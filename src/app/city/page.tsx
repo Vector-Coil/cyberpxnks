@@ -77,7 +77,10 @@ export default function CityPage() {
   const { timeRemaining, isComplete } = useCountdownTimer(activeExplore?.end_time || null);
 
   // Calculate total zones discovered across all districts
-  const totalZonesDiscovered = districts.reduce((sum, district) => sum + (district.zones?.length || 0), 0);
+  // Ensure districts array exists before reducing
+  const totalZonesDiscovered = Array.isArray(districts) 
+    ? districts.reduce((sum, district) => sum + (district.zones?.length || 0), 0) 
+    : 0;
 
   // Handle expand/collapse all
   const handleToggleAll = () => {
@@ -126,10 +129,18 @@ export default function CityPage() {
           const districtsData = await districtsRes.json();
           console.log('Districts with zones:', districtsData);
           console.log('Total districts:', districtsData.length);
-          console.log('Total zones:', districtsData.reduce((sum: number, d: any) => sum + (d.zones?.length || 0), 0));
-          setDistricts(districtsData);
+          
+          // Ensure we have an array
+          if (Array.isArray(districtsData)) {
+            console.log('Total zones:', districtsData.reduce((sum: number, d: any) => sum + (d.zones?.length || 0), 0));
+            setDistricts(districtsData);
+          } else {
+            console.error('Districts data is not an array:', districtsData);
+            setDistricts([]);
+          }
         } else {
           console.error('Failed to fetch districts:', districtsRes.status, await districtsRes.text());
+          setDistricts([]);
         }
 
         // Process active explore action
@@ -149,10 +160,15 @@ export default function CityPage() {
         // Process user location
         if (alertsRes.ok) {
           const alertsData = await alertsRes.json();
+          console.log('Alerts data received:', alertsData);
           if (alertsData.location?.zoneId) {
             setCurrentLocationId(alertsData.location.zoneId);
-            console.log('Current location:', alertsData.location);
+            console.log('Current location set:', alertsData.location);
+          } else {
+            console.warn('No location data in alerts response');
           }
+        } else {
+          console.error('Failed to fetch alerts:', alertsRes.status, await alertsRes.text());
         }
 
         // Process active jobs
@@ -270,7 +286,12 @@ export default function CityPage() {
 
     if (districtsRes.ok) {
       const districtsData = await districtsRes.json();
-      setDistricts(districtsData);
+      if (Array.isArray(districtsData)) {
+        setDistricts(districtsData);
+      } else {
+        console.error('Districts reload data is not an array:', districtsData);
+        setDistricts([]);
+      }
     }
 
     if (alertsRes.ok) {
