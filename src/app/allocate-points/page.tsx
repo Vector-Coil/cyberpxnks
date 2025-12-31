@@ -270,6 +270,7 @@ export default function StatsPage() {
   );
 
   // Helper to render stat row in table format
+
   const renderStatRow = (label: string, base: number, mod: number, total: number, description?: string) => (
     <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-3 items-center py-2 border-b border-gray-700 last:border-0">
       <div>
@@ -288,7 +289,7 @@ export default function StatsPage() {
           <span className="pill-stat text-xs" style={{ color: 'var(--bright-green)' }}>+{mod}</span>
         ) : (
           <span className="pill-charcoal text-xs opacity-50">—</span>
-      if (loading || isAuthLoading || !userFid) {
+        )}
       </div>
       <div className="text-center">
         <span className="pill-cloud-gray text-xs font-bold">{total}</span>
