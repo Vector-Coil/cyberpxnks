@@ -109,7 +109,6 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
               userProfileImage={navData.profileImage}
               credits={navData.credits}
               cxBalance={navData.cxBalance}
-              onMenuClick={() => setIsDrawerOpen(true)}
             />
           </div>
           <div className="flex items-center justify-center py-12">
@@ -158,7 +157,6 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
             userProfileImage={navData.profileImage}
             credits={navData.credits}
             cxBalance={navData.cxBalance}
-            onMenuClick={() => setIsDrawerOpen(true)}
           />
         </div>
 
