@@ -144,7 +144,6 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
               username={navData.username}
               userProfileImage={navData.profileImage}
               cxBalance={navData.cxBalance}
-              onMenuClick={() => setIsDrawerOpen(true)}
             />
           </div>
           <div className="frame-body flex items-center justify-center min-h-[400px]">
@@ -173,7 +172,6 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
               userProfileImage={navData.profileImage}
               credits={navData.credits}
               cxBalance={navData.cxBalance}
-              onMenuClick={() => setIsDrawerOpen(true)}
             />
           </div>
           <div className="pt-5 pb-2 px-6 flex flex-row gap-1">
@@ -207,7 +205,6 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
             userProfileImage={navData.profileImage}
             credits={navData.credits}
             cxBalance={navData.cxBalance}
-            onMenuClick={() => setIsDrawerOpen(true)}
           />
         </div>
         <div className="frame-body pt-0 pb-2 px-6 mb-2">
