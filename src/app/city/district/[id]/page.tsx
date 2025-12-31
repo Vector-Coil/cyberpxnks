@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { NavStrip, CxCard } from '../../../../components/CxShared';
 import ZoneCard from '../../../../components/ZoneCard';
+import NavDrawer from '../../../../components/NavDrawer';
 import { useNavData } from '../../../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../../../hooks/useAuthenticatedUser';
 
@@ -46,6 +47,7 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
   const [currentLocationId, setCurrentLocationId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeJobs, setActiveJobs] = useState<any[]>([]);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
     params.then(({ id }) => {
