@@ -1,7 +1,6 @@
 'use client';
 import React, { useState } from 'react';
 import { NavStrip } from '../../../components/CxShared';
-import NavDrawer from '../../../components/NavDrawer';
 
 interface GigDetailClientProps {
   gigData: {
@@ -31,12 +30,9 @@ interface GigDetailClientProps {
 }
 
 export default function GigDetailClient({ gigData, historyEvents, navData, userFid }: GigDetailClientProps) {
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   return (
     <>
-      <NavDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} username={navData.username} cxBalance={navData.cxBalance} userFid={userFid} />
-      
       <div className="frame-container frame-main">
         <div className="frame-body pt-6 pb-2 px-6">
           <NavStrip 
@@ -44,7 +40,6 @@ export default function GigDetailClient({ gigData, historyEvents, navData, userF
             userProfileImage={navData.profileImage}
             credits={navData.credits}
             cxBalance={navData.cxBalance}
-            onMenuClick={() => setIsDrawerOpen(true)}
           />
         </div>
         <div className="pt-5 pb-2 px-6 flex flex-row gap-3">

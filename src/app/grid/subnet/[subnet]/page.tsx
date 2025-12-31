@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { NavStrip, CxCard } from '../../../../components/CxShared';
-import NavDrawer from '../../../../components/NavDrawer';
 import CompactMeterStrip from '../../../../components/CompactMeterStrip';
 import { useNavData } from '../../../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../../../hooks/useAuthenticatedUser';
@@ -82,7 +81,6 @@ export default function SubnetDetailPage({ params }: { params: Promise<{ subnet:
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [historyView, setHistoryView] = useState<'mine' | 'all'>('mine');
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (!subnetId || Number.isNaN(subnetId) || !userFid || isAuthLoading) return;
@@ -139,14 +137,6 @@ export default function SubnetDetailPage({ params }: { params: Promise<{ subnet:
   if (loading) {
     return (
       <>
-        <NavDrawer 
-          isOpen={isDrawerOpen}
-          onClose={() => setIsDrawerOpen(false)}
-          username={navData.username}
-          profileImage={navData.profileImage}
-          cxBalance={navData.cxBalance}
-          userFid={userFid || undefined}
-        />
         <div className="frame-container frame-city">
           <div className="frame-body pt-6 pb-2 px-6">
             <NavStrip 
@@ -154,7 +144,6 @@ export default function SubnetDetailPage({ params }: { params: Promise<{ subnet:
               userProfileImage={navData.profileImage}
               credits={navData.credits}
               cxBalance={navData.cxBalance}
-              onMenuClick={() => setIsDrawerOpen(true)}
             />
           </div>
           <div className="flex items-center justify-center py-12">
@@ -168,14 +157,6 @@ export default function SubnetDetailPage({ params }: { params: Promise<{ subnet:
   if (!subnet) {
     return (
       <>
-        <NavDrawer 
-          isOpen={isDrawerOpen}
-          onClose={() => setIsDrawerOpen(false)}
-          username={navData.username}
-          profileImage={navData.profileImage}
-          cxBalance={navData.cxBalance}
-          userFid={userFid || undefined}
-        />
         <div className="frame-container frame-city">
           <div className="frame-body pt-6 pb-2 px-6">
             <NavStrip 
@@ -183,7 +164,6 @@ export default function SubnetDetailPage({ params }: { params: Promise<{ subnet:
               userProfileImage={navData.profileImage}
               credits={navData.credits}
               cxBalance={navData.cxBalance}
-              onMenuClick={() => setIsDrawerOpen(true)}
             />
           </div>
           <div className="text-center text-gray-400 py-12">
@@ -196,14 +176,6 @@ export default function SubnetDetailPage({ params }: { params: Promise<{ subnet:
 
   return (
     <>
-      <NavDrawer 
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        username={navData.username}
-        profileImage={navData.profileImage}
-        cxBalance={navData.cxBalance}
-        userFid={userFid || undefined}
-      />
       <div className="frame-container frame-city">
         <div className="frame-body pt-6 pb-2 px-6">
           <NavStrip 
@@ -211,7 +183,6 @@ export default function SubnetDetailPage({ params }: { params: Promise<{ subnet:
             userProfileImage={navData.profileImage}
             credits={navData.credits}
             cxBalance={navData.cxBalance}
-            onMenuClick={() => setIsDrawerOpen(true)}
           />
         </div>
         <CompactMeterStrip meters={getMeterData(userStats)} />

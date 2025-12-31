@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { NavStrip, CxCard } from '../../../components/CxShared';
-import NavDrawer from '../../../components/NavDrawer';
 import ConfirmModal from '../../../components/ConfirmModal';
 import CompactMeterStrip from '../../../components/CompactMeterStrip';
 import { useNavData } from '../../../hooks/useNavData';
@@ -45,7 +44,6 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
   const [itemData, setItemData] = useState<ItemData | null>(null);
   const [userStats, setUserStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [showUseConfirm, setShowUseConfirm] = useState(false);
   const [isUsing, setIsUsing] = useState(false);
 
@@ -139,14 +137,7 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
   if (loading) {
     return (
       <>
-        <NavDrawer 
-          isOpen={isDrawerOpen}
-          onClose={() => setIsDrawerOpen(false)}
-          username={navData.username}
-          profileImage={navData.profileImage}
-          cxBalance={navData.cxBalance}
-          userFid={userFid || undefined}
-        />
+
         <div className="frame-container frame-main">
           <div className="frame-body pt-6 pb-2 px-6 mb-2">
             <NavStrip 
@@ -208,14 +199,7 @@ export default function GearItemPage({ params }: { params: Promise<{ item: strin
 
   return (
     <>
-      <NavDrawer 
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        username={navData.username}
-        profileImage={navData.profileImage}
-        cxBalance={navData.cxBalance}
-        userFid={userFid || undefined}
-      />
+
       <div className="frame-container frame-main">
         <div className="frame-body pt-6 pb-2 px-6 mb-2">
           <NavStrip 

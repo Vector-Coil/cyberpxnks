@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { FrameHeader, CxCard, NavStrip } from '../../components/CxShared';
-import NavDrawer from '../../components/NavDrawer';
 import { useAuthenticatedUser } from '../../hooks/useAuthenticatedUser';
 import { useNavData } from '../../hooks/useNavData';
 
@@ -29,7 +28,6 @@ interface Gig {
 }
 
 export default function GigsPage() {
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [gigs, setGigs] = useState<Gig[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -83,14 +81,6 @@ export default function GigsPage() {
 
   return (
     <div className="frame-container frame-main">
-      <NavDrawer 
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        username={navData.username}
-        profileImage={navData.profileImage}
-        cxBalance={navData.cxBalance}
-        userFid={userFid || undefined}
-      />
 
       <div className="frame-body pt-6 pb-2 px-6">
         <NavStrip 
@@ -98,7 +88,6 @@ export default function GigsPage() {
           userProfileImage={navData.profileImage}
           credits={navData.credits}
           cxBalance={navData.cxBalance}
-          onMenuClick={() => setIsDrawerOpen(true)}
         />
       </div>
 

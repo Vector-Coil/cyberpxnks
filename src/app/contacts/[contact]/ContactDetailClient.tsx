@@ -1,7 +1,6 @@
 'use client';
 import React, { useState } from 'react';
 import { CxCard, NavStrip } from '../../../components/CxShared';
-import NavDrawer from '../../../components/NavDrawer';
 
 interface ContactDetailClientProps {
   contact: any;
@@ -12,18 +11,9 @@ interface ContactDetailClientProps {
 }
 
 export default function ContactDetailClient({ contact, gigs, navData, messageInfo, userFid }: ContactDetailClientProps) {
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   return (
     <>
-      <NavDrawer 
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        username={navData.username}
-        profileImage={navData.profileImage}
-        cxBalance={navData.cxBalance}
-        userFid={userFid || undefined}
-      />
       <div className="frame-container frame-main">
         <div className="frame-body pt-6 pb-2 px-6">
           <NavStrip 
@@ -31,7 +21,6 @@ export default function ContactDetailClient({ contact, gigs, navData, messageInf
             userProfileImage={navData.profileImage}
             credits={navData.credits}
             cxBalance={navData.cxBalance}
-            onMenuClick={() => setIsDrawerOpen(true)}
           />
         </div>
         <div className="pt-5 pb-2 px-6 flex flex-row gap-3">

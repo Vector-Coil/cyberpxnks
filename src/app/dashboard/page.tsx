@@ -6,7 +6,6 @@ import { sdk } from '@farcaster/miniapp-sdk';
 import { useNeynarContext } from '@neynar/react';
 import { useDailyFarcasterSync } from '../../hooks/useDailyFarcasterSync';
 import { NavStrip } from '../../components/CxShared';
-import NavDrawer from '../../components/NavDrawer';
 import { useNavData } from '../../hooks/useNavData';
 import { useRegenTimer } from '../../hooks/useRegenTimer';
 
@@ -366,7 +365,6 @@ export default function Dashboard() {
     const [equippedArsenal, setEquippedArsenal] = useState<any>(null);
     const [recentInventoryItem, setRecentInventoryItem] = useState<any>(null);
     const [currentLocation, setCurrentLocation] = useState<{ zoneId: number; zoneName: string; zoneImage: string } | null>(null);
-    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isLoadingAuth, setIsLoadingAuth] = useState(true);
     const [isLoadingStats, setIsLoadingStats] = useState(true);
     const [statsError, setStatsError] = useState<string | null>(null);
@@ -761,14 +759,6 @@ export default function Dashboard() {
 
   return (
     <>
-      <NavDrawer 
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        username={navData.username}
-        profileImage={navData.profileImage}
-        cxBalance={navData.cxBalance}
-        userFid={userFid || undefined}
-      />
       <div className="frame-container frame-main">
         <div className="frame-body pt-6 pb-2 px-6">
           <NavStrip 
@@ -776,7 +766,6 @@ export default function Dashboard() {
             userProfileImage={navData.profileImage}
             credits={navData.credits}
             cxBalance={navData.cxBalance}
-            onMenuClick={() => setIsDrawerOpen(true)}
           />
         </div>
 

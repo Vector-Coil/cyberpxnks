@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { FrameHeader, CxCard, NavStrip } from '../../components/CxShared';
-import NavDrawer from '../../components/NavDrawer';
 import CompactMeterStrip from '../../components/CompactMeterStrip';
 import { useNavData } from '../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../hooks/useAuthenticatedUser';
@@ -26,7 +25,6 @@ export default function ContactsPage() {
   const [userStats, setUserStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (!userFid || isAuthLoading) return;
@@ -63,14 +61,6 @@ export default function ContactsPage() {
 
   return (
     <>
-      <NavDrawer 
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        username={navData.username}
-        profileImage={navData.profileImage}
-        cxBalance={navData.cxBalance}
-        userFid={userFid || undefined}
-      />
       <div className="frame-container frame-main">
         <div className="frame-body pt-6 pb-2 px-6">
           <NavStrip 
@@ -78,7 +68,6 @@ export default function ContactsPage() {
             userProfileImage={navData.profileImage}
             credits={navData.credits}
             cxBalance={navData.cxBalance}
-            onMenuClick={() => setIsDrawerOpen(true)}
           />
         </div>
         <CompactMeterStrip meters={getMeterData(userStats)} />

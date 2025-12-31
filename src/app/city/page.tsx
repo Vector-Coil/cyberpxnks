@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { NavStrip, CxCard } from '../../components/CxShared';
-import NavDrawer from '../../components/NavDrawer';
 import LevelUpModal from '../../components/LevelUpModal';
 import ConfirmModal from '../../components/ConfirmModal';
 import CompactMeterStrip from '../../components/CompactMeterStrip';
@@ -68,7 +67,6 @@ export default function CityPage() {
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   const [newLevel, setNewLevel] = useState(0);
   const [cityHistory, setCityHistory] = useState<any[]>([]);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [activeJobs, setActiveJobs] = useState<any[]>([]);
   const [allCollapsed, setAllCollapsed] = useState(false);
   const [renderKey, setRenderKey] = useState(0);
@@ -317,14 +315,6 @@ export default function CityPage() {
 
   return (
     <>
-      <NavDrawer 
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        username={navData.username}
-        profileImage={navData.profileImage}
-        cxBalance={navData.cxBalance}
-        userFid={userFid || undefined}
-      />
       <div className="frame-container frame-city">
         <div className="frame-body pt-6 pb-2 px-6">
           <NavStrip 
@@ -332,7 +322,6 @@ export default function CityPage() {
             userProfileImage={navData.profileImage}
             credits={navData.credits}
             cxBalance={navData.cxBalance}
-            onMenuClick={() => setIsDrawerOpen(true)}
           />
         </div>
         <CompactMeterStrip meters={getMeterData(userStats)} />

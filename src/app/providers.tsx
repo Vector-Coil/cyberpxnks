@@ -6,6 +6,7 @@ import { SafeFarcasterSolanaProvider } from '~/components/providers/SafeFarcaste
 import { AutoRegeneration } from '~/components/AutoRegeneration';
 import { ANALYTICS_ENABLED, RETURN_URL } from '~/lib/constants';
 import NeynarProvider from '~/components/NeynarProvider';
+import { DrawerProvider } from '~/contexts/DrawerContext';
 
 const WagmiProvider = dynamic(
   () => import('~/components/providers/WagmiProvider'),
@@ -30,8 +31,10 @@ export function Providers({
           returnUrl={RETURN_URL}
         >
           <SafeFarcasterSolanaProvider endpoint={solanaEndpoint}>
-            <AutoRegeneration />
-            {children}
+            <DrawerProvider>
+              <AutoRegeneration />
+              {children}
+            </DrawerProvider>
           </SafeFarcasterSolanaProvider>
         </MiniAppProvider>
       </NeynarProvider>

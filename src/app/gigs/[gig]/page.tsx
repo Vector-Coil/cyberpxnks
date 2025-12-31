@@ -1,7 +1,6 @@
 import React from 'react';
 import { redirect } from 'next/navigation';
 import { FrameHeader, CxCard, NavStrip } from '../../../components/CxShared';
-import NavDrawer from '../../../components/NavDrawer';
 import { getDbPool } from '../../../lib/db';
 import { getNavStripData } from '../../../lib/navUtils';
 import GigDetailClient from './GigDetailClient';

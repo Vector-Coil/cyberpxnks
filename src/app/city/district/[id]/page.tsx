@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { NavStrip, CxCard } from '../../../../components/CxShared';
-import NavDrawer from '../../../../components/NavDrawer';
 import ZoneCard from '../../../../components/ZoneCard';
 import { useNavData } from '../../../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../../../hooks/useAuthenticatedUser';
@@ -40,7 +39,6 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
   const [districtId, setDistrictId] = useState<number | null>(null);
   const { userFid, isLoading: isAuthLoading } = useAuthenticatedUser();
   const navData = useNavData(userFid || 0);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const [district, setDistrict] = useState<District | null>(null);
   const [zones, setZones] = useState<Zone[]>([]);
@@ -104,14 +102,6 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
   if (loading) {
     return (
       <>
-        <NavDrawer 
-          isOpen={isDrawerOpen}
-          onClose={() => setIsDrawerOpen(false)}
-          username={navData.username}
-          profileImage={navData.profileImage}
-          cxBalance={navData.cxBalance}
-          userFid={userFid || undefined}
-        />
         <div className="frame-container frame-city">
           <div className="frame-body pt-6 pb-2 px-6">
             <NavStrip 
@@ -161,14 +151,6 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
 
   return (
     <>
-      <NavDrawer 
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        username={navData.username}
-        profileImage={navData.profileImage}
-        cxBalance={navData.cxBalance}
-        userFid={userFid || undefined}
-      />
       <div className="frame-container frame-city">
         <div className="frame-body pt-6 pb-2 px-6">
           <NavStrip 

@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FrameHeader, CxCard, NavStrip } from '../../components/CxShared';
-import NavDrawer from '../../components/NavDrawer';
 import { useNavData } from '../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../hooks/useAuthenticatedUser';
 
@@ -99,7 +98,6 @@ export default function StatsPage() {
   const router = useRouter();
   const { userFid, isLoading: isAuthLoading } = useAuthenticatedUser();
   const navData = useNavData(userFid || 0);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [completeStats, setCompleteStats] = useState<CompleteStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -215,21 +213,12 @@ export default function StatsPage() {
   if (loading) {
     return (
       <>
-        <NavDrawer 
-          isOpen={isDrawerOpen}
-          onClose={() => setIsDrawerOpen(false)}
-          username={navData.username}
-          profileImage={navData.profileImage}
-          cxBalance={navData.cxBalance}
-          userFid={userFid || undefined}
-        />
         <div className="frame-container frame-main">
           <div className="frame-body pt-6 pb-2 px-6">
             <NavStrip 
               username={navData.username}
               userProfileImage={navData.profileImage}
               cxBalance={navData.cxBalance}
-              onMenuClick={() => setIsDrawerOpen(true)}
             />
           </div>
           <FrameHeader />
@@ -244,21 +233,12 @@ export default function StatsPage() {
   if (!stats || !completeStats) {
     return (
       <>
-        <NavDrawer 
-          isOpen={isDrawerOpen}
-          onClose={() => setIsDrawerOpen(false)}
-          username={navData.username}
-          profileImage={navData.profileImage}
-          cxBalance={navData.cxBalance}
-          userFid={userFid || undefined}
-        />
         <div className="frame-container frame-main">
           <div className="frame-body pt-6 pb-2 px-6">
             <NavStrip 
               username={navData.username}
               userProfileImage={navData.profileImage}
               cxBalance={navData.cxBalance}
-              onMenuClick={() => setIsDrawerOpen(true)}
             />
           </div>
           <FrameHeader />
@@ -317,21 +297,12 @@ export default function StatsPage() {
 
   return (
     <>
-      <NavDrawer 
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        username={navData.username}
-        profileImage={navData.profileImage}
-        cxBalance={navData.cxBalance}
-        userFid={userFid || undefined}
-      />
       <div className="frame-container frame-main">
         <div className="frame-body pt-6 pb-2 px-6">
           <NavStrip 
             username={navData.username}
             userProfileImage={navData.profileImage}
             cxBalance={navData.cxBalance}
-            onMenuClick={() => setIsDrawerOpen(true)}
           />
         </div>
         

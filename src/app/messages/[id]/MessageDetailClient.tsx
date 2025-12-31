@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { CxCard, NavStrip } from '../../../components/CxShared';
-import NavDrawer from '../../../components/NavDrawer';
 import CompactMeterStrip from '../../../components/CompactMeterStrip';
 import { getMeterData } from '../../../lib/meterUtils';
 import { useStats } from '../../../hooks/useStatsSWR';
@@ -15,19 +14,10 @@ interface MessageDetailClientProps {
 }
 
 export default function MessageDetailClient({ message, navData, userFid }: MessageDetailClientProps) {
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const { stats: userStats } = useStats(300187);
 
   return (
     <>
-      <NavDrawer 
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        username={navData.username}
-        profileImage={navData.profileImage}
-        cxBalance={navData.cxBalance}
-        userFid={userFid || undefined}
-      />
       <div className="frame-container frame-main">
         <div className="frame-body pt-6 pb-2 px-6">
           <NavStrip 
@@ -35,7 +25,6 @@ export default function MessageDetailClient({ message, navData, userFid }: Messa
             userProfileImage={navData.profileImage}
             credits={navData.credits}
             cxBalance={navData.cxBalance}
-            onMenuClick={() => setIsDrawerOpen(true)}
           />
         </div>
         <CompactMeterStrip meters={getMeterData(userStats || null)} />

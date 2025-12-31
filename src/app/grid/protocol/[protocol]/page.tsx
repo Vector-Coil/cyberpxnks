@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { NavStrip, CxCard } from '../../../../components/CxShared';
-import NavDrawer from '../../../../components/NavDrawer';
 import CompactMeterStrip from '../../../../components/CompactMeterStrip';
 import { useNavData } from '../../../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../../../hooks/useAuthenticatedUser';
@@ -61,7 +60,6 @@ export default function ProtocolDetailPage({ params }: { params: Promise<{ proto
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [historyView, setHistoryView] = useState<'mine' | 'all'>('mine');
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (!protocolId || Number.isNaN(protocolId) || !userFid || isAuthLoading) return;
@@ -116,14 +114,6 @@ export default function ProtocolDetailPage({ params }: { params: Promise<{ proto
   if (loading) {
     return (
       <>
-        <NavDrawer 
-          isOpen={isDrawerOpen}
-          onClose={() => setIsDrawerOpen(false)}
-          username={navData.username}
-          profileImage={navData.profileImage}
-          cxBalance={navData.cxBalance}
-          userFid={userFid || undefined}
-        />
         <div className="frame-container frame-city">
           <div className="frame-body pt-6 pb-2 px-6">
             <NavStrip 
@@ -145,14 +135,7 @@ export default function ProtocolDetailPage({ params }: { params: Promise<{ proto
   if (!protocol) {
     return (
       <>
-        <NavDrawer 
-          isOpen={isDrawerOpen}
-          onClose={() => setIsDrawerOpen(false)}
-          username={navData.username}
-          profileImage={navData.profileImage}
-          cxBalance={navData.cxBalance}
-          userFid={userFid || undefined}
-        />
+
         <div className="frame-container frame-city">
           <div className="frame-body pt-6 pb-2 px-6">
             <NavStrip 
@@ -173,14 +156,6 @@ export default function ProtocolDetailPage({ params }: { params: Promise<{ proto
 
   return (
     <>
-      <NavDrawer 
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        username={navData.username}
-        profileImage={navData.profileImage}
-        cxBalance={navData.cxBalance}
-        userFid={userFid || undefined}
-      />
       <div className="frame-container frame-city">
         <div className="frame-body pt-6 pb-2 px-6">
           <NavStrip 

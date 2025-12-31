@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { NavStrip, CxCard } from '../../../components/CxShared';
-import NavDrawer from '../../../components/NavDrawer';
 import { useNavData } from '../../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../../hooks/useAuthenticatedUser';
 
@@ -221,14 +220,7 @@ export default function ShopPage({ params }: { params: Promise<{ shopId: string 
 
   return (
     <>
-      <NavDrawer 
-        isOpen={isDrawerOpen} 
-        onClose={() => setIsDrawerOpen(false)}
-        username={navData.username}
-        profileImage={navData.profileImage}
-        cxBalance={navData.cxBalance}
-        userFid={userFid || undefined}
-      />
+
       <div className="frame-container frame-main">
         <div className="frame-body pt-6 pb-2 px-6">
           <NavStrip 

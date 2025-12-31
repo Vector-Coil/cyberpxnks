@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { FrameHeader, CxCard, NavStrip } from '../../components/CxShared';
-import NavDrawer from '../../components/NavDrawer';
 import CompactMeterStrip from '../../components/CompactMeterStrip';
 import { useNavData } from '../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../hooks/useAuthenticatedUser';
@@ -28,7 +27,6 @@ interface Message {
 }
 
 export default function MessagesPage() {
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -76,14 +74,6 @@ export default function MessagesPage() {
 
   return (
     <>
-      <NavDrawer 
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        username={navData.username}
-        profileImage={navData.profileImage}
-        cxBalance={navData.cxBalance}
-        userFid={userFid || undefined}
-      />
       <div className="frame-container frame-main">
         <div className="frame-body pt-6 pb-2 px-6">
           <NavStrip 
@@ -91,7 +81,6 @@ export default function MessagesPage() {
             userProfileImage={navData.profileImage}
             credits={navData.credits}
             cxBalance={navData.cxBalance}
-            onMenuClick={() => setIsDrawerOpen(true)}
           />
         </div>
         <CompactMeterStrip meters={getMeterData(userStats || null)} />

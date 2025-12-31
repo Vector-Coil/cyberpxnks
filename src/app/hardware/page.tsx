@@ -5,7 +5,6 @@ import ConfirmModal from '../../components/ConfirmModal';
 import CompactMeterStrip from '../../components/CompactMeterStrip';
 import { useNavData } from '../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../hooks/useAuthenticatedUser';
-import NavDrawer from '../../components/NavDrawer';
 import { getMeterData } from '../../lib/meterUtils';
 
 // Hardware stat row component matching dashboard style
@@ -125,7 +124,6 @@ export default function HardwarePage() {
   const [unequipTarget, setUnequipTarget] = useState<{ itemId: number; name: string; type: 'slimsoft' | 'cyberdeck' | 'arsenal' } | null>(null);
   const [slimsoftEffects, setSlimsoftEffects] = useState<any[]>([]);
   const [selectedIncompatibleId, setSelectedIncompatibleId] = useState<number | null>(null);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'tech' | 'arsenal'>('tech');
   const [selectedArsenalId, setSelectedArsenalId] = useState<number | null>(null);
   const [previewArsenalId, setPreviewArsenalId] = useState<number | null>(null);
@@ -391,14 +389,6 @@ export default function HardwarePage() {
 
   return (
     <>
-      <NavDrawer 
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        username={navData.username}
-        profileImage={navData.profileImage}
-        cxBalance={navData.cxBalance}
-        userFid={userFid || undefined}
-      />
       <div className="frame-container frame-main">
         <div className="frame-body pt-6 pb-2 px-6 mb-2">
           <NavStrip 
@@ -406,7 +396,6 @@ export default function HardwarePage() {
             userProfileImage={navData.profileImage}
             credits={navData.credits}
             cxBalance={navData.cxBalance}
-            onMenuClick={() => setIsDrawerOpen(true)}
           />
         </div>
         <CompactMeterStrip meters={getMeterData(userStats)} />

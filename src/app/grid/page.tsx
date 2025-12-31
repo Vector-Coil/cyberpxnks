@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { NavStrip, CxCard } from '../../components/CxShared';
-import NavDrawer from '../../components/NavDrawer';
 import ConfirmModal from '../../components/ConfirmModal';
 import LevelUpModal from '../../components/LevelUpModal';
 import CompactMeterStrip from '../../components/CompactMeterStrip';
@@ -92,7 +91,6 @@ export default function GridPage() {
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   const [newLevel, setNewLevel] = useState(0);
   const [isLoadingScanResults, setIsLoadingScanResults] = useState(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
   // Use countdown timer hook for active scan
   const { timeRemaining, isComplete: isScanComplete } = useCountdownTimer(activeScan?.end_time || null);
@@ -326,14 +324,6 @@ export default function GridPage() {
 
   return (
     <>
-      <NavDrawer 
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        username={navData.username}
-        profileImage={navData.profileImage}
-        cxBalance={navData.cxBalance}
-        userFid={userFid || undefined}
-      />
       <div className="frame-container frame-grid">
         <div className="frame-body pt-6 pb-2 px-6">
           <NavStrip 
@@ -341,7 +331,6 @@ export default function GridPage() {
             userProfileImage={navData.profileImage}
             credits={navData.credits}
             cxBalance={navData.cxBalance}
-            onMenuClick={() => setIsDrawerOpen(true)}
           />
         </div>
         <CompactMeterStrip meters={getMeterData(userStats)} />

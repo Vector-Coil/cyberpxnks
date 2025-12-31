@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
+import { useDrawer } from '~/contexts/DrawerContext';
 
 export const FrameHeader: React.FC<{ titleSrc?: string }> = ({ titleSrc = '/cx-title.png' }) => (
   <div className="frame-header">
@@ -12,7 +13,7 @@ export interface NavStripProps {
   username?: string;
   cxBalance?: number; // On-chain $CX token balance from wallet
   credits?: number; // In-game credits from database
-  onMenuClick?: () => void;
+  onMenuClick?: () => void; // Deprecated: kept for backwards compatibility
   hasAlerts?: boolean;
 }
 
@@ -21,9 +22,10 @@ export const NavStrip: React.FC<NavStripProps> = ({
   username = 'user',
   cxBalance = 0,
   credits = 0,
-  onMenuClick,
+  onMenuClick, // Deprecated: drawer now managed globally
   hasAlerts
 }) => {
+  const { openDrawer } = useDrawer();
   const [showAlertDot, setShowAlertDot] = useState(false);
 
   useEffect(() => {
@@ -51,7 +53,10 @@ export const NavStrip: React.FC<NavStripProps> = ({
   }, [hasAlerts]);
 
   const handleMenuClick = () => {
-    if (onMenuClick) {
+    // Use global drawer context if available, otherwise fall back to legacy onMenuClick prop
+    if (openDrawer) {
+      openDrawer();
+    } else if (onMenuClick) {
       onMenuClick();
     } else {
       console.log('Menu clicked - no handler provided');
