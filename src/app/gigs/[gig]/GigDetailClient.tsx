@@ -117,10 +117,26 @@ export default function GigDetailClient({ gigData, historyEvents, navData, userF
                   return (<button className={btnClass} disabled aria-disabled="true">{btnLabel}</button>);
                 }
 
+                // Start gig logic
+                const handleStartGig = async () => {
+                  try {
+                    const res = await fetch(`/api/gigs/${gigData.id}/start`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ userFid }),
+                    });
+                    if (res.ok) {
+                      window.location.reload();
+                    } else {
+                      alert('Failed to start gig');
+                    }
+                  } catch (e) {
+                    alert('Error starting gig');
+                  }
+                };
+
                 return (
-                  <a href={`/gigs/${gigData.id}/play`}>
-                    <button className={btnClass}>{btnLabel}</button>
-                  </a>
+                  <button className={btnClass} onClick={handleStartGig}>{btnLabel}</button>
                 );
               })()}
             </div>
