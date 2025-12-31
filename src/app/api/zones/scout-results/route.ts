@@ -211,6 +211,15 @@ export async function POST(request: NextRequest) {
       bandwidth: 1  // +1 to restore
     });
 
+    // Fetch updated stats to return to client
+    const [updatedStatsRows] = await pool.execute<RowDataPacket[]>(
+      `SELECT current_consciousness, max_consciousness, current_stamina, max_stamina,
+              current_bandwidth, max_bandwidth, current_charge, max_charge
+       FROM users WHERE id = ? LIMIT 1`,
+      [userId]
+    );
+    const updatedStats = updatedStatsRows[0];
+
     // Check for level up
     let levelUpData = null;
     try {
@@ -236,6 +245,7 @@ export async function POST(request: NextRequest) {
       rewardType,
       xpGained: totalXp,
       gainsText,
+      historyId,
       unlockedPOI: unlockedPOI ? {
         id: unlockedPOI.id,
         name: unlockedPOI.name,
@@ -256,6 +266,7 @@ export async function POST(request: NextRequest) {
         sentiment: encounter.default_sentiment,
         imageUrl: encounter.image_url
       } : null,
+      updatedStats,
       message: 'Scout completed successfully',
       levelUp: levelUpData?.leveledUp ? levelUpData : null
     });
