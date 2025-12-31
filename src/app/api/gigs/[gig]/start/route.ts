@@ -29,6 +29,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ gi
     );
     return NextResponse.json({ ok: true });
   } catch (e) {
-    return NextResponse.json({ error: 'Failed to start gig' }, { status: 500 });
+    console.error('Start gig API error:', e);
+    return NextResponse.json({ error: 'Failed to start gig', details: e instanceof Error ? e.message : String(e) }, { status: 500 });
   }
 }
