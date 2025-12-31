@@ -226,10 +226,10 @@ const MeterGauge: React.FC<MeterGaugeProps> = ({ label, current, max, color, reg
 
     let meterColor = color;
     if (label.includes("THERMAL") || label.includes("NEURAL")) {
-        // Use bright-red for high load (Thermal/Neural)
-        if (fillPercentage >= 70) meterColor = 'bg-red-500';
-        // Use soft-green/bright-green for low load (Thermal/Neural)
-        else meterColor = 'bg-lime-400';
+      // Use bright-red for high load (Thermal/Neural)
+      if (fillPercentage >= 70) meterColor = 'bg-red-500';
+      // Use #ff6663 for low load (Thermal/Neural)
+      else meterColor = 'bg-[#ff6663]';
     }
 
     // Determine if regen timer should be shown
