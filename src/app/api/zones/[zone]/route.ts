@@ -64,14 +64,23 @@ export async function GET(
     );
 
     // Fetch unlocked POI for this zone (via user_zone_history)
+    // Also check for active cooldowns from failed breaches
     const [poiRows] = await pool.execute<any[]>(
-      `SELECT DISTINCT poi.id, poi.zone_id, poi.name, poi.poi_type, poi.type_label, poi.subnet_id, poi.description, 
-              poi.breach_difficulty, poi.image_url, uzh.timestamp as unlocked_at, 'scout' as unlock_method
+      `SELECT DISTINCT 
+              poi.id, poi.zone_id, poi.name, poi.poi_type, poi.type_label, poi.subnet_id, poi.description, 
+              poi.breach_difficulty, poi.image_url, uzh.timestamp as unlocked_at, 'scout' as unlock_method,
+              (SELECT cooldown_until 
+               FROM user_zone_history 
+               WHERE user_id = ? AND poi_id = poi.id 
+               AND cooldown_until IS NOT NULL 
+               AND cooldown_until > UTC_TIMESTAMP() 
+               ORDER BY cooldown_until DESC 
+               LIMIT 1) as cooldown_until
        FROM points_of_interest poi
        INNER JOIN user_zone_history uzh ON poi.id = uzh.poi_id
        WHERE uzh.user_id = ? AND poi.zone_id = ? AND uzh.action_type = 'UnlockedPOI'
        ORDER BY uzh.timestamp DESC`,
-      [user.id, zoneId]
+      [user.id, user.id, zoneId]
     );
 
     logger.debug('POI data from DB', { poiCount: poiRows.length, zoneId });

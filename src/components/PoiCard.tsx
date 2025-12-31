@@ -1,5 +1,5 @@
 "use client";
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { CxCard } from './CxShared';
 import { ActionResultsSummary } from './ActionResultsSummary';
 import { DiscoveryCard } from './DiscoveryCard';
@@ -18,6 +18,7 @@ interface POI {
   unlocked_at: string;
   unlock_method: string;
   type_label?: string;
+  cooldown_until?: string;
 }
 
 interface UserStats {
@@ -61,6 +62,37 @@ export default function PoiCard({
   onBackFromBreachResults
 }: PoiCardProps) {
   const isBreachComplete = timeLeft.startsWith('00:00:00');
+  const [cooldownTimeLeft, setCooldownTimeLeft] = useState<string>('');
+  
+  // Cooldown countdown timer
+  useEffect(() => {
+    if (!poiItem.cooldown_until) {
+      setCooldownTimeLeft('');
+      return;
+    }
+
+    const updateCooldown = () => {
+      const now = new Date().getTime();
+      const cooldownEnd = new Date(poiItem.cooldown_until!).getTime();
+      const diff = cooldownEnd - now;
+
+      if (diff <= 0) {
+        setCooldownTimeLeft('');
+        return;
+      }
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      setCooldownTimeLeft(`${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`);
+    };
+
+    updateCooldown();
+    const interval = setInterval(updateCooldown, 1000);
+    return () => clearInterval(interval);
+  }, [poiItem.cooldown_until]);
+
+  const isOnCooldown = !!cooldownTimeLeft;
   
   // Physical breach: 15 Charge + 15 Stamina + 1 Bandwidth
   // Remote breach: 10 Charge + 1 Bandwidth
@@ -72,7 +104,8 @@ export default function PoiCard({
     userStats.current_charge >= requiredCharge &&
     userStats.current_stamina >= requiredStamina &&
     !activeBreach &&
-    !hasPhysicalActionInProgress;
+    !hasPhysicalActionInProgress &&
+    !isOnCooldown;
 
   // Check if POI was recently unlocked (within last 24 hours)
   const isNewlyUnlocked = poiItem.unlocked_at && 
@@ -105,6 +138,16 @@ export default function PoiCard({
             <div className="text-fuschia text-xs font-semibold uppercase">
               Viewing Results ↓
             </div>
+          ) : isOnCooldown ? (
+            <>
+              <button 
+                className="btn-cx btn-cx-disabled btn-cx-full cursor-default"
+                disabled
+              >
+                ON COOLDOWN
+              </button>
+              <div className="text-red-400 text-center text-xs font-semibold">{cooldownTimeLeft}</div>
+            </>
           ) : activeBreach ? (
             <>
               <button 
