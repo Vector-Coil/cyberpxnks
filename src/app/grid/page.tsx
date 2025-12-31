@@ -73,8 +73,8 @@ interface UserStats {
 
 export default function GridPage() {
   const { userFid, isLoading: isAuthLoading } = useAuthenticatedUser();
-  // Only call useNavData if userFid is valid (non-zero)
-  const navData = userFid ? useNavData(userFid) : { username: 'user', credits: 0, cxBalance: 0, loading: true };
+  // Only call useNavData after userFid is loaded and valid
+  const navData = (userFid && !isAuthLoading) ? useNavData(userFid) : { username: 'user', credits: 0, cxBalance: 0, loading: true };
   const [subnets, setSubnets] = useState<Subnet[]>([]);
   const [protocols, setProtocols] = useState<Protocol[]>([]);
   const [slimsoftEffects, setSlimsoftEffects] = useState<SlimsoftEffect[]>([]);
@@ -313,7 +313,7 @@ export default function GridPage() {
     }
   };
 
-  if (loading) {
+  if (loading || isAuthLoading || !userFid) {
     return (
       <div className="frame-container frame-grid">
         <div className="frame-body flex items-center justify-center min-h-[600px]">
