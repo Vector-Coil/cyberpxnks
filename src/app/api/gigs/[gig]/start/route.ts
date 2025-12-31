@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDbPool } from '../../../../../../lib/db';
-import { getUserByFid } from '../../../../../../lib/navUtils';
+import { getDbPool } from '../../../../lib/db';
+import { getUserByFid } from '../../../../lib/navUtils';
 
 export async function POST(request: NextRequest, { params }: { params: { gig: string } }) {
   try {
