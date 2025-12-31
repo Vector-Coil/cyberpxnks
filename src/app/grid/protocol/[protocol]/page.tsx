@@ -60,7 +60,7 @@ export default function ProtocolDetailPage({ params }: { params: Promise<{ proto
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [historyView, setHistoryView] = useState<'mine' | 'all'>('mine');
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  // Removed deprecated isDrawerOpen state
 
   useEffect(() => {
     if (!protocolId || Number.isNaN(protocolId) || !userFid || isAuthLoading) return;
@@ -122,7 +122,6 @@ export default function ProtocolDetailPage({ params }: { params: Promise<{ proto
               userProfileImage={navData.profileImage}
               credits={navData.credits}
               cxBalance={navData.cxBalance}
-              onMenuClick={() => setIsDrawerOpen(true)}
             />
           </div>
           <div className="flex items-center justify-center py-12">
@@ -136,7 +135,6 @@ export default function ProtocolDetailPage({ params }: { params: Promise<{ proto
   if (!protocol) {
     return (
       <>
-
         <div className="frame-container frame-city">
           <div className="frame-body pt-6 pb-2 px-6">
             <NavStrip 
@@ -144,7 +142,6 @@ export default function ProtocolDetailPage({ params }: { params: Promise<{ proto
               userProfileImage={navData.profileImage}
               credits={navData.credits}
               cxBalance={navData.cxBalance}
-              onMenuClick={() => setIsDrawerOpen(true)}
             />
           </div>
           <div className="text-center text-gray-400 py-12">
@@ -164,7 +161,6 @@ export default function ProtocolDetailPage({ params }: { params: Promise<{ proto
             userProfileImage={navData.profileImage}
             credits={navData.credits}
             cxBalance={navData.cxBalance}
-            onMenuClick={() => setIsDrawerOpen(true)}
           />
         </div>
         <CompactMeterStrip meters={getMeterData(userStats)} />
