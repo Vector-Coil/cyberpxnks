@@ -97,8 +97,8 @@ interface CompleteStats {
 export default function StatsPage() {
   const router = useRouter();
   const { userFid, isLoading: isAuthLoading } = useAuthenticatedUser();
-  // Only call useNavData after userFid is loaded and valid
-  const navData = (userFid && !isAuthLoading) ? useNavData(userFid) : { username: 'user', credits: 0, cxBalance: 0, loading: true };
+  // Always call useNavData, but only use its data after userFid is valid
+  const navData = useNavData(userFid || 300187);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [completeStats, setCompleteStats] = useState<CompleteStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -219,6 +219,7 @@ export default function StatsPage() {
             <NavStrip 
               username={navData.username}
               userProfileImage={navData.profileImage}
+              credits={navData.credits}
               cxBalance={navData.cxBalance}
             />
           </div>
@@ -239,6 +240,7 @@ export default function StatsPage() {
             <NavStrip 
               username={navData.username}
               userProfileImage={navData.profileImage}
+              credits={navData.credits}
               cxBalance={navData.cxBalance}
             />
           </div>
@@ -301,11 +303,12 @@ export default function StatsPage() {
     <>
       <div className="frame-container frame-main">
         <div className="frame-body pt-6 pb-2 px-6">
-          <NavStrip 
-            username={navData.username}
-            userProfileImage={navData.profileImage}
-            cxBalance={navData.cxBalance}
-          />
+            <NavStrip 
+              username={navData.username}
+              userProfileImage={navData.profileImage}
+              credits={navData.credits}
+              cxBalance={navData.cxBalance}
+            />
         </div>
         
         <div className="pt-5 pb-2 px-6 flex flex-row gap-3 items-center">
