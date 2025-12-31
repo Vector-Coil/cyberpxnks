@@ -160,12 +160,26 @@ export default function GigsPage() {
 
                           <div className="mt-1 text-sm text-gray-400">{gig.description}</div>
 
-                          {requirements.length > 0 && (
-                            <div className="mt-2">
-                              <span className="meta-heading text-sm">Requirements:</span>{' '}
-                              <span className="text-gray-300">{requirements.join(', ')}</span>
+
+                          <div className="mt-2">
+                            <span className="meta-heading text-sm">Objectives:</span>{' '}
+                            {gig.objective && (
+                              <span className="text-gray-300">{gig.objective}</span>
+                            )}
+                            <div className="mt-1">
+                              {gig.requirements && gig.requirements.length > 0 ? (
+                                <ul className="list-disc ml-6">
+                                  {gig.requirements.map((r: any, i: number) => (
+                                    <li key={i} className={r.met ? 'text-blue-400' : 'text-red-300'}>
+                                      {r.text}
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <span className="text-gray-400">No objectives</span>
+                              )}
                             </div>
-                          )}
+                          </div>
 
                           <div className="mt-2">
                             <span className="meta-heading text-sm">Reward:</span>{' '}
@@ -250,12 +264,26 @@ export default function GigsPage() {
 
                                     <div className="mt-1 text-sm text-gray-400">{gig.description}</div>
 
-                                    {requirements.length > 0 && (
-                                      <div className="mt-2">
-                                        <span className="meta-heading text-sm">Requirements:</span>{' '}
-                                        <span className="text-gray-300">{requirements.join(', ')}</span>
+
+                                    <div className="mt-2">
+                                      <span className="meta-heading text-sm">Objectives:</span>{' '}
+                                      {gig.objective && (
+                                        <span className="text-gray-300">{gig.objective}</span>
+                                      )}
+                                      <div className="mt-1">
+                                        {gig.requirements && gig.requirements.length > 0 ? (
+                                          <ul className="list-disc ml-6">
+                                            {gig.requirements.map((r: any, i: number) => (
+                                              <li key={i} className={r.met ? 'text-blue-400' : 'text-red-300'}>
+                                                {r.text}
+                                              </li>
+                                            ))}
+                                          </ul>
+                                        ) : (
+                                          <span className="text-gray-400">No objectives</span>
+                                        )}
                                       </div>
-                                    )}
+                                    </div>
 
                                     <div className="mt-2">
                                       <span className="meta-heading text-sm">Reward:</span>{' '}

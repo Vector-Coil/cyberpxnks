@@ -171,7 +171,8 @@ export default async function GigDetailPage({ params }: { params: any }) {
       contact_name,
       status,
       isNew,
-      requirements
+      requirements,
+      objective: gRow.objective ?? gRow.gig_objective ?? gRow.gigObjective ?? null
     };
 
     const navDataWithDefaults = {

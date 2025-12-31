@@ -14,6 +14,7 @@ interface GigDetailClientProps {
     status: string | null;
     isNew: boolean;
     requirements: Array<{ text: string; met: boolean }>;
+    objective?: string;
   };
   historyEvents: Array<{
     type: 'unlocked' | 'refreshed' | 'completed';
@@ -70,19 +71,25 @@ export default function GigDetailClient({ gigData, historyEvents, navData, userF
 
               <div className="mt-4 mb-3 text-gray-300">{gigData.description}</div>
 
+
               <div className="mb-1">
-                <span className="meta-heading">Requirements:</span>{' '}
-                {gigData.requirements && gigData.requirements.length > 0 ? (
-                  <span>
-                    {gigData.requirements.map((r, i) => (
-                      <span key={i} className={r.met ? 'text-blue-400' : 'text-red-300'}>
-                        {r.text}{i < gigData.requirements.length - 1 ? ', ' : ''}
-                      </span>
-                    ))}
-                  </span>
-                ) : (
-                  <span className="text-gray-400">None</span>
+                <span className="meta-heading">Objectives:</span>{' '}
+                {gigData.objective && (
+                  <span className="text-gray-300">{gigData.objective}</span>
                 )}
+                <div className="mt-1">
+                  {gigData.requirements && gigData.requirements.length > 0 ? (
+                    <ul className="list-disc ml-6">
+                      {gigData.requirements.map((r, i) => (
+                        <li key={i} className={r.met ? 'text-blue-400' : 'text-red-300'}>
+                          {r.text}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span className="text-gray-400">No objectives</span>
+                  )}
+                </div>
               </div>
 
               <div className="mb-3">
@@ -107,6 +114,10 @@ export default function GigDetailClient({ gigData, historyEvents, navData, userF
                   btnLabel = 'COMPLETED';
                   isDisabled = true;
                   btnClass = 'btn-cx btn-cx-disabled btn-cx-full';
+                } else if (statusNorm === 'STARTED' || statusNorm === 'IN PROGRESS') {
+                  btnLabel = 'IN PROGRESS';
+                  isDisabled = true;
+                  btnClass = 'btn-cx btn-cx-disabled btn-cx-full cx-disabled';
                 } else if (statusNorm !== '' && statusNorm !== 'UNLOCKED') {
                   btnLabel = statusNorm === 'LOCKED' ? 'LOCKED' : 'UNAVAILABLE';
                   isDisabled = true;

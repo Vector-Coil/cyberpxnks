@@ -94,22 +94,9 @@ export default function ContactDetailClient({ contact, gigs, navData, messageInf
                                         return isNew ? (
                                           <span className="pill pill-alert pill-alert-pulse absolute -top-2 right-0 z-10">NEW</span>
                                         ) : null;
-                                      })()}
-                                    </div>
-
-                                    {/* Requirements placeholder until a requirements table is added */}
-                                    <div className="mt-2">
-                                      <span className="meta-heading">Requirements:</span>{' '}
-                                      {g.requirements && g.requirements.length > 0 ? (
-                                          <span>
-                                          {g.requirements.map((r: any, i: number) => (
-                                              <span key={i} className={r.met ? 'text-blue-400' : 'text-red-300'}>{r.text}{i < g.requirements.length - 1 ? ', ' : ''}</span>
-                                          ))}
-                                          </span>
-                                      ) : (
-                                          <span className="text-gray-400">None</span>
-                                      )}
-                                    </div>
+                                      <a href={`/gigs/${g.id}`} className="inline-block w-full mt-2">
+                                        <button className="btn-cx btn-cx-primary btn-cx-full">VIEW GIG</button>
+                                      </a>
                                 </div>
 
                             </div>
