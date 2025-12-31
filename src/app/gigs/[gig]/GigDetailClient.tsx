@@ -61,10 +61,10 @@ export default function GigDetailClient({ gigData, historyEvents, navData, userF
 
             <div className="flex flex-col">
 
-              <div className="text-xl font-bold uppercase text-white mt-2 text-center">
+              <div className="text-xl font-bold uppercase text-white mt-2 text-center relative">
                 {gigData.gig_code}
                 {gigData.isNew && (
-                  <span className="inline-block ml-2 bg-bright-green text-black text-xs font-semibold px-2 py-0.5 rounded-full shadow-xl animate-pulse">NEW</span>
+                  <span className="pill pill-alert pill-alert-pulse absolute -top-2 right-0 z-10">NEW</span>
                 )}
               </div>
 

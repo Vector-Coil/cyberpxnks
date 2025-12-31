@@ -84,7 +84,18 @@ export default function ContactDetailClient({ contact, gigs, navData, messageInf
                             <div className="flex-1">
 
                                 <div className="direction-column">
-                                    <div className="card-title uppercase">{g.gig_code}</div>
+
+                                    <div className="card-title uppercase relative">
+                                      {g.gig_code}
+                                      {/* NEW pill for recently unlocked gigs */}
+                                      {(() => {
+                                        const hoursSinceUnlock = (new Date().getTime() - new Date(g.unlocked_at).getTime()) / (1000 * 60 * 60);
+                                        const isNew = hoursSinceUnlock < 24;
+                                        return isNew ? (
+                                          <span className="pill pill-alert pill-alert-pulse absolute -top-2 right-0 z-10">NEW</span>
+                                        ) : null;
+                                      })()}
+                                    </div>
 
                                     {/* Requirements placeholder until a requirements table is added */}
                                     <div className="mt-2">
