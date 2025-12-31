@@ -25,7 +25,7 @@ const CompactMeterStrip: React.FC<CompactMeterStripProps> = ({ meters }) => {
                         let meterColor = meter.color;
                         if (meter.label.includes("THERMAL") || meter.label.includes("NEURAL")) {
                             if (fillPercentage >= 70) meterColor = 'bg-red-500';
-                            else meterColor = 'bg-lime-400';
+                            else meterColor = 'bg-[#ff6663]';
                         }
 
                         // Custom label mapping for specific meters
