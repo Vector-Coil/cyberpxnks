@@ -60,6 +60,7 @@ export default function ProtocolDetailPage({ params }: { params: Promise<{ proto
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [historyView, setHistoryView] = useState<'mine' | 'all'>('mine');
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (!protocolId || Number.isNaN(protocolId) || !userFid || isAuthLoading) return;
