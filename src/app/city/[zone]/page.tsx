@@ -252,21 +252,13 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
 
   // Check for any physical actions in progress at current location
   // Physical actions (Scout, Breach, Explore, etc) block travel and other physical actions
+  // Block all physical actions if any are in progress (including Explore)
   const hasPhysicalActionInProgress = history.some(h => {
-    // Physical action types that require user to be at the location
     const physicalActionTypes = ['Scouted', 'Breached', 'RemoteBreach', 'OvernetScan', 'Exploring'];
-    
-    // Check if this is a physical action type
     if (!physicalActionTypes.includes(h.action_type)) return false;
-    
-    // Check if it has an end time
     if (!h.end_time) return false;
-    
-    // Check if it's still in progress (matches backend logic)
     const isInProgress = !h.result_status || h.result_status === '' || h.result_status === 'in_progress';
     if (!isInProgress) return false;
-    
-    // Check if end time hasn't passed yet
     return new Date(h.end_time).getTime() > Date.now();
   });
 
@@ -278,14 +270,12 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
     !hasPhysicalActionInProgress;
 
   const handleScoutClick = () => {
-    if (canScout) {
-      setShowScoutModal(true);
-    }
+    if (!canScout) return; // Block if not allowed
+    setShowScoutModal(true);
   };
 
   const handleConfirmScout = async () => {
-    if (isConfirming) return; // Prevent double-click
-    
+    if (isConfirming || !canScout) return; // Prevent double-click and block if not allowed
     setIsConfirming(true);
     try {
       const res = await fetch(`/api/zones/scout?fid=${userFid}`, {
@@ -307,13 +297,12 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
           setHistory(zoneData.history || []);
         }
       } else {
-        const errorData = await res.json();
-        console.error('Scout failed:', errorData.error);
-        alert(errorData.error || 'Failed to start scout');
+        // Silently fail, do not show error dialog
+        setShowScoutModal(false);
       }
     } catch (err) {
-      console.error('Failed to start scout:', err);
-      alert('Failed to start scout');
+      // Silently fail, do not show error dialog
+      setShowScoutModal(false);
     } finally {
       setIsConfirming(false);
     }
@@ -389,6 +378,8 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
 
   // Breach handlers
   const handleBreachClick = (poiItem: POI) => {
+    // Block breach if any physical action is in progress
+    if (hasPhysicalActionInProgress) return;
     setSelectedPoi(poiItem);
     
     // Calculate success rate when opening modal
