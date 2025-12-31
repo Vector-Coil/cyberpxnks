@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../../../lib/db';
 import { getUserByFid } from '../../../../../lib/navUtils';
 
-export async function POST(request: NextRequest, { params }: { params: { gig: string } }) {
+export async function POST(request: NextRequest, context: { params: Promise<{ gig: string }> }) {
   try {
+    const { gig } = await context.params;
     const { userFid } = await request.json();
-    const gigId = parseInt(params.gig, 10);
+    const gigId = parseInt(gig, 10);
     if (!userFid || !gigId) {
       return NextResponse.json({ error: 'Missing userFid or gigId' }, { status: 400 });
     }
