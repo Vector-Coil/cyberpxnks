@@ -97,7 +97,8 @@ interface CompleteStats {
 export default function StatsPage() {
   const router = useRouter();
   const { userFid, isLoading: isAuthLoading } = useAuthenticatedUser();
-  const navData = useNavData(userFid || 0);
+  // Only call useNavData after userFid is loaded and valid
+  const navData = (userFid && !isAuthLoading) ? useNavData(userFid) : { username: 'user', credits: 0, cxBalance: 0, loading: true };
   const [stats, setStats] = useState<UserStats | null>(null);
   const [completeStats, setCompleteStats] = useState<CompleteStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -287,7 +288,7 @@ export default function StatsPage() {
           <span className="pill-stat text-xs" style={{ color: 'var(--bright-green)' }}>+{mod}</span>
         ) : (
           <span className="pill-charcoal text-xs opacity-50">—</span>
-        )}
+      if (loading || isAuthLoading || !userFid) {
       </div>
       <div className="text-center">
         <span className="pill-cloud-gray text-xs font-bold">{total}</span>
