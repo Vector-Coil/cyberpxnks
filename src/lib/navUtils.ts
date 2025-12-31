@@ -1,3 +1,14 @@
+/**
+ * Fetch user row by Farcaster FID
+ */
+export async function getUserByFid(fid: number): Promise<any | null> {
+  const pool = await getDbPool();
+  const [userRows] = await pool.execute<any[]>(
+    'SELECT id, username, credits, pfp_url FROM users WHERE fid = ? LIMIT 1',
+    [fid]
+  );
+  return (userRows as any[])[0] || null;
+}
 import { getDbPool } from './db';
 
 /**

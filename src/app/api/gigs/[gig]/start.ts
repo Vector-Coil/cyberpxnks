@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../../lib/db';
-import { getUserFromFid } from '../../../../lib/navUtils';
+import { getUserByFid } from '../../../../lib/navUtils';
 
 export async function POST(request: NextRequest, { params }: { params: { gig: string } }) {
   try {
@@ -9,7 +9,7 @@ export async function POST(request: NextRequest, { params }: { params: { gig: st
     if (!userFid || !gigId) {
       return NextResponse.json({ error: 'Missing userFid or gigId' }, { status: 400 });
     }
-    const user = await getUserFromFid(userFid);
+    const user = await getUserByFid(userFid);
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
