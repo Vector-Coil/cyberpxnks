@@ -367,7 +367,7 @@ export default function GridPage() {
                 </div>
               )}
               <div className="flex-1 text-center text-white">
-                Digital identity obfuscation utility is active. Your public Echo persona: <span className="font-bold text-fuschia">{mirrorName}</span>
+                Digital identity obfuscation active. Echo persona: <span className="font-bold text-fuschia">{mirrorName}</span>
               </div>
             </div>
           )}
@@ -434,8 +434,8 @@ export default function GridPage() {
 
           {/* Slimsoft Actions */}
           {slimsoftEffects.length === 0 ? (
-            <div className="text-center text-gray-400 py-4 mb-3">
-              Equip slimsoft with active functionality to enable additional actions.
+            <div className="text-center text-gray-400 py-4 mb-1">
+              Equip slimsoft to enable additional actions.
             </div>
           ) : slimsoftEffects.length === 1 ? (
             // Single action: full width button with left-aligned image and centered text
