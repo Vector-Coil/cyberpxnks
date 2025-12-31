@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '../../../../lib/db';
+import { getDbPool } from '../../../../lib/db';
 import { getUserFromFid } from '../../../../lib/navUtils';
 
 export async function POST(request: NextRequest, { params }: { params: { gig: string } }) {
@@ -14,6 +14,7 @@ export async function POST(request: NextRequest, { params }: { params: { gig: st
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
     // Only allow advancing from UNLOCKED to STARTED
+    const pool = await getDbPool();
     const [rows] = await pool.execute<any[]>(
       'SELECT status FROM gig_history WHERE user_id = ? AND gig_id = ? LIMIT 1',
       [user.id, gigId]
