@@ -111,9 +111,9 @@ export function rollCriticalFailure(): boolean {
  */
 export function getBreachFailurePenalties() {
   return {
-    stamina: -5,
-    consciousness: -10,
-    charge: -5,
+    stamina: -10,
+    consciousness: -20,
+    charge: -15,
     neural: 10,
     thermal: 10
   };

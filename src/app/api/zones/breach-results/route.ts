@@ -332,13 +332,22 @@ export async function POST(request: NextRequest) {
 
     // Apply total XP (base + discovery bonus)
     const totalXp = baseXp + discoveryBonus;
+    
+    // Roll for credits reward (0, 25, 50, or 100)
+    const creditsOptions = [0, 25, 50, 100];
+    const creditsGained = creditsOptions[Math.floor(Math.random() * creditsOptions.length)];
+    
+    // Update XP and credits
     await pool.execute(
-      'UPDATE users SET xp = xp + ? WHERE id = ?',
-      [totalXp, userId]
+      'UPDATE users SET xp = xp + ?, credits = credits + ? WHERE id = ?',
+      [totalXp, creditsGained, userId]
     );
 
     // Build gains text
     let gainsText = `+${totalXp} XP`;
+    if (creditsGained > 0) {
+      gainsText += `, +${creditsGained} Credits`;
+    }
     if (discoveredItem) {
       gainsText += ` (+10 discovery bonus), Discovered ${discoveredItem.name}`;
     } else if (encounter) {
@@ -372,13 +381,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Log breach completion activity
+    const activityMessage = creditsGained > 0 
+      ? `Completed breach of ${poiName}, gained ${totalXp} XP and ${creditsGained} Credits`
+      : `Completed breach of ${poiName}, gained ${totalXp} XP`;
+    
     await logActivity(
       userId,
       'action',
       'breach_completed',
       totalXp,
       poiId || null,
-      `Completed breach of ${poiName}, gained ${totalXp} XP`
+      activityMessage
     );
 
     // Check for level up
@@ -411,6 +424,7 @@ export async function POST(request: NextRequest) {
       success: true,
       historyId: historyId,
       xpGained: totalXp,
+      creditsGained: creditsGained,
       rewardType,
       discoveredItem: discoveredItem ? {
         id: discoveredItem.id,

@@ -138,6 +138,7 @@ export default function PoiCard({
           <ActionResultsSummary
             actionName="Breach"
             xpGained={breachResults.xpGained}
+            creditsGained={breachResults.creditsGained}
             failed={breachResults.failed || false}
             criticalFailure={breachResults.criticalFailure || false}
             penalties={breachResults.penalties}

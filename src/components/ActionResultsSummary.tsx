@@ -17,6 +17,7 @@ interface Penalties {
 interface ActionResultsSummaryProps {
   actionName: string;
   xpGained: number;
+  creditsGained?: number;
   discovery?: Discovery | null;
   className?: string;
   failed?: boolean;
@@ -33,6 +34,7 @@ interface ActionResultsSummaryProps {
 export function ActionResultsSummary({
   actionName,
   xpGained,
+  creditsGained,
   discovery,
   className = '',
   failed = false,
@@ -56,6 +58,12 @@ export function ActionResultsSummary({
           <span className="text-gray-300">Gained XP</span>
           <span className={`${failed ? 'pill-cloud-gray' : 'pill-cloud-gray'}`}>{xpGained} XP{failed && ' (25%)'}</span>
         </div>
+        {creditsGained !== undefined && creditsGained > 0 && (
+          <div className="flex items-center justify-between">
+            <span className="text-gray-300">Gained Credits</span>
+            <span className="pill-cloud-gray">{creditsGained} Credits</span>
+          </div>
+        )}
         {failed && penalties && (
           <div className="space-y-1 mt-2 pt-2 border-t border-gray-700">
             <div className="text-red-400 text-xs font-semibold mb-1">PENALTIES:</div>

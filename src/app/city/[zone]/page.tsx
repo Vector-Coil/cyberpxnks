@@ -15,6 +15,7 @@ import { useNavData } from '../../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../../hooks/useAuthenticatedUser';
 import { useCountdownTimer } from '../../../hooks/useCountdownTimer';
 import { getMeterData } from '../../../lib/meterUtils';
+import { calculateBreachSuccessRate } from '../../../lib/game/breachUtils';
 
 interface Zone {
   id: number;
@@ -24,6 +25,7 @@ interface Zone {
   district?: number;
   district_name?: string;
   district_map_url?: string;
+  district_level?: number;
   description: string;
   image_url?: string;
 }
@@ -389,6 +391,20 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
   // Breach handlers
   const handleBreachClick = (poiItem: POI) => {
     setSelectedPoi(poiItem);
+    
+    // Calculate success rate when opening modal
+    if (userStats && zone) {
+      const successRateData = calculateBreachSuccessRate({
+        decryption: (userStats as any).decryption || 0,
+        interfaceStat: (userStats as any).interface || 0,
+        cache: (userStats as any).cache || 0,
+        userLevel: userLevel,
+        districtLevel: zone.district_level || 1,
+        breachDifficulty: poiItem.breach_difficulty || 0
+      });
+      setBreachSuccessRate(successRateData);
+    }
+    
     setShowBreachModal(true);
   };
 
@@ -1041,6 +1057,22 @@ export default function ZoneDetailPage({ params }: { params: Promise<{ zone: str
             <div className="modal-body">
               Search the subnet for access to items, data, or funds.
             </div>
+            {breachSuccessRate && (
+              <div className={`px-3 py-2 rounded text-sm mb-2 border ${
+                breachSuccessRate.riskLevel === 'low' ? 'bg-green-900 bg-opacity-30 border-green-500' :
+                breachSuccessRate.riskLevel === 'moderate' ? 'bg-yellow-900 bg-opacity-30 border-yellow-500' :
+                breachSuccessRate.riskLevel === 'high' ? 'bg-orange-900 bg-opacity-30 border-orange-500' :
+                'bg-red-900 bg-opacity-30 border-red-500'
+              }`}>
+                <span className={breachSuccessRate.riskColor}>
+                  Success Chance: {breachSuccessRate.successRate}%
+                </span>
+                {breachSuccessRate.riskLevel === 'low' && <span className="text-green-400"> - Low Risk</span>}
+                {breachSuccessRate.riskLevel === 'moderate' && <span className="text-yellow-400"> - Moderate Risk</span>}
+                {breachSuccessRate.riskLevel === 'high' && <span className="text-orange-400"> - High Risk</span>}
+                {breachSuccessRate.riskLevel === 'critical' && <span className="text-red-400"> - Critical Risk</span>}
+              </div>
+            )}
             {isAtLocation ? (
               <>
                 <div className="bg-green-900 bg-opacity-30 border border-green-500 text-green-400 px-3 py-2 rounded text-sm mb-2">

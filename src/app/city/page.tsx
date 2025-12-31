@@ -72,6 +72,8 @@ export default function CityPage() {
   const [activeJobs, setActiveJobs] = useState<any[]>([]);
   const [allCollapsed, setAllCollapsed] = useState(false);
   const [renderKey, setRenderKey] = useState(0);
+  const [hasPhysicalActionInProgress, setHasPhysicalActionInProgress] = useState(false);
+  const [blockingAction, setBlockingAction] = useState<any>(null);
   
   // Use countdown timer hook for active explore
   const { timeRemaining, isComplete } = useCountdownTimer(activeExplore?.end_time || null);
@@ -149,6 +151,8 @@ export default function CityPage() {
           if (exploreData.activeExplore) {
             setActiveExplore(exploreData.activeExplore);
           }
+          setHasPhysicalActionInProgress(exploreData.hasPhysicalActionInProgress || false);
+          setBlockingAction(exploreData.blockingAction || null);
         }
 
         // Process city-wide activity history
@@ -190,7 +194,8 @@ export default function CityPage() {
     userStats.current_consciousness >= (userStats.max_consciousness * 0.5) &&
     userStats.current_bandwidth >= 1 &&
     userStats.current_stamina >= staminaCost &&
-    !activeExplore;
+    !activeExplore &&
+    !hasPhysicalActionInProgress;
 
   // Debug logging
   console.log('Explore validation:', {
@@ -344,9 +349,12 @@ export default function CityPage() {
             </button>
             {!canExplore && !activeExplore && userStats && (
               <p className="text-gray-400 text-sm mt-2 text-center">
-                {userStats.current_consciousness < (userStats.max_consciousness * 0.5) && 'Consciousness too low. '}
-                {userStats.current_bandwidth < 1 && 'Need at least 1 Bandwidth. '}
-                {userStats.current_stamina < staminaCost && `Need ${staminaCost} Stamina.`}
+                {hasPhysicalActionInProgress && blockingAction && (
+                  <>{blockingAction.actionType === 'Scouted' ? 'Scout' : 'Physical Breach'} in progress. </>
+                )}
+                {!hasPhysicalActionInProgress && userStats.current_consciousness < (userStats.max_consciousness * 0.5) && 'Consciousness too low. '}
+                {!hasPhysicalActionInProgress && userStats.current_bandwidth < 1 && 'Need at least 1 Bandwidth. '}
+                {!hasPhysicalActionInProgress && userStats.current_stamina < staminaCost && `Need ${staminaCost} Stamina.`}
               </p>
             )}
           </div>
