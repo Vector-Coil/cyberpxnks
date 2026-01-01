@@ -26,6 +26,7 @@ interface Gig {
   completed_count: number;
   unlocked_at: string;
   objective?: string;
+  requirements?: Array<{ text: string; met: boolean }>;
 }
 
 export default function GigsPage() {
