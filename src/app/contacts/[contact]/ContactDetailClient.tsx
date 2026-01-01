@@ -94,10 +94,11 @@ export default function ContactDetailClient({ contact, gigs, navData, messageInf
                                         return isNew ? (
                                           <span className="pill pill-alert pill-alert-pulse absolute -top-2 right-0 z-10">NEW</span>
                                         ) : null;
+                                      })()}
                                       <a href={`/gigs/${g.id}`} className="inline-block w-full mt-2">
                                         <button className="btn-cx btn-cx-primary btn-cx-full">VIEW GIG</button>
                                       </a>
-                                </div>
+                                    </div>
 
                             </div>
 
@@ -109,38 +110,7 @@ export default function ContactDetailClient({ contact, gigs, navData, messageInf
 
                             <div className="mt-1 text-gray-300">{g.description}</div>
 
-                            <div className="mt-4">
-                                {/* Button state depends on gig status. Completed or non-UNLOCKED gigs show disabled style */}
-                                {(() => {
-                                const statusNorm = (g.status ?? '').toString().toUpperCase();
-                                let btnLabel = 'VIEW GIG';
-                                let isDisabled = false;
-                                let btnClass = 'btn-cx btn-cx-primary btn-cx-full';
-
-                                if (statusNorm === 'COMPLETED') {
-                                    btnLabel = 'COMPLETED';
-                                    isDisabled = true;
-                                    btnClass = 'btn-cx btn-cx-disabled btn-cx-full';
-                                } else if (statusNorm !== '' && statusNorm !== 'UNLOCKED') {
-                                    // Any other non-empty, non-UNLOCKED status is treated as inaccessible/locked
-                                    btnLabel = statusNorm === 'LOCKED' ? 'LOCKED' : 'UNAVAILABLE';
-                                    isDisabled = true;
-                                    btnClass = 'btn-cx btn-cx-disabled btn-cx-full';
-                                }
-
-                                if (isDisabled) {
-                                    return (
-                                    <button className={btnClass} disabled aria-disabled="true">{btnLabel}</button>
-                                    );
-                                }
-
-                                // Active BEGIN button links to the gig page
-                                return (
-                                    <a href={`/gigs/${g.id}`}>
-                                    <button className={btnClass}>{btnLabel}</button>
-                                    </a>
-                                );
-                                })()}
+                            {/* Removed disabled button logic; always show enabled View Gig button above */}
                             </div>
                             
                         </div>
