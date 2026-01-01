@@ -144,7 +144,8 @@ export async function POST(request: NextRequest) {
       });
 
       // Set cooldown (60 minutes)
-      const cooldownUntil = new Date(Date.now() + 60 * 60 * 1000);
+      // Set cooldown (1 minute for testing)
+      const cooldownUntil = new Date(Date.now() + 1 * 60 * 1000);
       
       // Mark breach as failed with cooldown
       await pool.execute(
