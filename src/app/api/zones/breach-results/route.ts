@@ -238,6 +238,66 @@ export async function POST(request: NextRequest) {
     // === SUCCESS PATH (existing logic) ===
     // Award random XP (30-50 in increments of 5)
     // Note: Thermal/neural load increases are handled automatically by the regeneration system during breach
+
+    // === CONDITIONAL GIG ITEM REWARD LOGIC ===
+    // 1. Find all in-progress gigs for this user with objectives matching this breach action
+    // 2. Check if item_from matches this POI or action context
+    // 3. If so, grant item and mark objective as fulfilled
+    // 4. Prevent duplicate rewards
+    // 5. Extensible for other actions
+    // Get all in-progress gigs for user
+    const [activeGigs] = await pool.execute<any[]>(
+      `SELECT g.id as gig_id, g.gig_code, gr.obj_1, gr.obj_2, gr.obj_3, gr.item_from, gr.reward_item, gh.status
+       FROM gigs g
+       LEFT JOIN gig_requirements gr ON g.id = gr.gig_id
+       LEFT JOIN gig_history gh ON g.id = gh.gig_id AND gh.user_id = ?
+       WHERE gh.status IN ('STARTED', 'IN PROGRESS')`
+      , [userId]
+    );
+
+    for (const gig of activeGigs) {
+      // Check each objective for a breach action match
+      for (let i = 1; i <= 3; i++) {
+        const objKey = `obj_${i}`;
+        const objective = gig[objKey];
+        // Example: breach_pubsec, breach_terminal, etc.
+        if (objective && objective.startsWith('breach')) {
+          // If item_from is set, check if it matches this POI
+          if (gig.item_from && String(gig.item_from) === String(poiId)) {
+            // Check if user already has the reward item
+            if (gig.reward_item) {
+              const [hasItemRows] = await pool.execute<any[]>(
+                `SELECT quantity FROM user_inventory WHERE user_id = ? AND item_id = ?`,
+                [userId, gig.reward_item]
+              );
+              if (!hasItemRows.length) {
+                // Grant item to user
+                await pool.execute(
+                  `INSERT INTO user_inventory (user_id, item_id, quantity, acquired_at)
+                   VALUES (?, ?, 1, UTC_TIMESTAMP())
+                   ON DUPLICATE KEY UPDATE quantity = quantity + 1`,
+                  [userId, gig.reward_item]
+                );
+                // Mark objective as fulfilled (custom: set completed_count or status)
+                await pool.execute(
+                  `UPDATE gig_history SET completed_count = completed_count + 1, last_completed_at = UTC_TIMESTAMP(), status = 'COMPLETED' WHERE user_id = ? AND gig_id = ?`,
+                  [userId, gig.gig_id]
+                );
+                // Log activity
+                await logActivity(
+                  userId,
+                  'gig',
+                  'item_reward_granted',
+                  null,
+                  gig.reward_item,
+                  `Granted gig item reward for objective ${objective} on POI ${poiId}`
+                );
+              }
+            }
+          }
+        }
+      }
+    }
     const xpOptions = [30, 35, 40, 45, 50];
     const baseXp = xpOptions[Math.floor(Math.random() * xpOptions.length)];
 
