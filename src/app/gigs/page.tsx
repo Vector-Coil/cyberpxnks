@@ -25,6 +25,7 @@ interface Gig {
   last_completed_at?: string;
   completed_count: number;
   unlocked_at: string;
+  objective?: string;
 }
 
 export default function GigsPage() {
