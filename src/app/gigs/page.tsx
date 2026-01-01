@@ -27,6 +27,7 @@ interface Gig {
   unlocked_at: string;
   objective?: string;
   requirements?: Array<{ text: string; met: boolean }>;
+  objectives?: string[];
 }
 
 export default function GigsPage() {
