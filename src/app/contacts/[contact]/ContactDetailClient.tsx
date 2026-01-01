@@ -73,49 +73,32 @@ export default function ContactDetailClient({ contact, gigs, navData, messageInf
             {gigs.map(g => (
               <div key={g.id}>
                 <CxCard className="">
-                    <div className="flex flex-col gap-3">
-
-                        <div className="flex flex-row items-start gap-4">
-                            
-                            <div className="w-20 h-20 bg-gray-700 rounded overflow-hidden flex-shrink-0">
-                            {g.image_url ? <img src={g.image_url} alt={g.gig_code} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-600" />}
-                            </div>
-
-                            <div className="flex-1">
-
-                                <div className="direction-column">
-
-                                    <div className="card-title uppercase relative">
-                                      {g.gig_code}
-                                      {/* NEW pill for recently unlocked gigs */}
-                                      {(() => {
-                                        const hoursSinceUnlock = (new Date().getTime() - new Date(g.unlocked_at).getTime()) / (1000 * 60 * 60);
-                                        const isNew = hoursSinceUnlock < 24;
-                                        return isNew ? (
-                                          <span className="pill pill-alert pill-alert-pulse absolute -top-2 right-0 z-10">NEW</span>
-                                        ) : null;
-                                      })()}
-                                      <a href={`/gigs/${g.id}`} className="inline-block w-full mt-2">
-                                        <button className="btn-cx btn-cx-primary btn-cx-full">VIEW GIG</button>
-                                      </a>
-                                    </div>
-
-                            </div>
-
-                        </div>
-                
-                        <div>
-
-
-
-                            <div className="mt-1 text-gray-300">{g.description}</div>
-
-                            {/* Removed disabled button logic; always show enabled View Gig button above */}
-                            </div>
-                            
-                        </div>
-
+                  <div className="flex flex-row items-start gap-4">
+                    <div className="w-20 h-20 bg-gray-700 rounded overflow-hidden flex-shrink-0">
+                      {g.image_url ? <img src={g.image_url} alt={g.gig_code} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-600" />}
                     </div>
+                    <div className="flex-1 flex flex-col justify-between min-h-[80px]">
+                      <div>
+                        <div className="card-title uppercase relative">
+                          {g.gig_code}
+                          {/* NEW pill for recently unlocked gigs */}
+                          {(() => {
+                            const hoursSinceUnlock = (new Date().getTime() - new Date(g.unlocked_at).getTime()) / (1000 * 60 * 60);
+                            const isNew = hoursSinceUnlock < 24;
+                            return isNew ? (
+                              <span className="pill pill-alert pill-alert-pulse absolute -top-2 right-0 z-10">NEW</span>
+                            ) : null;
+                          })()}
+                        </div>
+                        <div className="mt-1 text-gray-300">{g.description}</div>
+                      </div>
+                      <div className="mt-3">
+                        <a href={`/gigs/${g.id}`} className="inline-block w-full">
+                          <button className="btn-cx btn-cx-primary btn-cx-full">VIEW GIG</button>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
                 </CxCard>
               </div>
             ))}

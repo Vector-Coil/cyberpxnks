@@ -138,60 +138,30 @@ export default function GigsPage() {
               return (
                 <div key={gig.id}>
                   <CxCard className="cursor-pointer hover:opacity-90 transition-opacity relative">
-                    {isNew && (
-                      <div className="pill pill-alert pill-alert-pulse absolute -top-1 -right-1 z-10">
-                        NEW
+                    <div className="flex flex-row items-start gap-4">
+                      <div className="w-20 h-20 bg-gray-700 rounded overflow-hidden flex-shrink-0">
+                        {gig.image_url ? (
+                          <img src={gig.image_url} alt={gig.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-2xl">
+                            {gig.title.charAt(0)}
+                          </div>
+                        )}
                       </div>
-                    )}
-                    <div className="flex flex-col gap-4">
-                      <div className="flex flex-row items-start gap-4">
-                        <div className="w-20 h-20 bg-gray-700 rounded overflow-hidden flex-shrink-0">
-                          {gig.image_url ? (
-                            <img src={gig.image_url} alt={gig.title} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-2xl">
-                              {gig.title.charAt(0)}
-                            </div>
-                          )}
+                      <div className="flex-1 flex flex-col justify-between min-h-[80px]">
+                        <div>
+                          <div className="card-title uppercase relative">
+                            {gig.title}
+                            {/* NEW pill for recently unlocked gigs */}
+                            {isNew ? (
+                              <span className="pill pill-alert pill-alert-pulse absolute -top-2 right-0 z-10">NEW</span>
+                            ) : null}
+                          </div>
+                          <div className="mt-1 text-gray-300">{gig.description}</div>
                         </div>
-
-                        <div className="flex-1">
-                          <div className="meta-eyebrow">{gig.contact_name || 'Unknown Contact'}</div>
-
-                          <div className="card-title">{gig.title}</div>
-
-                          <div className="mt-1 text-sm text-gray-400">{gig.description}</div>
-
-
-                          <div className="mt-2">
-                            <span className="meta-heading text-sm">Objectives:</span>{' '}
-                            {gig.objective && (
-                              <span className="text-gray-300">{gig.objective}</span>
-                            )}
-                            <div className="mt-1">
-                              {gig.requirements && gig.requirements.length > 0 ? (
-                                <ul className="list-disc ml-6">
-                                  {gig.requirements.map((r: any, i: number) => (
-                                    <li key={i} className={r.met ? 'text-blue-400' : 'text-red-300'}>
-                                      {r.text}
-                                    </li>
-                                  ))}
-                                </ul>
-                              ) : (
-                                <span className="text-gray-400">No objectives</span>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="mt-2">
-                            <span className="meta-heading text-sm">Reward:</span>{' '}
-                            <span className="text-bright-green">{gig.reward_credits} CX</span>
-                          </div>
-
-                          <a href={`/gigs/${gig.id}`} className="inline-block mt-3">
-                            <button className="btn-cx btn-cx-primary">
-                              VIEW GIG
-                            </button>
+                        <div className="mt-3">
+                          <a href={`/gigs/${gig.id}`} className="inline-block w-full">
+                            <button className="btn-cx btn-cx-primary btn-cx-full">VIEW GIG</button>
                           </a>
                         </div>
                       </div>
@@ -269,16 +239,11 @@ export default function GigsPage() {
 
                                     <div className="mt-2">
                                       <span className="meta-heading text-sm">Objectives:</span>{' '}
-                                      {gig.objective && (
-                                        <span className="text-gray-300">{gig.objective}</span>
-                                      )}
                                       <div className="mt-1">
-                                        {gig.requirements && gig.requirements.length > 0 ? (
+                                        {gig.objectives && gig.objectives.length > 0 ? (
                                           <ul className="list-disc ml-6">
-                                            {gig.requirements.map((r: any, i: number) => (
-                                              <li key={i} className={r.met ? 'text-blue-400' : 'text-red-300'}>
-                                                {r.text}
-                                              </li>
+                                            {gig.objectives.map((obj: string, i: number) => (
+                                              <li key={i} className="text-blue-400">{obj}</li>
                                             ))}
                                           </ul>
                                         ) : (

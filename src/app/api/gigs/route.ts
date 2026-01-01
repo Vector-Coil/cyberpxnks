@@ -69,6 +69,7 @@ export async function GET(request: NextRequest) {
           c.image_url as contact_image_url,
           g.image_url,
           gr.req_1, gr.req_2, gr.req_3,
+          gr.obj_1, gr.obj_2, gr.obj_3,
           gh.status,
           gh.last_completed_at,
           gh.completed_count,
@@ -77,7 +78,7 @@ export async function GET(request: NextRequest) {
         LEFT JOIN gig_requirements gr ON g.id = gr.gig_id
         LEFT JOIN gig_history gh ON g.id = gh.gig_id AND gh.user_id = ?
         LEFT JOIN contacts c ON g.contact = c.id
-        WHERE gh.status = 'UNLOCKED' OR gh.last_completed_at IS NOT NULL
+        WHERE (gh.status = 'UNLOCKED' OR gh.status = 'STARTED' OR gh.status = 'IN PROGRESS' OR gh.last_completed_at IS NOT NULL)
         ORDER BY g.contact, g.id DESC
       `;
       params = [userId];
@@ -91,6 +92,7 @@ export async function GET(request: NextRequest) {
           c.image_url as contact_image_url,
           g.image_url,
           gr.req_1, gr.req_2, gr.req_3,
+          gr.obj_1, gr.obj_2, gr.obj_3,
           gh.status,
           gh.last_completed_at,
           gh.completed_count,
@@ -99,7 +101,7 @@ export async function GET(request: NextRequest) {
         LEFT JOIN gig_requirements gr ON g.id = gr.gig_id
         LEFT JOIN gig_history gh ON g.id = gh.gig_id AND gh.user_id = ?
         LEFT JOIN contacts c ON g.contact = c.id
-        WHERE gh.status = 'UNLOCKED' OR gh.last_completed_at IS NOT NULL
+        WHERE (gh.status = 'UNLOCKED' OR gh.status = 'STARTED' OR gh.status = 'IN PROGRESS' OR gh.last_completed_at IS NOT NULL)
         ORDER BY g.id DESC
         LIMIT 100
       `;
@@ -108,18 +110,29 @@ export async function GET(request: NextRequest) {
 
     const [rows] = await pool.execute(query, params);
 
-    // Resolve requirement names for all gigs
+    // Resolve requirement and objective names for all gigs
     const gigsWithResolvedReqs = await Promise.all(
       (rows as any[]).map(async (gig) => {
         const req_1_name = gig.req_1 ? await resolveRequirementName(gig.req_1, pool) : null;
         const req_2_name = gig.req_2 ? await resolveRequirementName(gig.req_2, pool) : null;
         const req_3_name = gig.req_3 ? await resolveRequirementName(gig.req_3, pool) : null;
-        
+
+        // Parse objectives (obj_*)
+        const objectives: string[] = [];
+        for (let i = 1; i <= 3; i++) {
+          const objKey = `obj_${i}`;
+          if (gig[objKey]) {
+            const resolved = await resolveRequirementName(gig[objKey], pool);
+            objectives.push(resolved);
+          }
+        }
+
         return {
           ...gig,
           req_1_name,
           req_2_name,
-          req_3_name
+          req_3_name,
+          objectives
         };
       })
     );
