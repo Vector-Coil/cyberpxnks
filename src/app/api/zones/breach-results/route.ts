@@ -156,10 +156,20 @@ export async function POST(request: NextRequest) {
       );
 
       // Restore bandwidth
+      logger.debug('Restoring bandwidth (breach failure)', { fid, userId, historyId });
       await pool.execute(
         'UPDATE user_stats SET current_bandwidth = current_bandwidth + 1 WHERE user_id = ?',
         [userId]
       );
+      try {
+        const [bwRows] = await pool.execute<any[]>(
+          'SELECT current_bandwidth FROM user_stats WHERE user_id = ? LIMIT 1',
+          [userId]
+        );
+        logger.debug('Bandwidth after restore (failure)', { userId, current_bandwidth: bwRows[0]?.current_bandwidth });
+      } catch (e) {
+        logger.warn('Failed to read bandwidth after restore (failure)', { error: e, userId });
+      }
 
       // Log failure
       await logActivity(
@@ -417,10 +427,20 @@ export async function POST(request: NextRequest) {
     );
 
     // Restore bandwidth AFTER marking as complete to prevent double-restoration on retry
+    logger.debug('Restoring bandwidth (breach success)', { fid, userId, historyId });
     await pool.execute(
       'UPDATE user_stats SET current_bandwidth = current_bandwidth + 1 WHERE user_id = ?',
       [userId]
     );
+    try {
+      const [bwRows2] = await pool.execute<any[]>(
+        'SELECT current_bandwidth FROM user_stats WHERE user_id = ? LIMIT 1',
+        [userId]
+      );
+      logger.debug('Bandwidth after restore (success)', { userId, current_bandwidth: bwRows2[0]?.current_bandwidth });
+    } catch (e) {
+      logger.warn('Failed to read bandwidth after restore (success)', { error: e, userId });
+    }
 
     // Get POI details for logging
     let poiName = 'Unknown Terminal';
