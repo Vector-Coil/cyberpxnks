@@ -10,27 +10,28 @@ async function resolveRequirementName(req: string, pool: any): Promise<string> {
   
   const type = parts[0];
   const idNum = parseInt(parts[1], 10);
-  
-  try {
-    if (type === 'gig' && idNum) {
-      const [rows] = await pool.execute('SELECT gig_code FROM gigs WHERE id = ? LIMIT 1', [idNum]);
-      const gig = (rows as any[])[0];
-      return gig?.gig_code ? `GIG: ${gig.gig_code}` : req;
-    } else if (type === 'contact' && idNum) {
-      const [rows] = await pool.execute('SELECT display_name FROM contacts WHERE id = ? LIMIT 1', [idNum]);
-      const contact = (rows as any[])[0];
-      return contact?.display_name || req;
-    } else if (type === 'item' && idNum) {
-      const [rows] = await pool.execute('SELECT name FROM items WHERE id = ? LIMIT 1', [idNum]);
-      const item = (rows as any[])[0];
-      return item?.name || req;
-    }
-  } catch (e) {
-    console.error('Error resolving requirement:', e);
-  }
-  
-  return req;
-}
+      `
+        SELECT 
+          g.id, g.gig_code as title, g.gig_desc as description,
+          g.reward_item, g.reward_credits, g.contact,
+          c.display_name as contact_name,
+          c.image_url as contact_image_url,
+          g.image_url,
+          gr.reg_1, gr.reg_2, gr.reg_3,
+          -- Grab the whole requirements row; objective column names vary by schema
+          gr.*,
+          gh.status,
+          gh.last_completed_at,
+          gh.completed_count,
+          gh.unlocked_at
+        FROM gigs g
+        LEFT JOIN gig_requirements gr ON g.id = gr.gig_id
+        LEFT JOIN gig_history gh ON g.id = gh.gig_id AND gh.user_id = ?
+        LEFT JOIN contacts c ON g.contact = c.id
+        WHERE (gh.status = 'UNLOCKED' OR gh.status = 'STARTED' OR gh.status = 'IN PROGRESS' OR gh.last_completed_at IS NOT NULL)
+        ORDER BY g.id DESC
+        LIMIT 100
+      `;
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -68,8 +69,9 @@ export async function GET(request: NextRequest) {
           c.display_name as contact_name,
           c.image_url as contact_image_url,
           g.image_url,
-          gr.req_1, gr.req_2, gr.req_3,
-          gr.obj_1, gr.obj_2, gr.obj_3,
+          gr.reg_1, gr.reg_2, gr.reg_3,
+          -- Grab full requirements row; objective column names may vary
+          gr.*,
           gh.status,
           gh.last_completed_at,
           gh.completed_count,
@@ -114,22 +116,32 @@ export async function GET(request: NextRequest) {
     const gigsWithResolvedReqs = await Promise.all(
       (rows as any[]).map(async (gig) => {
         try {
-          const req_1_name = gig.req_1 ? await resolveRequirementName(gig.req_1, pool) : null;
-          const req_2_name = gig.req_2 ? await resolveRequirementName(gig.req_2, pool) : null;
-          const req_3_name = gig.req_3 ? await resolveRequirementName(gig.req_3, pool) : null;
+          const reqNames: Array<string | null> = [];
+          for (let i = 1; i <= 5; i++) {
+            const key = `reg_${i}`;
+            try {
+              reqNames.push(gig[key] ? await resolveRequirementName(gig[key], pool) : null);
+            } catch (reqErr) {
+              console.error('[API /api/gigs] Failed to resolve requirement', { gigId: gig.id, key, error: reqErr });
+              reqNames.push(gig[key] || null);
+            }
+          }
+          const [req_1_name, req_2_name, req_3_name, req_4_name, req_5_name] = reqNames;
 
-          // Parse objectives (obj_*)
+          // Parse objectives: column names vary (obj_1, obj1, objective_1, etc.)
           const objectives: string[] = [];
-          for (let i = 1; i <= 3; i++) {
-            const objKey = `obj_${i}`;
-            if (gig[objKey]) {
-              try {
-                const resolved = await resolveRequirementName(gig[objKey], pool);
-                objectives.push(resolved);
-              } catch (innerErr) {
-                console.error('[API /api/gigs] Failed to resolve objective', { gigId: gig.id, obj: gig[objKey], error: innerErr });
-                objectives.push(String(gig[objKey]));
-              }
+          const objectiveKeys = Object.keys(gig || {}).filter(k => /(^obj\b|^obj_|^objective|^objective_|^obj\d|obj_\d)/i.test(k)).slice(0, 5);
+          // Normalize to up to 3 objectives
+          for (const key of objectiveKeys) {
+            if (objectives.length >= 3) break;
+            const rawVal = gig[key];
+            if (!rawVal) continue;
+            try {
+              const resolved = await resolveRequirementName(rawVal, pool);
+              objectives.push(resolved);
+            } catch (innerErr) {
+              console.error('[API /api/gigs] Failed to resolve objective', { gigId: gig.id, key, value: rawVal, error: innerErr });
+              objectives.push(String(rawVal));
             }
           }
 
@@ -138,6 +150,8 @@ export async function GET(request: NextRequest) {
             req_1_name,
             req_2_name,
             req_3_name,
+            req_4_name,
+            req_5_name,
             objectives
           };
         } catch (err) {
@@ -145,9 +159,11 @@ export async function GET(request: NextRequest) {
           // Return the gig with minimal info so the whole endpoint doesn't fail
           return {
             ...gig,
-            req_1_name: gig.req_1 || null,
-            req_2_name: gig.req_2 || null,
-            req_3_name: gig.req_3 || null,
+            req_1_name: gig.reg_1 || null,
+            req_2_name: gig.reg_2 || null,
+            req_3_name: gig.reg_3 || null,
+            req_4_name: gig.reg_4 || null,
+            req_5_name: gig.reg_5 || null,
             objectives: []
           };
         }
