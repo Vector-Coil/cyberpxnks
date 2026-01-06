@@ -10,28 +10,27 @@ async function resolveRequirementName(req: string, pool: any): Promise<string> {
   
   const type = parts[0];
   const idNum = parseInt(parts[1], 10);
-      `
-        SELECT 
-          g.id, g.gig_code as title, g.gig_desc as description,
-          g.reward_item, g.reward_credits, g.contact,
-          c.display_name as contact_name,
-          c.image_url as contact_image_url,
-          g.image_url,
-          gr.reg_1, gr.reg_2, gr.reg_3,
-          -- Grab the whole requirements row; objective column names vary by schema
-          gr.*,
-          gh.status,
-          gh.last_completed_at,
-          gh.completed_count,
-          gh.unlocked_at
-        FROM gigs g
-        LEFT JOIN gig_requirements gr ON g.id = gr.gig_id
-        LEFT JOIN gig_history gh ON g.id = gh.gig_id AND gh.user_id = ?
-        LEFT JOIN contacts c ON g.contact = c.id
-        WHERE (gh.status = 'UNLOCKED' OR gh.status = 'STARTED' OR gh.status = 'IN PROGRESS' OR gh.last_completed_at IS NOT NULL)
-        ORDER BY g.id DESC
-        LIMIT 100
-      `;
+  try {
+    if (type === 'gig' && idNum) {
+      const [rows] = await pool.execute('SELECT gig_code FROM gigs WHERE id = ? LIMIT 1', [idNum]);
+      const gig = (rows as any[])[0];
+      return gig?.gig_code ? `GIG: ${gig.gig_code}` : req;
+    } else if (type === 'contact' && idNum) {
+      const [rows] = await pool.execute('SELECT display_name FROM contacts WHERE id = ? LIMIT 1', [idNum]);
+      const contact = (rows as any[])[0];
+      return contact?.display_name || req;
+    } else if (type === 'item' && idNum) {
+      const [rows] = await pool.execute('SELECT name FROM items WHERE id = ? LIMIT 1', [idNum]);
+      const item = (rows as any[])[0];
+      return item?.name || req;
+    }
+  } catch (e) {
+    console.error('Error resolving requirement:', e);
+  }
+
+  return req;
+
+}
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -93,8 +92,9 @@ export async function GET(request: NextRequest) {
           c.display_name as contact_name,
           c.image_url as contact_image_url,
           g.image_url,
-          gr.req_1, gr.req_2, gr.req_3,
-          gr.obj_1, gr.obj_2, gr.obj_3,
+          gr.reg_1, gr.reg_2, gr.reg_3, gr.reg_4, gr.reg_5,
+          -- Grab full requirements row; objective column names may vary
+          gr.*,
           gh.status,
           gh.last_completed_at,
           gh.completed_count,
