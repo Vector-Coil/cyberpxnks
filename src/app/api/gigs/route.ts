@@ -109,31 +109,48 @@ export async function GET(request: NextRequest) {
     }
 
     const [rows] = await pool.execute(query, params);
-
+    console.debug('[API /api/gigs] Query returned rows count:', Array.isArray(rows) ? (rows as any[]).length : 0);
     // Resolve requirement and objective names for all gigs
     const gigsWithResolvedReqs = await Promise.all(
       (rows as any[]).map(async (gig) => {
-        const req_1_name = gig.req_1 ? await resolveRequirementName(gig.req_1, pool) : null;
-        const req_2_name = gig.req_2 ? await resolveRequirementName(gig.req_2, pool) : null;
-        const req_3_name = gig.req_3 ? await resolveRequirementName(gig.req_3, pool) : null;
+        try {
+          const req_1_name = gig.req_1 ? await resolveRequirementName(gig.req_1, pool) : null;
+          const req_2_name = gig.req_2 ? await resolveRequirementName(gig.req_2, pool) : null;
+          const req_3_name = gig.req_3 ? await resolveRequirementName(gig.req_3, pool) : null;
 
-        // Parse objectives (obj_*)
-        const objectives: string[] = [];
-        for (let i = 1; i <= 3; i++) {
-          const objKey = `obj_${i}`;
-          if (gig[objKey]) {
-            const resolved = await resolveRequirementName(gig[objKey], pool);
-            objectives.push(resolved);
+          // Parse objectives (obj_*)
+          const objectives: string[] = [];
+          for (let i = 1; i <= 3; i++) {
+            const objKey = `obj_${i}`;
+            if (gig[objKey]) {
+              try {
+                const resolved = await resolveRequirementName(gig[objKey], pool);
+                objectives.push(resolved);
+              } catch (innerErr) {
+                console.error('[API /api/gigs] Failed to resolve objective', { gigId: gig.id, obj: gig[objKey], error: innerErr });
+                objectives.push(String(gig[objKey]));
+              }
+            }
           }
-        }
 
-        return {
-          ...gig,
-          req_1_name,
-          req_2_name,
-          req_3_name,
-          objectives
-        };
+          return {
+            ...gig,
+            req_1_name,
+            req_2_name,
+            req_3_name,
+            objectives
+          };
+        } catch (err) {
+          console.error('[API /api/gigs] Error resolving gig requirements', { gig, error: err });
+          // Return the gig with minimal info so the whole endpoint doesn't fail
+          return {
+            ...gig,
+            req_1_name: gig.req_1 || null,
+            req_2_name: gig.req_2 || null,
+            req_3_name: gig.req_3 || null,
+            objectives: []
+          };
+        }
       })
     );
 
