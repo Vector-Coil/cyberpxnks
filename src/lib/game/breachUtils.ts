@@ -9,6 +9,14 @@ export interface BreachSuccessParams {
   userLevel: number;
   districtLevel: number;
   breachDifficulty: number;
+  // Optional extra tech/contextual values
+  deckTier?: number;
+  slimsoftTier?: number;
+  clockSpeed?: number;
+  latency?: number;
+  signalNoise?: number;
+  // Optional slimsoft percent modifier (0-100)
+  slimsoftPct?: number;
 }
 
 export interface BreachSuccessResult {
@@ -39,31 +47,50 @@ export function calculateBreachSuccessRate(params: BreachSuccessParams): BreachS
     breachDifficulty
   } = params;
 
-  // Base success rate
-  let successRate = 60;
+  // New formula (separate contributions)
+  const {
+    deckTier = 0,
+    slimsoftTier = 0,
+    clockSpeed = 0,
+    latency = 0,
+    signalNoise = 0
+  } = params as any;
 
-  // Add Decryption bonus
-  successRate += decryption / 10;
+  let success = 50; // base
 
-  // Add Interface bonus
-  successRate += interfaceStat;
+  // Decryption contribution (primary)
+  let decryptionContrib = decryption * 0.6;
 
-  // Add Cache bonus
-  successRate += cache / 20;
-
-  // Subtract level disparity penalty
-  const levelDiff = districtLevel - userLevel;
-  if (levelDiff > 0) {
-    successRate -= levelDiff * 10;
+  // Apply slimsoft percent modifier multiplicatively if provided
+  const slimsoftPct = (params as any).slimsoftPct || 0;
+  if (slimsoftPct) {
+    decryptionContrib = decryptionContrib * (1 + (slimsoftPct / 100));
   }
 
-  // Subtract breach difficulty penalty
-  if (breachDifficulty > 0) {
-    successRate -= breachDifficulty * 5;
-  }
+  // Tier bonuses
+  const tierBonus = (deckTier || 0) * 5; // +5% per tier
+  const slimsoftTierBonus = (slimsoftTier && slimsoftTier > 0) ? slimsoftTier * 3 : 0;
 
-  // Apply floor and cap
-  successRate = Math.max(15, Math.min(95, successRate));
+  // Tech bonuses
+  const techBonus = (clockSpeed || 0) * 0.5 + (cache || 0) * 0.3;
+
+  // Signal provides a small bonus: signalNoise / 10
+  const signalBonus = (signalNoise || 0) / 10;
+
+  // Latency is a penalty
+  const latencyPenalty = (latency || 0) * 0.5;
+
+  // Level and difficulty penalties (softened)
+  const levelDiff = Math.max(0, districtLevel - userLevel);
+  const levelPenalty = levelDiff * 8;
+  const difficultyPenalty = (breachDifficulty || 0) * 4;
+
+  // Interface adds directly
+  success += decryptionContrib + tierBonus + slimsoftTierBonus + techBonus + signalBonus - latencyPenalty - levelPenalty - difficultyPenalty + (interfaceStat || 0);
+
+  // Clamp
+  success = Math.max(10, Math.min(98, success));
+  let successRate = success;
 
   // Determine risk level
   let riskLevel: 'low' | 'moderate' | 'high' | 'critical';

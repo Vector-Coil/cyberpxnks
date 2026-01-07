@@ -35,6 +35,8 @@ export interface HardwareModifiers {
 
 export interface SlimsoftModifiers {
   decryption: number;
+  decryption_flat?: number;
+  decryption_pct?: number;
   encryption: number;
   antivirus: number;
   consciousness_regen: number;
@@ -259,6 +261,8 @@ export class StatsService {
 
       slimsoft = {
         decryption: Number(equip.ss_decryption) || 0,
+        decryption_flat: typeof equip.ss_decryption_flat !== 'undefined' ? Number(equip.ss_decryption_flat) : (Number(equip.ss_decryption) || 0),
+        decryption_pct: Number(equip.ss_decryption_pct) || 0,
         encryption: Number(equip.ss_encryption) || 0,
         antivirus: Number(equip.ss_antivirus) || 0,
         consciousness_regen: Number(equip.ss_consciousness_regen) || 0,
@@ -290,6 +294,8 @@ export class StatsService {
         
         slimsoft = {
           decryption: 0,
+          decryption_flat: 0,
+          decryption_pct: 0,
           encryption: 0,
           antivirus: fb.antivirus || 0,
           consciousness_regen: 0,
@@ -310,6 +316,8 @@ export class StatsService {
 
         slimsoft = {
           decryption: 0,
+          decryption_flat: 0,
+          decryption_pct: 0,
           encryption: 0,
           antivirus: 0,
           consciousness_regen: 0,
@@ -425,7 +433,7 @@ export class StatsService {
       cooling: Number(baseStats.cooling) + Number(hardware.heat_sink),
       signal_noise: Number(baseStats.signal_noise) + Number(hardware.memory) + Number(hardware.lifi),
       latency: Number(baseStats.latency) + Number(hardware.lifi),
-      decryption: Number(baseStats.decryption) + Number(hardware.encryption) + Number(slimsoft.decryption),
+      decryption: Number(baseStats.decryption) + Number(hardware.encryption) + Number(slimsoft.decryption_flat ?? slimsoft.decryption),
       cache: Number(baseStats.cache) + Number(hardware.memory)
     };
 
