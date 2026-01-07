@@ -170,25 +170,37 @@ export async function POST(request: NextRequest) {
     }
     await statsService.modifyStats(statChanges);
 
-    // Fetch equipped cyberdeck tier
-    const [deckRows] = await pool.execute<any[]>(
-      `SELECT i.tier FROM user_loadout ul
-       INNER JOIN items i ON ul.item_id = i.id
-       WHERE ul.user_id = ? AND ul.slot_type = 'cyberdeck' AND ul.is_equipped = 1
-       LIMIT 1`,
-      [user.id]
-    );
-    const deckTier = (deckRows as any[])[0]?.tier || 0;
+    // Fetch equipped cyberdeck tier (safe fallback on DB errors)
+    let deckTier = 0;
+    try {
+      const [deckRows] = await pool.execute<any[]>(
+        `SELECT i.tier FROM user_loadout ul
+         INNER JOIN items i ON ul.item_id = i.id
+         WHERE ul.user_id = ? AND ul.slot_type = 'cyberdeck' AND ul.is_equipped = 1
+         LIMIT 1`,
+        [user.id]
+      );
+      deckTier = (deckRows as any[])[0]?.tier || 0;
+    } catch (err) {
+      logger.warn('Failed to fetch deck tier, defaulting to 0', { userId: user.id, err });
+      deckTier = 0;
+    }
 
-    // Fetch highest slimsoft tier that affects decryption
-    const [ssTierRows] = await pool.execute<any[]>(
-      `SELECT MAX(i.tier) as ss_decryption_tier FROM user_loadout ul
-       INNER JOIN items i ON ul.item_id = i.id
-       INNER JOIN slimsoft_effects se ON i.id = se.item_id
-       WHERE ul.user_id = ? AND ul.slot_type = 'slimsoft' AND ul.is_equipped = 1 AND se.target_stat = 'decryption'`,
-      [user.id]
-    );
-    const slimsoftTier = (ssTierRows as any[])[0]?.ss_decryption_tier || 0;
+    // Fetch highest slimsoft tier that affects decryption (safe fallback)
+    let slimsoftTier = 0;
+    try {
+      const [ssTierRows] = await pool.execute<any[]>(
+        `SELECT MAX(i.tier) as ss_decryption_tier FROM user_loadout ul
+         INNER JOIN items i ON ul.item_id = i.id
+         INNER JOIN slimsoft_effects se ON i.id = se.item_id
+         WHERE ul.user_id = ? AND ul.slot_type = 'slimsoft' AND ul.is_equipped = 1 AND se.target_stat = 'decryption'`,
+        [user.id]
+      );
+      slimsoftTier = (ssTierRows as any[])[0]?.ss_decryption_tier || 0;
+    } catch (err) {
+      logger.warn('Failed to fetch slimsoft tier, defaulting to 0', { userId: user.id, err });
+      slimsoftTier = 0;
+    }
 
     // Calculate breach success rate for client display
     const successRateData = calculateBreachSuccessRate({
@@ -202,13 +214,9 @@ export async function POST(request: NextRequest) {
       slimsoftTier,
       clockSpeed: stats.tech.clock_speed || 0,
       latency: stats.tech.latency || 0,
-      signalNoise: stats.tech.signal_noise || 0
+      signalNoise: stats.tech.signal_noise || 0,
+      slimsoftPct: stats.slimsoft?.decryption_pct || 0
     });
-
-    // Pass slimsoft percent if available from stats.slimsoft.decryption_pct
-    if (stats.slimsoft && typeof stats.slimsoft.decryption_pct !== 'undefined') {
-      (successRateData as any).slimsoftPct = stats.slimsoft.decryption_pct || 0;
-    }
 
     // Create breach action
     const endTime = new Date(Date.now() + COOLDOWNS.ZONE_BREACH);
