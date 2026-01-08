@@ -114,14 +114,40 @@ export default function GigDetailClient({ gigData, historyEvents, navData, userF
                   btnLabel = 'COMPLETED';
                   isDisabled = true;
                   btnClass = 'btn-cx btn-cx-disabled btn-cx-full';
-                } else if (statusNorm === 'STARTED' || statusNorm === 'IN PROGRESS') {
-                  btnLabel = 'IN PROGRESS';
-                  isDisabled = true;
-                  btnClass = 'btn-cx btn-cx-disabled btn-cx-full cx-disabled';
-                } else if (statusNorm !== '' && statusNorm !== 'UNLOCKED') {
+                } else if (statusNorm !== '' && statusNorm !== 'UNLOCKED' && statusNorm !== 'STARTED' && statusNorm !== 'IN PROGRESS') {
                   btnLabel = statusNorm === 'LOCKED' ? 'LOCKED' : 'UNAVAILABLE';
                   isDisabled = true;
                   btnClass = 'btn-cx btn-cx-disabled btn-cx-full';
+                }
+
+                // Determine if all requirements are met (client-side flag from server)
+                const allRequirementsMet = Array.isArray(gigData.requirements) && gigData.requirements.length > 0 && gigData.requirements.every(r => r.met === true);
+
+                if ((statusNorm === 'STARTED' || statusNorm === 'IN PROGRESS') && allRequirementsMet) {
+                  // Allow completion when in-progress and requirements met
+                  btnLabel = 'COMPLETE';
+                  isDisabled = false;
+                  btnClass = 'btn-cx btn-cx-primary btn-cx-full';
+
+                  const handleCompleteGig = async () => {
+                    try {
+                      const res = await fetch(`/api/gigs/${gigData.id}/complete`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userFid }),
+                      });
+                      if (res.ok) {
+                        window.location.reload();
+                      } else {
+                        const err = await res.json().catch(() => null);
+                        alert('Failed to complete gig' + (err?.error ? `: ${err.error}` : ''));
+                      }
+                    } catch (e) {
+                      alert('Error completing gig');
+                    }
+                  };
+
+                  return (<button className={btnClass} onClick={handleCompleteGig}>{btnLabel}</button>);
                 }
 
                 if (isDisabled) {

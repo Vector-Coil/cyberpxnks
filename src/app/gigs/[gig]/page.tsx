@@ -89,6 +89,15 @@ export default async function GigDetailPage({ params }: { params: any }) {
             const [chCheckRows] = await pool.execute<any[]>('SELECT id FROM contact_history WHERE user_id = ? AND contact_id = ? LIMIT 1', [user.id, idNum]);
             met = Array.isArray(chCheckRows) && (chCheckRows as any[]).length > 0;
 
+          } else if (type === 'item' && idNum) {
+            // Item requirement: check user's inventory for the item (non-consuming)
+            const [itemRows] = await pool.execute<any[]>('SELECT name FROM items WHERE id = ? LIMIT 1', [idNum]);
+            const item = (itemRows as any[])[0] ?? null;
+            text = item?.name ?? `Item ${idNum}`;
+
+            const [invRows] = await pool.execute<any[]>('SELECT quantity FROM user_inventory WHERE user_id = ? AND item_id = ? LIMIT 1', [user.id, idNum]);
+            met = Array.isArray(invRows) && (invRows as any[]).length > 0 && (invRows as any[])[0].quantity > 0;
+
           } else {
             met = false;
           }
