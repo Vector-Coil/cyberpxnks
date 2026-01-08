@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import { NavStrip } from '../../../components/CxShared';
+import { useAuthenticatedUser } from '../../../hooks/useAuthenticatedUser';
 
 interface GigDetailClientProps {
   gigData: {
@@ -27,10 +28,10 @@ interface GigDetailClientProps {
     credits: number;
     cxBalance: number;
   };
-  userFid: number;
 }
 
-export default function GigDetailClient({ gigData, historyEvents, navData, userFid }: GigDetailClientProps) {
+export default function GigDetailClient({ gigData, historyEvents, navData }: GigDetailClientProps) {
+  const { userFid, isLoading: userLoading } = useAuthenticatedUser();
   const [requirementsState, setRequirementsState] = useState<Array<{ text: string; met: boolean }>>(gigData.requirements || []);
   const [validating, setValidating] = useState(false);
 
@@ -43,6 +44,7 @@ export default function GigDetailClient({ gigData, historyEvents, navData, userF
       if (!gigData || !gigData.id) return;
       const statusNorm = (gigData.status ?? '').toString().toUpperCase();
       if (!(statusNorm === 'STARTED' || statusNorm === 'IN PROGRESS')) return;
+      if (!userFid) return;
       try {
         setValidating(true);
         const res = await fetch(`/api/gigs/${gigData.id}/validate`, {
@@ -179,6 +181,7 @@ export default function GigDetailClient({ gigData, historyEvents, navData, userF
                   btnClass = 'btn-cx btn-cx-primary btn-cx-full';
 
                   const handleCompleteGig = async () => {
+                    if (!userFid) { alert('Not authenticated'); return; }
                     try {
                       const res = await fetch(`/api/gigs/${gigData.id}/complete`, {
                         method: 'POST',
@@ -205,6 +208,7 @@ export default function GigDetailClient({ gigData, historyEvents, navData, userF
 
                 // Start gig logic
                 const handleStartGig = async () => {
+                  if (!userFid) { alert('Not authenticated'); return; }
                   try {
                     const res = await fetch(`/api/gigs/${gigData.id}/start`, {
                       method: 'POST',

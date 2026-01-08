@@ -115,7 +115,6 @@ export async function GET(request: NextRequest) {
         LEFT JOIN gig_requirements gr ON g.id = gr.gig_id
         LEFT JOIN gig_history gh ON g.id = gh.gig_id AND gh.user_id = ?
         LEFT JOIN contacts c ON g.contact = c.id
-        WHERE (LOWER(gh.status) IN ('unlocked','started','in_progress') OR gh.last_completed_at IS NOT NULL)
         ORDER BY g.contact, g.id DESC
       `;
       params = [userId];
@@ -139,7 +138,6 @@ export async function GET(request: NextRequest) {
         LEFT JOIN gig_requirements gr ON g.id = gr.gig_id
         LEFT JOIN gig_history gh ON g.id = gh.gig_id AND gh.user_id = ?
         LEFT JOIN contacts c ON g.contact = c.id
-        WHERE (LOWER(gh.status) IN ('unlocked','started','in_progress') OR gh.last_completed_at IS NOT NULL)
         ORDER BY g.id DESC
         LIMIT 100
       `;
@@ -181,9 +179,8 @@ export async function GET(request: NextRequest) {
             }
           }
 
-          // Determine effective status: if a gig was previously completed, re-check
-          // its requirements against the user's current state and downgrade if needed.
-          let effectiveStatus = normalizeStatus(gig.status || gig.status);
+          // Determine effective status: start from history status (normalized)
+          let effectiveStatus = normalizeStatus(gig.status || null);
           try {
             const completedAt = gig.last_completed_at;
             if (completedAt) {
@@ -227,6 +224,42 @@ export async function GET(request: NextRequest) {
             console.error('[API /api/gigs] Error re-checking completed gig requirements', { gigId: gig.id, error: statusCheckErr });
           }
 
+          // If there is no history status (user hasn't had a gig_history row),
+          // check if requirements are currently met and mark as UNLOCKED for presentation.
+          try {
+            const hasHistory = gig && (gig.status !== null && gig.status !== undefined && String(gig.status).trim() !== '');
+            if (!hasHistory) {
+              let allMet = true;
+              for (let i = 1; i <= 5; i++) {
+                const r = gig[`req_${i}`];
+                if (!r) continue;
+                const parts = String(r).split('_');
+                if (parts.length !== 2) { allMet = false; break; }
+                const [type, idStr] = parts;
+                const idNum = parseInt(idStr, 10);
+                if (!type || !idNum) { allMet = false; break; }
+                if (type === 'contact') {
+                  const [rows] = await pool.execute('SELECT 1 FROM contact_history WHERE user_id = ? AND contact_id = ? AND status = \'unlocked\' LIMIT 1', [userId, idNum]);
+                  if (!(rows as any[]).length) { allMet = false; break; }
+                } else if (type === 'gig') {
+                  const [rows] = await pool.execute('SELECT 1 FROM gig_history WHERE user_id = ? AND gig_id = ? AND (status = \'complete\' OR status = \'completed\') LIMIT 1', [userId, idNum]);
+                  if (!(rows as any[]).length) { allMet = false; break; }
+                } else if (type === 'item') {
+                  const [rows] = await pool.execute('SELECT quantity FROM user_inventory WHERE user_id = ? AND item_id = ? LIMIT 1', [userId, idNum]);
+                  const inv = (rows as any[])[0];
+                  if (!inv || Number(inv.quantity) <= 0) { allMet = false; break; }
+                } else {
+                  allMet = false; break;
+                }
+              }
+              if (allMet) {
+                effectiveStatus = 'UNLOCKED';
+              }
+            }
+          } catch (e) {
+            console.error('[API /api/gigs] Error checking implicit unlock for gig', { gigId: gig.id, error: e });
+          }
+
           return {
             ...gig,
             status: normalizeStatus(effectiveStatus),
@@ -252,6 +285,20 @@ export async function GET(request: NextRequest) {
         }
       })
     );
+
+    // Filter gigs to include only unlocked/started/in-progress or completed gigs
+    let filteredGigs = gigsWithResolvedReqs;
+    if (sort === 'completed') {
+      filteredGigs = gigsWithResolvedReqs.filter(g => {
+        const s = String(g.status || '').toUpperCase();
+        return s === 'COMPLETED' || g.last_completed_at;
+      });
+    } else {
+      filteredGigs = gigsWithResolvedReqs.filter(g => {
+        const s = String(g.status || '').toUpperCase();
+        return s === 'UNLOCKED' || s === 'IN PROGRESS' || s === 'STARTED' || s === 'COMPLETED' || g.last_completed_at;
+      });
+    }
 
     // Default ordering: push IN PROGRESS (started) to top, UNLOCKED next, COMPLETED to bottom
     // Only apply this reordering for the default 'newest' sort and 'contact' view should keep grouping
