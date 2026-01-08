@@ -111,6 +111,32 @@ export default async function GigDetailPage({ params }: { params: any }) {
       console.debug('gig requirements lookup failed', e?.stack ?? e);
     }
 
+    // If the gig was previously marked completed but one or more requirements are
+    // no longer met (e.g., item removed from inventory), downgrade the status so
+    // the UI reflects the gig is back 'in progress'. This keeps the button state
+    // consistent when users remove required items during testing.
+    try {
+      const statusNorm = String(status ?? '').toUpperCase();
+      const allReqsMet = requirements.length === 0 ? true : requirements.every(r => r.met === true);
+      if ((statusNorm === 'COMPLETED' || statusNorm === 'COMPLETE') && !allReqsMet) {
+        // Show as in-progress to the client without mutating DB here
+        // to avoid surprising side-effects during a simple refresh.
+        // The client will prevent completion until requirements are met again.
+        // Use a normalized value consistent with other parts of the app.
+        // eslint-disable-next-line no-console
+        console.debug(`Downgrading displayed gig status for gig ${id} due to unmet requirements`);
+        // Override variable 'status' which is passed to the client
+        // so the client sees 'IN PROGRESS' instead of 'COMPLETED'
+        // when requirements are missing.
+        // Note: this does not change the DB row; it's a presentation fix.
+        // If desired, server-side DB downgrade could be implemented later.
+        // @ts-ignore
+        status = 'IN PROGRESS';
+      }
+    } catch (e) {
+      // non-fatal
+    }
+
     // Contact info
     let contact_name = '';
     if (contact_id) {

@@ -165,6 +165,13 @@ export default function GigDetailClient({ gigData, historyEvents, navData, userF
                 // Determine if all requirements are met (client-side flag from server)
                 const allRequirementsMet = Array.isArray(gigData.requirements) && gigData.requirements.length > 0 && gigData.requirements.every(r => r.met === true);
 
+                // If a gig is started/in-progress but requirements are NOT met,
+                // show a disabled 'IN PROGRESS' button rather than exposing the
+                // start flow (which would fail) or the completion CTA.
+                if ((statusNorm === 'STARTED' || statusNorm === 'IN PROGRESS') && !allRequirementsMet) {
+                  return (<button className={'btn-cx btn-cx-disabled btn-cx-full'} disabled aria-disabled="true">IN PROGRESS</button>);
+                }
+
                 if ((statusNorm === 'STARTED' || statusNorm === 'IN PROGRESS') && allRequirementsMet) {
                   // Allow completion when in-progress and requirements met
                   btnLabel = 'COMPLETE';
