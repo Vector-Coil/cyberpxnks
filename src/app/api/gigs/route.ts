@@ -145,8 +145,55 @@ export async function GET(request: NextRequest) {
             }
           }
 
+          // Determine effective status: if a gig was previously completed, re-check
+          // its requirements against the user's current state and downgrade if needed.
+          let effectiveStatus = gig.status;
+          try {
+            const completedAt = gig.last_completed_at;
+            if (completedAt) {
+              // Re-check all requirements (any unmet requirement should invalidate completion)
+              let allStillMet = true;
+              for (let i = 1; i <= 5; i++) {
+                const r = gig[`req_${i}`];
+                if (!r) continue;
+                const parts = String(r).split('_');
+                if (parts.length !== 2) { allStillMet = false; break; }
+                const [type, idStr] = parts;
+                const idNum = parseInt(idStr, 10);
+                if (!type || !idNum) { allStillMet = false; break; }
+                if (type === 'contact') {
+                  const [rows] = await pool.execute('SELECT 1 FROM contact_history WHERE user_id = ? AND contact_id = ? AND status = \'unlocked\' LIMIT 1', [userId, idNum]);
+                  if (!(rows as any[]).length) { allStillMet = false; break; }
+                } else if (type === 'gig') {
+                  const [rows] = await pool.execute('SELECT 1 FROM gig_history WHERE user_id = ? AND gig_id = ? AND (status = \'complete\' OR status = \'completed\') LIMIT 1', [userId, idNum]);
+                  if (!(rows as any[]).length) { allStillMet = false; break; }
+                } else if (type === 'item') {
+                  const [rows] = await pool.execute('SELECT quantity FROM user_inventory WHERE user_id = ? AND item_id = ? LIMIT 1', [userId, idNum]);
+                  const inv = (rows as any[])[0];
+                  if (!inv || Number(inv.quantity) <= 0) { allStillMet = false; break; }
+                } else {
+                  allStillMet = false; break;
+                }
+              }
+              if (!allStillMet) {
+                // Downgrade completed gigs to 'in progress' so UI reflects that requirements
+                // are no longer satisfied (user removed required item, etc.). If the row
+                // already reports a started/in-progress status, keep it.
+                const s = String(gig.status || '').toLowerCase();
+                if (!s || s === 'completed' || s === 'complete') {
+                  effectiveStatus = 'IN PROGRESS';
+                } else {
+                  effectiveStatus = gig.status;
+                }
+              }
+            }
+          } catch (statusCheckErr) {
+            console.error('[API /api/gigs] Error re-checking completed gig requirements', { gigId: gig.id, error: statusCheckErr });
+          }
+
           return {
             ...gig,
+            status: effectiveStatus,
             req_1_name,
             req_2_name,
             req_3_name,
