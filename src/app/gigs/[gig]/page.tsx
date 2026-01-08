@@ -46,7 +46,7 @@ export default async function GigDetailPage({ params }: { params: any }) {
     const description = gRow.gig_desc ?? gRow.gigDesc ?? gRow.description ?? gRow.desc ?? '';
     const contact_id = gRow.contact ?? null;
     const unlocked_at = ghRow.unlocked_at ?? null;
-    const status = ghRow.status ?? null;
+    let status = ghRow.status ?? null;
 
     // isNew: unlocked within 72 hours and still UNLOCKED
     const now = new Date();
