@@ -47,7 +47,7 @@ interface PoiCardProps {
   onBackFromBreachResults: () => void;
 }
 
-export default function PoiCard({
+function PoiCard({
   poiItem,
   isAtLocation,
   userStats,
@@ -111,7 +111,10 @@ export default function PoiCard({
   const isNewlyUnlocked = poiItem.unlocked_at && 
     (new Date().getTime() - new Date(poiItem.unlocked_at).getTime()) < 24 * 60 * 60 * 1000;
 
-  console.log('PoiCard render:', { id: poiItem.id, name: poiItem.name, image_url: poiItem.image_url });
+  // Log only when visible countdown changes to reduce noise
+  useEffect(() => {
+    console.log('PoiCard render (timeLeft):', { id: poiItem.id, timeLeft });
+  }, [timeLeft]);
 
   return (
     <CxCard>
@@ -237,3 +240,30 @@ export default function PoiCard({
     </CxCard>
   );
 }
+
+// Memoize to avoid unnecessary re-renders when only unrelated timers update
+function propsAreEqual(prev: PoiCardProps, next: PoiCardProps) {
+  if (prev.timeLeft !== next.timeLeft) return false;
+  if (prev.selectedPoi?.id !== next.selectedPoi?.id) return false;
+  if (prev.isAtLocation !== next.isAtLocation) return false;
+  if (prev.hasPhysicalActionInProgress !== next.hasPhysicalActionInProgress) return false;
+  if (prev.isLoadingResults !== next.isLoadingResults) return false;
+
+  // Compare activeBreach by end_time if present
+  const prevB = prev.activeBreach as any;
+  const nextB = next.activeBreach as any;
+  if (!!prevB !== !!nextB) return false;
+  if (prevB && nextB) {
+    if (prevB.end_time !== nextB.end_time) return false;
+  }
+
+  // Shallow compare userStats
+  if (JSON.stringify(prev.userStats) !== JSON.stringify(next.userStats)) return false;
+
+  // breachResults reference change should trigger
+  if (prev.breachResults !== next.breachResults) return false;
+
+  return true;
+}
+
+export default React.memo(PoiCard, propsAreEqual);
