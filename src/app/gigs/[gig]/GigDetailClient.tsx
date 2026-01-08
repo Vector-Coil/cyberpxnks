@@ -31,6 +31,48 @@ interface GigDetailClientProps {
 }
 
 export default function GigDetailClient({ gigData, historyEvents, navData, userFid }: GigDetailClientProps) {
+  const [requirementsState, setRequirementsState] = useState<Array<{ text: string; met: boolean }>>(gigData.requirements || []);
+  const [validating, setValidating] = useState(false);
+
+  // Poll validation for started gigs so UI updates if inventory changes
+  React.useEffect(() => {
+    let mounted = true;
+    let timer: any = null;
+
+    async function validateOnce() {
+      if (!gigData || !gigData.id) return;
+      const statusNorm = (gigData.status ?? '').toString().toUpperCase();
+      if (!(statusNorm === 'STARTED' || statusNorm === 'IN PROGRESS')) return;
+      try {
+        setValidating(true);
+        const res = await fetch(`/api/gigs/${gigData.id}/validate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userFid })
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (mounted && json && Array.isArray(json.requirements)) {
+            setRequirementsState(json.requirements);
+          }
+        }
+      } catch (err) {
+        // ignore validation errors
+      } finally {
+        setValidating(false);
+      }
+    }
+
+    // initial
+    validateOnce();
+    // poll while started
+    timer = setInterval(() => validateOnce(), 5000);
+
+    return () => {
+      mounted = false;
+      if (timer) clearInterval(timer);
+    };
+  }, [gigData?.id, gigData?.status, userFid]);
 
   return (
     <>
