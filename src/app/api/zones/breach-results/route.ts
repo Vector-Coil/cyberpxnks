@@ -70,12 +70,27 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Breach not yet complete' }, { status: 400 });
     }
 
-    // Get POI details including breach_difficulty
+    // Get POI details including breach_difficulty and subnet
     const [poiDetailsRows] = await pool.execute<any[]>(
-      'SELECT id, name, zone_id, breach_difficulty FROM points_of_interest WHERE id = ? LIMIT 1',
+      'SELECT id, name, zone_id, breach_difficulty, subnet_id FROM points_of_interest WHERE id = ? LIMIT 1',
       [poiId]
     );
     const poiDetails = poiDetailsRows[0];
+
+    // Resolve subnet name for the POI if available
+    let poiSubnetName: string | null = null;
+    if (poiDetails?.subnet_id) {
+      try {
+        const [subnetRows] = await pool.execute<any[]>(
+          'SELECT name FROM subnets WHERE id = ? LIMIT 1',
+          [poiDetails.subnet_id]
+        );
+        poiSubnetName = (subnetRows[0]?.name || null);
+      } catch (e) {
+        logger.warn('Failed to fetch subnet name for POI', { poiId, error: e });
+        poiSubnetName = null;
+      }
+    }
 
     // Get zone district level and user level for success calculation
     const [zoneRows] = await pool.execute<any[]>(
@@ -252,11 +267,11 @@ export async function POST(request: NextRequest) {
 
     // === CONDITIONAL GIG ITEM REWARD LOGIC ===
     // Award items with for_gig and found_where matching the user's started gigs and current breach action/location
-    // 1. Get all started gigs for the user
+    // 1. Get all started gigs for the user (case-insensitive)
     const [startedGigs] = await pool.execute<any[]>(
       `SELECT gh.gig_id
          FROM gig_history gh
-        WHERE gh.user_id = ? AND gh.status = 'STARTED'`,
+        WHERE gh.user_id = ? AND LOWER(gh.status) = 'started'`,
       [userId]
     );
 
@@ -264,18 +279,20 @@ export async function POST(request: NextRequest) {
 
     if (startedGigIds.length > 0) {
       // 2. Find items with for_gig in startedGigIds and found_where matching this breach action/location
-      // For breach, found_where is expected to be 'breach_{poiId}' or 'breach_{zoneId}' or similar
-      // We'll check both POI and zone for flexibility
+      // For breach, found_where can be 'breach_{poiId}', 'breach_{zoneId}', or 'breach_{subnetName}'
       const foundWhereOptions = [
         `breach_${poiId}`,
         `breach_${breach.zone_id}`
       ];
-      const [gigItems] = await pool.execute<any[]>(
-        `SELECT id, name FROM items
-         WHERE for_gig IN (${startedGigIds.map(() => '?').join(',')})
-           AND found_where IN (${foundWhereOptions.map(() => '?').join(',')})`,
-        [...startedGigIds, ...foundWhereOptions]
-      );
+      if (poiSubnetName) {
+        foundWhereOptions.push(`breach_${String(poiSubnetName).toLowerCase()}`);
+      }
+
+      const placeholdersForGigs = startedGigIds.map(() => '?').join(',');
+      const placeholdersForFound = foundWhereOptions.map(() => '?').join(',');
+      const query = `SELECT id, name FROM items WHERE for_gig IN (${placeholdersForGigs}) AND LOWER(found_where) IN (${placeholdersForFound})`;
+      const params = [...startedGigIds, ...foundWhereOptions.map(f => String(f).toLowerCase())];
+      const [gigItems] = await pool.execute<any[]>(query, params);
       for (const item of gigItems) {
         // Check if user already has the item
         const [hasItemRows] = await pool.execute<any[]>(
