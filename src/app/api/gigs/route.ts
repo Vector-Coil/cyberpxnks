@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
           c.display_name as contact_name,
           c.image_url as contact_image_url,
           g.image_url,
-          gr.reg_1, gr.reg_2, gr.reg_3,
+          gr.req_1, gr.req_2, gr.req_3,
           -- Grab full requirements row; objective column names may vary
           gr.*,
           gh.status,
@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
           c.display_name as contact_name,
           c.image_url as contact_image_url,
           g.image_url,
-          gr.reg_1, gr.reg_2, gr.reg_3, gr.reg_4, gr.reg_5,
+          gr.req_1, gr.req_2, gr.req_3, gr.req_4, gr.req_5,
           -- Grab full requirements row; objective column names may vary
           gr.*,
           gh.status,
@@ -118,7 +118,7 @@ export async function GET(request: NextRequest) {
         try {
           const reqNames: Array<string | null> = [];
           for (let i = 1; i <= 5; i++) {
-            const key = `reg_${i}`;
+            const key = `req_${i}`;
             try {
               reqNames.push(gig[key] ? await resolveRequirementName(gig[key], pool) : null);
             } catch (reqErr) {
@@ -159,11 +159,11 @@ export async function GET(request: NextRequest) {
           // Return the gig with minimal info so the whole endpoint doesn't fail
           return {
             ...gig,
-            req_1_name: gig.reg_1 || null,
-            req_2_name: gig.reg_2 || null,
-            req_3_name: gig.reg_3 || null,
-            req_4_name: gig.reg_4 || null,
-            req_5_name: gig.reg_5 || null,
+            req_1_name: gig.req_1 || null,
+            req_2_name: gig.req_2 || null,
+            req_3_name: gig.req_3 || null,
+            req_4_name: gig.req_4 || null,
+            req_5_name: gig.req_5 || null,
             objectives: []
           };
         }
