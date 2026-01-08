@@ -5,6 +5,18 @@ import { getDbPool } from '../../../lib/db';
 import { getNavStripData } from '../../../lib/navUtils';
 import GigDetailClient from './GigDetailClient';
 
+function normalizeStatus(raw: any): string {
+  if (!raw && raw !== 0) return '';
+  const s = String(raw).trim().toLowerCase();
+  if (!s) return '';
+  if (s === 'completed' || s === 'complete') return 'COMPLETED';
+  if (s === 'started' || s === 'start') return 'STARTED';
+  if (s === 'unlocked') return 'UNLOCKED';
+  if (s === 'in_progress' || s === 'inprogress' || s === 'in progress') return 'IN PROGRESS';
+  if (s === 'locked') return 'LOCKED';
+  return String(raw).toUpperCase();
+}
+
 export default async function GigDetailPage({ params }: { params: any }) {
   const p = await params;
   const gigId = parseInt(p.gig, 10);
@@ -46,7 +58,7 @@ export default async function GigDetailPage({ params }: { params: any }) {
     const description = gRow.gig_desc ?? gRow.gigDesc ?? gRow.description ?? gRow.desc ?? '';
     const contact_id = gRow.contact ?? null;
     const unlocked_at = ghRow.unlocked_at ?? null;
-    let status = ghRow.status ?? null;
+    let status = normalizeStatus(ghRow.status ?? null);
 
     // isNew: unlocked within 72 hours and still UNLOCKED
     const now = new Date();

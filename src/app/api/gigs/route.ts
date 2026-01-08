@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../lib/db';
 
+function normalizeStatus(raw: any): string {
+  if (!raw && raw !== 0) return '';
+  const s = String(raw).trim().toLowerCase();
+  if (!s) return '';
+  if (s === 'completed' || s === 'complete') return 'COMPLETED';
+  if (s === 'started' || s === 'start') return 'STARTED';
+  if (s === 'unlocked') return 'UNLOCKED';
+  if (s === 'in_progress' || s === 'inprogress' || s === 'in progress') return 'IN PROGRESS';
+  if (s === 'locked') return 'LOCKED';
+  return String(raw).toUpperCase();
+}
+
 // Helper function to resolve requirement names
 async function resolveRequirementName(req: string, pool: any): Promise<string> {
   if (!req || !req.trim()) return '';
@@ -59,7 +71,31 @@ export async function GET(request: NextRequest) {
     // Query gigs with user's history
     let query, params;
 
-    if (sort === 'contact') {
+    // Support a 'completed' filter to list only completed gigs
+    if (sort === 'completed') {
+      query = `
+        SELECT
+          g.id, g.gig_code as title, g.gig_desc as description,
+          g.reward_item, g.reward_credits, g.contact,
+          c.display_name as contact_name,
+          c.image_url as contact_image_url,
+          g.image_url,
+          gr.req_1, gr.req_2, gr.req_3, gr.req_4, gr.req_5,
+          gr.*,
+          gh.status,
+          gh.last_completed_at,
+          gh.completed_count,
+          gh.unlocked_at
+        FROM gigs g
+        LEFT JOIN gig_requirements gr ON g.id = gr.gig_id
+        LEFT JOIN gig_history gh ON g.id = gh.gig_id AND gh.user_id = ?
+        LEFT JOIN contacts c ON g.contact = c.id
+        WHERE (gh.last_completed_at IS NOT NULL OR LOWER(gh.status) IN ('completed','complete'))
+        ORDER BY gh.last_completed_at DESC, g.id DESC
+        LIMIT 100
+      `;
+      params = [userId];
+    } else if (sort === 'contact') {
       // Sort by contact - show gigs from unlocked contacts
       query = `
         SELECT 
@@ -79,7 +115,7 @@ export async function GET(request: NextRequest) {
         LEFT JOIN gig_requirements gr ON g.id = gr.gig_id
         LEFT JOIN gig_history gh ON g.id = gh.gig_id AND gh.user_id = ?
         LEFT JOIN contacts c ON g.contact = c.id
-        WHERE (gh.status = 'UNLOCKED' OR gh.status = 'STARTED' OR gh.status = 'IN PROGRESS' OR gh.last_completed_at IS NOT NULL)
+        WHERE (LOWER(gh.status) IN ('unlocked','started','in_progress') OR gh.last_completed_at IS NOT NULL)
         ORDER BY g.contact, g.id DESC
       `;
       params = [userId];
@@ -103,7 +139,7 @@ export async function GET(request: NextRequest) {
         LEFT JOIN gig_requirements gr ON g.id = gr.gig_id
         LEFT JOIN gig_history gh ON g.id = gh.gig_id AND gh.user_id = ?
         LEFT JOIN contacts c ON g.contact = c.id
-        WHERE (gh.status = 'UNLOCKED' OR gh.status = 'STARTED' OR gh.status = 'IN PROGRESS' OR gh.last_completed_at IS NOT NULL)
+        WHERE (LOWER(gh.status) IN ('unlocked','started','in_progress') OR gh.last_completed_at IS NOT NULL)
         ORDER BY g.id DESC
         LIMIT 100
       `;
@@ -147,7 +183,7 @@ export async function GET(request: NextRequest) {
 
           // Determine effective status: if a gig was previously completed, re-check
           // its requirements against the user's current state and downgrade if needed.
-          let effectiveStatus = gig.status;
+          let effectiveStatus = normalizeStatus(gig.status || gig.status);
           try {
             const completedAt = gig.last_completed_at;
             if (completedAt) {
@@ -183,7 +219,7 @@ export async function GET(request: NextRequest) {
                 if (!s || s === 'completed' || s === 'complete') {
                   effectiveStatus = 'IN PROGRESS';
                 } else {
-                  effectiveStatus = gig.status;
+                  effectiveStatus = normalizeStatus(gig.status);
                 }
               }
             }
@@ -193,7 +229,7 @@ export async function GET(request: NextRequest) {
 
           return {
             ...gig,
-            status: effectiveStatus,
+            status: normalizeStatus(effectiveStatus),
             req_1_name,
             req_2_name,
             req_3_name,
@@ -217,8 +253,27 @@ export async function GET(request: NextRequest) {
       })
     );
 
+    // Default ordering: push IN PROGRESS (started) to top, UNLOCKED next, COMPLETED to bottom
+    // Only apply this reordering for the default 'newest' sort and 'contact' view should keep grouping
+    let finalGigs = gigsWithResolvedReqs;
+    if (sort === 'newest') {
+      const priority = (s: string) => {
+        const ss = String(s || '').toUpperCase();
+        if (ss === 'IN PROGRESS' || ss === 'STARTED') return 0;
+        if (ss === 'UNLOCKED') return 1;
+        if (ss === 'COMPLETED') return 2;
+        return 1;
+      };
+      finalGigs = gigsWithResolvedReqs.slice().sort((a: any, b: any) => {
+        const pa = priority(a.status);
+        const pb = priority(b.status);
+        if (pa !== pb) return pa - pb;
+        return Number(b.id || 0) - Number(a.id || 0);
+      });
+    }
+
     return NextResponse.json({ 
-      gigs: gigsWithResolvedReqs,
+      gigs: finalGigs,
       sort 
     });
   } catch (error) {

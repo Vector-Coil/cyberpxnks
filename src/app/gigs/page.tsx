@@ -109,11 +109,13 @@ export default function GigsPage() {
             <>
               <a href="/gigs?sort=newest" className="meta-eyebrow hover:underline">Newest</a>
               <span className="pill-cloud-gray px-2 py-0.5">Contact</span>
+              <a href="/gigs?sort=completed" className="meta-eyebrow hover:underline">Completed</a>
             </>
           ) : (
             <>
               <span className="pill-cloud-gray px-2 py-0.5">Newest</span>
               <a href="/gigs?sort=contact" className="meta-eyebrow hover:underline">Contact</a>
+              <a href="/gigs?sort=completed" className="meta-eyebrow hover:underline">Completed</a>
             </>
           )}
         </div>
@@ -139,6 +141,12 @@ export default function GigsPage() {
               return (
                 <div key={gig.id}>
                   <CxCard className="cursor-pointer hover:opacity-90 transition-opacity relative">
+                    {/* Status pill on card */}
+                    {gig.status && (
+                      <div className={`absolute -top-2 -right-2 z-10 px-2 py-0.5 text-xs font-bold rounded-full ${gig.status === 'COMPLETED' ? 'bg-bright-green text-black' : (gig.status === 'IN PROGRESS' || gig.status === 'STARTED') ? 'bg-yellow-400 text-black' : 'bg-gray-600 text-white'}`}>
+                        {gig.status}
+                      </div>
+                    )}
                     <div className="flex flex-row items-start gap-4">
                       <div className="w-20 h-20 bg-gray-700 rounded overflow-hidden flex-shrink-0">
                         {gig.image_url ? (
@@ -161,9 +169,9 @@ export default function GigsPage() {
                           <div className="mt-1 text-gray-300">{gig.description}</div>
                         </div>
                         <div className="mt-3">
-                          <a href={`/gigs/${gig.id}`} className="inline-block w-full">
-                            <button className="btn-cx btn-cx-primary btn-cx-full">VIEW GIG</button>
-                          </a>
+                            <a href={`/gigs/${gig.id}`} className="inline-block w-full">
+                              <button className="btn-cx btn-cx-primary btn-cx-full">VIEW GIG</button>
+                            </a>
                         </div>
                       </div>
                     </div>
