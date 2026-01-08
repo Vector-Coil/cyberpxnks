@@ -268,6 +268,9 @@ export async function POST(request: NextRequest) {
     // === CONDITIONAL GIG ITEM REWARD LOGIC ===
     // Award items with for_gig and found_where matching the user's started gigs and current breach action/location
     // 1. Get all started gigs for the user (case-insensitive)
+    // Track any gig-granted items to include in results
+    let grantedGigItem: any = null;
+    const extraGrantedItems: any[] = [];
     const [startedGigs] = await pool.execute<any[]>(
       `SELECT gh.gig_id
          FROM gig_history gh
@@ -316,6 +319,9 @@ export async function POST(request: NextRequest) {
             item.id,
             `Granted gig item (${item.name}) for gig and breach at POI ${poiId}`
           );
+          // remember for results display
+          grantedGigItem = item;
+          extraGrantedItems.push(item);
         }
       }
     }
@@ -386,6 +392,15 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // If a gig granted an item earlier, include it in the results.
+    if (grantedGigItem) {
+      if (!discoveredItem) {
+        discoveredItem = grantedGigItem;
+        discoveryBonus = 0;
+      }
+      // extraGrantedItems already contains granted items and will be appended to gains text if needed
+    }
+
     // Get user's street cred for encounter filtering
     const [userDataRows] = await pool.execute<RowDataPacket[]>(
       'SELECT street_cred FROM users WHERE id = ? LIMIT 1',
@@ -431,6 +446,15 @@ export async function POST(request: NextRequest) {
     }
     if (discoveredItem) {
       gainsText += ` (+10 discovery bonus), Discovered ${discoveredItem.name}`;
+    }
+    // Append any extra granted gig items that weren't the primary discoveredItem
+    if (extraGrantedItems.length > 0) {
+      const extras = extraGrantedItems.filter(it => !discoveredItem || it.id !== discoveredItem.id);
+      if (extras.length > 0) {
+        gainsText += `; Granted: ${extras.map(e => e.name).join(', ')}`;
+      } else if (encounter) {
+        gainsText += `, Encountered ${encounter.name}`;
+      }
     } else if (encounter) {
       gainsText += `, Encountered ${encounter.name}`;
     }
