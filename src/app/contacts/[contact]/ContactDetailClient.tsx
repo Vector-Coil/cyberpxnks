@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
-import { CxCard, NavStrip } from '../../../components/CxShared';
+import { NavStrip } from '../../../components/CxShared';
+import GigCard from '../../../components/GigCard';
 
 interface ContactDetailClientProps {
   contact: any;
@@ -74,11 +75,13 @@ export default function ContactDetailClient({ contact, gigs, navData, messageInf
               <div key={g.id}>
                 <CxCard className="">
                   <div className="flex flex-row items-start gap-4">
-                    <div className="w-20 h-20 bg-gray-700 rounded overflow-hidden flex-shrink-0">
+                    <div className="w-20 h-20 bg-gray-700 rounded overflow-hidden flex-shrink-0 relative">
                       {g.image_url ? <img src={g.image_url} alt={g.gig_code} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-gray-600" />}
-                    </div>
-                    <div className="flex-1 flex flex-col justify-between min-h-[80px]">
-                      <div>
+                      {gigs.map(g => (
+                        <div key={g.id}>
+                          <GigCard gig={g} isNew={((new Date().getTime() - new Date(g.unlocked_at).getTime()) / (1000 * 60 * 60)) < 24} />
+                        </div>
+                      ))}
                         <div className="card-title uppercase relative">
                           {g.gig_code}
                           {/* NEW pill for recently unlocked gigs */}
