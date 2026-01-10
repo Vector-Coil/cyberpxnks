@@ -217,6 +217,7 @@ export default async function GigDetailPage({ params }: { params: any }) {
       contact_id,
       contact_name,
       status,
+      unlocked_at,
       isNew,
       requirements,
       objective: gRow.objective ?? gRow.gig_objective ?? gRow.gigObjective ?? null

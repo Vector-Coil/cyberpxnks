@@ -13,6 +13,7 @@ interface GigDetailClientProps {
     contact_id: number | null;
     contact_name: string;
     status: string | null;
+    unlocked_at?: string | null;
     isNew: boolean;
     requirements: Array<{ text: string; met: boolean }>;
     objective?: string;
@@ -122,9 +123,9 @@ export default function GigDetailClient({ gigData, historyEvents, navData }: Gig
                   <span className="text-gray-300">{gigData.objective}</span>
                 )}
                 <div className="mt-1">
-                  {gigData.requirements && gigData.requirements.length > 0 ? (
+                  {requirementsState && requirementsState.length > 0 ? (
                     <ul className="list-disc ml-6">
-                      {gigData.requirements.map((r, i) => (
+                      {requirementsState.map((r, i) => (
                         <li key={i} className={r.met ? 'text-blue-400' : 'text-red-300'}>
                           {r.text}
                         </li>
@@ -148,8 +149,10 @@ export default function GigDetailClient({ gigData, historyEvents, navData }: Gig
 
             <div className="mt-3">
               {/* CTA button */}
-              {(() => {
-                const statusNorm = (gigData.status ?? '').toString().toUpperCase();
+                {(() => {
+                let statusNorm = (gigData.status ?? '').toString().toUpperCase();
+                // Treat empty status as UNLOCKED when unlocked_at is present
+                if (!statusNorm && gigData.unlocked_at) statusNorm = 'UNLOCKED';
                 let btnLabel = 'BEGIN GIG';
                 let isDisabled = false;
                 let btnClass = 'btn-cx btn-cx-primary btn-cx-full';
@@ -165,7 +168,7 @@ export default function GigDetailClient({ gigData, historyEvents, navData }: Gig
                 }
 
                 // Determine if all requirements are met (client-side flag from server)
-                const allRequirementsMet = Array.isArray(gigData.requirements) && gigData.requirements.length > 0 && gigData.requirements.every(r => r.met === true);
+                const allRequirementsMet = Array.isArray(requirementsState) && requirementsState.length > 0 && requirementsState.every(r => r.met === true);
 
                 // If a gig is started/in-progress but requirements are NOT met,
                 // show a disabled 'IN PROGRESS' button rather than exposing the

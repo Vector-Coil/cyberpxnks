@@ -300,9 +300,23 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Filter gigs to include only unlocked/started/in-progress or completed gigs
+    let filteredGigs = gigsWithResolvedReqs;
+    if (sort === 'completed') {
+      filteredGigs = gigsWithResolvedReqs.filter(g => {
+        const s = String(g.status || '').toUpperCase();
+        return s === 'COMPLETED' || g.last_completed_at;
+      });
+    } else {
+      filteredGigs = gigsWithResolvedReqs.filter(g => {
+        const s = String(g.status || '').toUpperCase();
+        return s === 'UNLOCKED' || s === 'IN PROGRESS' || s === 'STARTED' || s === 'COMPLETED' || g.last_completed_at;
+      });
+    }
+
     // Default ordering: push IN PROGRESS (started) to top, UNLOCKED next, COMPLETED to bottom
     // Only apply this reordering for the default 'newest' sort and 'contact' view should keep grouping
-    let finalGigs = gigsWithResolvedReqs;
+    let finalGigs = filteredGigs;
     if (sort === 'newest') {
       const priority = (s: string) => {
         const ss = String(s || '').toUpperCase();
@@ -311,7 +325,7 @@ export async function GET(request: NextRequest) {
         if (ss === 'COMPLETED') return 2;
         return 1;
       };
-      finalGigs = gigsWithResolvedReqs.slice().sort((a: any, b: any) => {
+      finalGigs = filteredGigs.slice().sort((a: any, b: any) => {
         const pa = priority(a.status);
         const pb = priority(b.status);
         if (pa !== pb) return pa - pb;
