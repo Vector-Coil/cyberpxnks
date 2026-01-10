@@ -143,13 +143,11 @@ export default function GigDetailClient({ gigData, historyEvents, navData }: Gig
                 <span className="meta-heading">Unlocked by:</span>
                 <div className="mt-1">
                   {requirementsState && requirementsState.length > 0 ? (
-                    <ul className="list-disc ml-6">
                       {requirementsState.map((r, i) => (
-                        <li key={i} className={r.met ? 'text-blue-400' : 'text-red-300'}>
+                        <span key={i} className={r.met ? 'text-blue-400' : 'text-red-300'}>
                           {r.text}
-                        </li>
+                        </span>
                       ))}
-                    </ul>
                   ) : (
                     <span className="text-gray-400">No unlock requirements</span>
                   )}
