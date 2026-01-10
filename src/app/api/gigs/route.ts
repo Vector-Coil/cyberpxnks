@@ -286,19 +286,7 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    // Filter gigs to include only unlocked/started/in-progress or completed gigs
-    let filteredGigs = gigsWithResolvedReqs;
-    if (sort === 'completed') {
-      filteredGigs = gigsWithResolvedReqs.filter(g => {
-        const s = String(g.status || '').toUpperCase();
-        return s === 'COMPLETED' || g.last_completed_at;
-      });
-    } else {
-      filteredGigs = gigsWithResolvedReqs.filter(g => {
-        const s = String(g.status || '').toUpperCase();
-        return s === 'UNLOCKED' || s === 'IN PROGRESS' || s === 'STARTED' || s === 'COMPLETED' || g.last_completed_at;
-      });
-    }
+    
 
     // Filter gigs to include only unlocked/started/in-progress or completed gigs
     let filteredGigs = gigsWithResolvedReqs;
