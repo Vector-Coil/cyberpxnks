@@ -17,6 +17,7 @@ interface GigDetailClientProps {
     isNew: boolean;
     requirements: Array<{ text: string; met: boolean }>;
     objective?: string;
+    objectives?: string[];
   };
   historyEvents: Array<{
     type: 'unlocked' | 'refreshed' | 'completed';
@@ -119,9 +120,27 @@ export default function GigDetailClient({ gigData, historyEvents, navData }: Gig
 
               <div className="mb-1">
                 <span className="meta-heading">Objectives:</span>{' '}
-                {gigData.objective && (
-                  <span className="text-gray-300">{gigData.objective}</span>
+                {gigData.objectives && gigData.objectives.length > 0 ? (
+                  <div className="mt-1">
+                    <ul className="list-disc ml-6">
+                      {gigData.objectives.map((o, i) => (
+                        <li key={i} className="text-blue-400">{o}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <span className="text-gray-400">No objectives</span>
                 )}
+              </div>
+
+              <div className="mb-3">
+                <span className="meta-heading">Contact:</span>{' '}
+                <a href={`/contacts/${gigData.contact_id}`}>{gigData.contact_name}</a>
+              </div>
+
+              {/* Unlocked by (requirements) */}
+              <div className="mb-3 mt-2">
+                <span className="meta-heading">Unlocked by:</span>
                 <div className="mt-1">
                   {requirementsState && requirementsState.length > 0 ? (
                     <ul className="list-disc ml-6">
@@ -132,14 +151,9 @@ export default function GigDetailClient({ gigData, historyEvents, navData }: Gig
                       ))}
                     </ul>
                   ) : (
-                    <span className="text-gray-400">No objectives</span>
+                    <span className="text-gray-400">No unlock requirements</span>
                   )}
                 </div>
-              </div>
-
-              <div className="mb-3">
-                <span className="meta-heading">Contact:</span>{' '}
-                <a href={`/contacts/${gigData.contact_id}`}>{gigData.contact_name}</a>
               </div>
 
             </div>

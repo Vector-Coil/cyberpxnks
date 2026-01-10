@@ -123,6 +123,60 @@ export default async function GigDetailPage({ params }: { params: any }) {
       console.debug('gig requirements lookup failed', e?.stack ?? e);
     }
 
+    // Parse objectives (objective_*, obj_*, etc.) into readable names
+    const objectives: string[] = [];
+    try {
+      const candidateKeys = Object.keys(gRow || {}).filter(k => /(^obj\b|^obj_|^objective|^objective_|^obj\d|objective\d)/i.test(k)).slice(0, 5);
+      for (const key of candidateKeys) {
+        const rawVal = gRow[key];
+        if (!rawVal || String(rawVal).trim() === '') continue;
+        const parts = String(rawVal).split('_');
+        const type = parts[0] ?? '';
+        const val = parts.slice(1).join('_');
+        let text = String(rawVal);
+        try {
+          if (type === 'item' && Number(val)) {
+            const idNum = parseInt(val, 10);
+            const [itRows] = await pool.execute<any[]>('SELECT name FROM items WHERE id = ? LIMIT 1', [idNum]);
+            const it = (itRows as any[])[0] ?? null;
+            text = it?.name ?? `Item ${idNum}`;
+          } else if (type === 'breach' && val) {
+            // breach_<subnetName> -- try to lookup subnet display name, otherwise use raw
+            const subnetName = val;
+            try {
+              const [sRows] = await pool.execute<any[]>('SELECT display_name FROM subnets WHERE name = ? LIMIT 1', [subnetName]);
+              const s = (sRows as any[])[0] ?? null;
+              text = s?.display_name ?? `Breach ${subnetName}`;
+            } catch (e) {
+              text = `Breach ${subnetName}`;
+            }
+          } else if (type === 'scout' && Number(val)) {
+            const zoneId = parseInt(val, 10);
+            const [zRows] = await pool.execute<any[]>('SELECT name FROM points_of_interest WHERE id = ? LIMIT 1', [zoneId]);
+            const z = (zRows as any[])[0] ?? null;
+            text = z?.name ?? `Zone ${zoneId}`;
+          } else if (type === 'gig' && Number(val)) {
+            const idNum = parseInt(val, 10);
+            const [ginfoRows] = await pool.execute<any[]>('SELECT gig_code FROM gigs WHERE id = ? LIMIT 1', [idNum]);
+            const ginfo = (ginfoRows as any[])[0] ?? null;
+            text = ginfo?.gig_code ?? `Gig ${idNum}`;
+          } else if (type === 'contact' && Number(val)) {
+            const idNum = parseInt(val, 10);
+            const [cRows] = await pool.execute<any[]>('SELECT display_name AS name FROM contacts WHERE id = ? LIMIT 1', [idNum]);
+            const crow = (cRows as any[])[0] ?? null;
+            text = crow?.name ?? `Contact ${idNum}`;
+          } else {
+            text = String(rawVal);
+          }
+        } catch (inner) {
+          text = String(rawVal);
+        }
+        objectives.push(text);
+      }
+    } catch (e) {
+      // non-fatal
+    }
+
     // If the gig was previously marked completed but one or more requirements are
     // no longer met (e.g., item removed from inventory), downgrade the status so
     // the UI reflects the gig is back 'in progress'. This keeps the button state
@@ -220,6 +274,7 @@ export default async function GigDetailPage({ params }: { params: any }) {
       unlocked_at,
       isNew,
       requirements,
+      objectives,
       objective: gRow.objective ?? gRow.gig_objective ?? gRow.gigObjective ?? null
     };
 
