@@ -118,6 +118,7 @@ export default function GigDetailClient({ gigData, historyEvents, navData }: Gig
               <div className="mt-4 mb-3 text-gray-300">{gigData.description}</div>
 
 
+              {/* Objectives */}
               <div className="mb-1">
                 <span className="meta-heading">Objectives:</span>{' '}
                 {gigData.objectives && gigData.objectives.length > 0 ? (
@@ -133,25 +134,29 @@ export default function GigDetailClient({ gigData, historyEvents, navData }: Gig
                 )}
               </div>
 
+              {/* Contact */}
               <div className="mb-3">
                 <span className="meta-heading">Contact:</span>{' '}
                 <a href={`/contacts/${gigData.contact_id}`}>{gigData.contact_name}</a>
               </div>
 
-              {/* Unlocked by (requirements) */}
-              <div className="mb-3 mt-2">
-                <span className="meta-heading">Unlocked by:</span>
-                <div className="mt-1">
-                  {requirementsState && requirementsState.length > 0 ? (
-                      {requirementsState.map((r, i) => (
-                        <span key={i} className={r.met ? 'text-blue-400' : 'text-red-300'}>
-                          {r.text}
-                        </span>
-                      ))}
-                  ) : (
-                    <span className="text-gray-400">No unlock requirements</span>
-                  )}
-                </div>
+              {/* Requirements */}
+              <div className="mb-3">
+                <span className="meta-heading">Unlocked by:</span>{' '}
+                {requirementsState && requirementsState.length > 0 ? (
+                  <div className="mt-1">
+                    <ul className="list-disc ml-6">
+                    {requirementsState.map((r, i) => (
+                      <li key={i} className={r.met ? 'text-blue-400' : 'text-red-300'}>
+                        {r.text}
+                      </li>
+                    ))}
+                    </ul>
+                  </div>
+                ) : (
+                  <span className="text-gray-400">No requirements</span>
+                )}
+                
               </div>
 
             </div>

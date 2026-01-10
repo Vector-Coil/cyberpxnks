@@ -126,7 +126,7 @@ export default async function GigDetailPage({ params }: { params: any }) {
     // Parse objectives (objective_*, obj_*, etc.) into readable names
     const objectives: string[] = [];
     try {
-      const candidateKeys = Object.keys(gRow || {}).filter(k => /(^obj\b|^obj_|^objective|^objective_|^obj\d|objective\d)/i.test(k)).slice(0, 5);
+      const candidateKeys = Object.keys(gRow || {}).filter(k => /(obj|objective)/i.test(k)).slice(0, 5);
       for (const key of candidateKeys) {
         const rawVal = gRow[key];
         if (!rawVal || String(rawVal).trim() === '') continue;
@@ -141,15 +141,10 @@ export default async function GigDetailPage({ params }: { params: any }) {
             const it = (itRows as any[])[0] ?? null;
             text = it?.name ?? `Item ${idNum}`;
           } else if (type === 'breach' && val) {
-            // breach_<subnetName> -- try to lookup subnet display name, otherwise use raw
             const subnetName = val;
-            try {
-              const [sRows] = await pool.execute<any[]>('SELECT display_name FROM subnets WHERE name = ? LIMIT 1', [subnetName]);
-              const s = (sRows as any[])[0] ?? null;
-              text = s?.display_name ?? `Breach ${subnetName}`;
-            } catch (e) {
-              text = `Breach ${subnetName}`;
-            }
+            const [sRows] = await pool.execute<any[]>('SELECT display_name FROM subnets WHERE name = ? LIMIT 1', [subnetName]);
+            const s = (sRows as any[])[0] ?? null;
+            text = s?.display_name ?? `Breach ${subnetName}`;
           } else if (type === 'scout' && Number(val)) {
             const zoneId = parseInt(val, 10);
             const [zRows] = await pool.execute<any[]>('SELECT name FROM points_of_interest WHERE id = ? LIMIT 1', [zoneId]);
@@ -172,6 +167,40 @@ export default async function GigDetailPage({ params }: { params: any }) {
           text = String(rawVal);
         }
         objectives.push(text);
+      }
+
+      // Also include any legacy single-objective fields if present
+      const legacy = gRow.objective ?? gRow.gig_objective ?? gRow.gigObjective ?? null;
+      if (legacy && String(legacy).trim() !== '') {
+        // avoid duplicates
+        const rawVal = legacy;
+        const parts = String(rawVal).split('_');
+        const type = parts[0] ?? '';
+        const val = parts.slice(1).join('_');
+        let text = String(rawVal);
+        try {
+          if (type === 'item' && Number(val)) {
+            const idNum = parseInt(val, 10);
+            const [itRows] = await pool.execute<any[]>('SELECT name FROM items WHERE id = ? LIMIT 1', [idNum]);
+            const it = (itRows as any[])[0] ?? null;
+            text = it?.name ?? `Item ${idNum}`;
+          } else if (type === 'breach' && val) {
+            const subnetName = val;
+            const [sRows] = await pool.execute<any[]>('SELECT display_name FROM subnets WHERE name = ? LIMIT 1', [subnetName]);
+            const s = (sRows as any[])[0] ?? null;
+            text = s?.display_name ?? `Breach ${subnetName}`;
+          } else if (type === 'scout' && Number(val)) {
+            const zoneId = parseInt(val, 10);
+            const [zRows] = await pool.execute<any[]>('SELECT name FROM points_of_interest WHERE id = ? LIMIT 1', [zoneId]);
+            const z = (zRows as any[])[0] ?? null;
+            text = z?.name ?? `Zone ${zoneId}`;
+          } else {
+            text = String(rawVal);
+          }
+        } catch (inner) {
+          text = String(rawVal);
+        }
+        if (!objectives.includes(text)) objectives.push(text);
       }
     } catch (e) {
       // non-fatal
