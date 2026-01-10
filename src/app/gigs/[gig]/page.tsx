@@ -68,9 +68,10 @@ export default async function GigDetailPage({ params }: { params: any }) {
 
     // Load requirements (flexible column detection)
     const requirements: Array<{ text: string; met: boolean }> = [];
+    let reqRow: any = null;
     try {
       const [reqRows] = await pool.execute<any[]>('SELECT * FROM gig_requirements WHERE gig_id = ? LIMIT 1', [id]);
-      const reqRow = (reqRows as any[])[0] ?? null;
+      reqRow = (reqRows as any[])[0] ?? null;
       if (reqRow) {
         const keys = Object.keys(reqRow || {});
         const candidateKeys = keys.filter(k => /(^req\b|req_|requirement|requirement\b|^r\d)/i.test(k));
@@ -126,9 +127,10 @@ export default async function GigDetailPage({ params }: { params: any }) {
     // Parse objectives (objective_*, obj_*, etc.) into readable names
     const objectives: string[] = [];
     try {
-      const candidateKeys = Object.keys(gRow || {}).filter(k => /(obj|objective)/i.test(k)).slice(0, 5);
+      const combinedSource = { ...(gRow || {}), ...(reqRow || {}) };
+      const candidateKeys = Object.keys(combinedSource).filter(k => /(obj|objective)/i.test(k)).slice(0, 5);
       for (const key of candidateKeys) {
-        const rawVal = gRow[key];
+        const rawVal = combinedSource[key];
         if (!rawVal || String(rawVal).trim() === '') continue;
         const parts = String(rawVal).split('_');
         const type = parts[0] ?? '';
