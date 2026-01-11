@@ -171,15 +171,31 @@ export async function GET(request: NextRequest) {
           WHERE (gh.unlocked_at IS NOT NULL OR gh.status IS NOT NULL OR gh.last_completed_at IS NOT NULL)
           ORDER BY g.contact, g.id DESC
         `;
+        // Resolve requirement display names (req_1..req_5)
+        const req_1_name = gig.req_1 ? await resolveRequirementName(String(gig.req_1), pool) : null;
+        const req_2_name = gig.req_2 ? await resolveRequirementName(String(gig.req_2), pool) : null;
+        const req_3_name = gig.req_3 ? await resolveRequirementName(String(gig.req_3), pool) : null;
+        const req_4_name = gig.req_4 ? await resolveRequirementName(String(gig.req_4), pool) : null;
+        const req_5_name = gig.req_5 ? await resolveRequirementName(String(gig.req_5), pool) : null;
+
+        // Parse objective_* or obj_* columns into readable objective names
+        const objectives: string[] = [];
+        try {
+          const candidateKeys = Object.keys(gig).filter(k => /^objective[_\d]*|^obj[_\d]*/i.test(k));
+          for (const key of candidateKeys) {
+            const rawVal = gig[key];
             if (!rawVal) continue;
             try {
-              const resolved = await resolveRequirementName(rawVal, pool);
-              objectives.push(resolved);
+              const resolved = await resolveRequirementName(String(rawVal), pool);
+              if (!objectives.includes(resolved)) objectives.push(resolved);
             } catch (innerErr) {
               console.error('[API /api/gigs] Failed to resolve objective', { gigId: gig.id, key, value: rawVal, error: innerErr });
               objectives.push(String(rawVal));
             }
           }
+        } catch (e) {
+          console.error('[API /api/gigs] Error parsing objectives', { gigId: gig.id, error: e });
+        }
 
           // Determine effective status: start from history status (normalized)
           let effectiveStatus = normalizeStatus(gig.status || null);
