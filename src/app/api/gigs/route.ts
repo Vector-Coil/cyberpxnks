@@ -150,6 +150,7 @@ export async function GET(request: NextRequest) {
     // Resolve requirement and objective names for all gigs
     const gigsWithResolvedReqs = await Promise.all(
       (rows as any[]).map(async (gig) => {
+        try {
         query = `
           SELECT 
             g.id, g.gig_code as title, g.gig_desc as description,

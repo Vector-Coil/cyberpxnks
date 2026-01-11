@@ -160,7 +160,7 @@ async function scheduleRandomJunkMessage(
  * Trigger junk message with probability when user discovers a zone
  * Call this from zone discovery endpoints
  */
-export async function triggerZoneDiscoveryJunk(userId: number): Promise<void> {
+async function triggerZoneDiscoveryJunk(userId: number): Promise<void> {
   // 1 in 20 chance
   const random = Math.random();
   if (random >= 0.05) {

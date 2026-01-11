@@ -73,8 +73,8 @@ interface UserStats {
 
 export default function GridPage() {
   const { userFid, isLoading: isAuthLoading } = useAuthenticatedUser();
-  // Only call useNavData after userFid is loaded and valid
-  const navData = (userFid && !isAuthLoading) ? useNavData(userFid) : { username: 'user', credits: 0, cxBalance: 0, loading: true };
+  // Always call hook unconditionally to satisfy Hooks rules; it will fetch for default/dev fid until userFid is available
+  const navData = useNavData(userFid || 300187);
   const [subnets, setSubnets] = useState<Subnet[]>([]);
   const [protocols, setProtocols] = useState<Protocol[]>([]);
   const [slimsoftEffects, setSlimsoftEffects] = useState<SlimsoftEffect[]>([]);
