@@ -138,6 +138,7 @@ export async function GET(request: NextRequest) {
         LEFT JOIN gig_requirements gr ON g.id = gr.gig_id
         LEFT JOIN gig_history gh ON g.id = gh.gig_id AND gh.user_id = ?
         LEFT JOIN contacts c ON g.contact = c.id
+        WHERE (gh.unlocked_at IS NOT NULL OR gh.status IS NOT NULL OR gh.last_completed_at IS NOT NULL)
         ORDER BY g.id DESC
         LIMIT 100
       `;
@@ -149,26 +150,27 @@ export async function GET(request: NextRequest) {
     // Resolve requirement and objective names for all gigs
     const gigsWithResolvedReqs = await Promise.all(
       (rows as any[]).map(async (gig) => {
-        try {
-          const reqNames: Array<string | null> = [];
-          for (let i = 1; i <= 5; i++) {
-            const key = `req_${i}`;
-            try {
-              reqNames.push(gig[key] ? await resolveRequirementName(gig[key], pool) : null);
-            } catch (reqErr) {
-              console.error('[API /api/gigs] Failed to resolve requirement', { gigId: gig.id, key, error: reqErr });
-              reqNames.push(gig[key] || null);
-            }
-          }
-          const [req_1_name, req_2_name, req_3_name, req_4_name, req_5_name] = reqNames;
-
-          // Parse objectives: column names vary (obj_1, obj1, objective_1, etc.)
-          const objectives: string[] = [];
-          const objectiveKeys = Object.keys(gig || {}).filter(k => /(^obj\b|^obj_|^objective|^objective_|^obj\d|obj_\d)/i.test(k)).slice(0, 5);
-          // Normalize to up to 3 objectives
-          for (const key of objectiveKeys) {
-            if (objectives.length >= 3) break;
-            const rawVal = gig[key];
+        query = `
+          SELECT 
+            g.id, g.gig_code as title, g.gig_desc as description,
+            g.reward_item, g.reward_credits, g.contact,
+            c.display_name as contact_name,
+            c.image_url as contact_image_url,
+            g.image_url,
+            gr.req_1, gr.req_2, gr.req_3,
+            -- Grab full requirements row; objective column names may vary
+            gr.*,
+            gh.status,
+            gh.last_completed_at,
+            gh.completed_count,
+            gh.unlocked_at
+          FROM gigs g
+          LEFT JOIN gig_requirements gr ON g.id = gr.gig_id
+          LEFT JOIN gig_history gh ON g.id = gh.gig_id AND gh.user_id = ?
+          LEFT JOIN contacts c ON g.contact = c.id
+          WHERE (gh.unlocked_at IS NOT NULL OR gh.status IS NOT NULL OR gh.last_completed_at IS NOT NULL)
+          ORDER BY g.contact, g.id DESC
+        `;
             if (!rawVal) continue;
             try {
               const resolved = await resolveRequirementName(rawVal, pool);
