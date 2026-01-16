@@ -286,14 +286,18 @@ export default function CityPage() {
       />
       <div className="frame-container frame-city">
         <div className="frame-body pt-6 pb-2 px-6">
-          <NavStrip 
-            username={navData.username}
-            userProfileImage={navData.profileImage}
-            credits={navData.credits}
-            cxBalance={navData.cxBalance}
-            onMenuClick={() => setIsDrawerOpen(true)}
-          />
-        </div>
+            {(!isAuthLoading && userFid) ? (
+              <NavStrip 
+                username={navData.username}
+                userProfileImage={navData.profileImage}
+                credits={navData.credits}
+                cxBalance={navData.cxBalance}
+                onMenuClick={() => setIsDrawerOpen(true)}
+              />
+            ) : (
+              <div className="w-full h-[34px]" />
+            )}
+          </div>
         <CompactMeterStrip meters={getMeterData(userStats)} />
 
       <div className="pt-5 pb-2 px-6 flex flex-row gap-3 items-center">
