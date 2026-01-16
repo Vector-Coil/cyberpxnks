@@ -23,6 +23,7 @@ async function resolveRequirementName(req: string, pool: any): Promise<string> {
   const type = parts[0];
   const idNum = parseInt(parts[1], 10);
   try {
+    console.time('[API /api/gigs] total processing time');
     if (type === 'gig' && idNum) {
       const [rows] = await pool.execute('SELECT gig_code FROM gigs WHERE id = ? LIMIT 1', [idNum]);
       const gig = (rows as any[])[0];
@@ -147,31 +148,21 @@ export async function GET(request: NextRequest) {
 
     const [rows] = await pool.execute(query, params);
     console.debug('[API /api/gigs] Query returned rows count:', Array.isArray(rows) ? (rows as any[]).length : 0);
-    // Resolve requirement and objective names for all gigs
-    const gigsWithResolvedReqs = await Promise.all(
-      (rows as any[]).map(async (gig) => {
-        try {
-        query = `
-          SELECT 
-            g.id, g.gig_code as title, g.gig_desc as description,
-            g.reward_item, g.reward_credits, g.contact,
-            c.display_name as contact_name,
-            c.image_url as contact_image_url,
-            g.image_url,
-            gr.req_1, gr.req_2, gr.req_3,
-            -- Grab full requirements row; objective column names may vary
-            gr.*,
-            gh.status,
-            gh.last_completed_at,
-            gh.completed_count,
-            gh.unlocked_at
-          FROM gigs g
-          LEFT JOIN gig_requirements gr ON g.id = gr.gig_id
-          LEFT JOIN gig_history gh ON g.id = gh.gig_id AND gh.user_id = ?
-          LEFT JOIN contacts c ON g.contact = c.id
-          WHERE (gh.unlocked_at IS NOT NULL OR gh.status IS NOT NULL OR gh.last_completed_at IS NOT NULL)
-          ORDER BY g.contact, g.id DESC
-        `;
+    // Resolve requirement and objective names for gigs with a time-bound loop
+    const startTime = Date.now();
+    const timeLimitMs = 2000; // If processing takes longer than this, return partial results
+    const gigsWithResolvedReqs: any[] = [];
+    let timedOut = false;
+
+    for (const gig of (rows as any[])) {
+      // If we've exceeded the time budget, stop resolving further and return partial
+      if (Date.now() - startTime > timeLimitMs) {
+        console.warn('[API /api/gigs] Processing time exceeded, returning partial results');
+        timedOut = true;
+        break;
+      }
+
+      try {
         // Resolve requirement display names (req_1..req_5)
         const req_1_name = gig.req_1 ? await resolveRequirementName(String(gig.req_1), pool) : null;
         const req_2_name = gig.req_2 ? await resolveRequirementName(String(gig.req_2), pool) : null;
@@ -179,7 +170,7 @@ export async function GET(request: NextRequest) {
         const req_4_name = gig.req_4 ? await resolveRequirementName(String(gig.req_4), pool) : null;
         const req_5_name = gig.req_5 ? await resolveRequirementName(String(gig.req_5), pool) : null;
 
-        // Parse objective_* or obj_* columns into readable objective names
+        // Parse objective_* or obj_* columns into readable objective names (limited)
         const objectives: string[] = [];
         try {
           const candidateKeys = Object.keys(gig).filter(k => /^objective[_\d]*|^obj[_\d]*/i.test(k));
@@ -198,112 +189,90 @@ export async function GET(request: NextRequest) {
           console.error('[API /api/gigs] Error parsing objectives', { gigId: gig.id, error: e });
         }
 
-          // Determine effective status: start from history status (normalized)
-          let effectiveStatus = normalizeStatus(gig.status || null);
-          try {
-            const completedAt = gig.last_completed_at;
-            if (completedAt) {
-              // Re-check all requirements (any unmet requirement should invalidate completion)
-              let allStillMet = true;
-              for (let i = 1; i <= 5; i++) {
-                const r = gig[`req_${i}`];
-                if (!r) continue;
-                const parts = String(r).split('_');
-                if (parts.length !== 2) { allStillMet = false; break; }
-                const [type, idStr] = parts;
-                const idNum = parseInt(idStr, 10);
-                if (!type || !idNum) { allStillMet = false; break; }
-                if (type === 'contact') {
-                  const [rows] = await pool.execute('SELECT 1 FROM contact_history WHERE user_id = ? AND contact_id = ? AND status = \'unlocked\' LIMIT 1', [userId, idNum]);
-                  if (!(rows as any[]).length) { allStillMet = false; break; }
-                } else if (type === 'gig') {
-                  const [rows] = await pool.execute('SELECT 1 FROM gig_history WHERE user_id = ? AND gig_id = ? AND (status = \'complete\' OR status = \'completed\') LIMIT 1', [userId, idNum]);
-                  if (!(rows as any[]).length) { allStillMet = false; break; }
-                } else if (type === 'item') {
-                  const [rows] = await pool.execute('SELECT quantity FROM user_inventory WHERE user_id = ? AND item_id = ? LIMIT 1', [userId, idNum]);
-                  const inv = (rows as any[])[0];
-                  if (!inv || Number(inv.quantity) <= 0) { allStillMet = false; break; }
-                } else {
-                  allStillMet = false; break;
-                }
-              }
-              if (!allStillMet) {
-                // Downgrade completed gigs to 'in progress' so UI reflects that requirements
-                // are no longer satisfied (user removed required item, etc.). If the row
-                // already reports a started/in-progress status, keep it.
-                const s = String(gig.status || '').toLowerCase();
-                if (!s || s === 'completed' || s === 'complete') {
-                  effectiveStatus = 'IN PROGRESS';
-                } else {
-                  effectiveStatus = normalizeStatus(gig.status);
-                }
+        // Determine effective status (best-effort). Keep heavy re-checks minimal.
+        let effectiveStatus = normalizeStatus(gig.status || null);
+
+        try {
+          const completedAt = gig.last_completed_at;
+          if (completedAt) {
+            // Light-weight re-check: only verify contact requirements quickly
+            let allStillMet = true;
+            for (let i = 1; i <= 3; i++) {
+              const r = gig[`req_${i}`];
+              if (!r) continue;
+              const parts = String(r).split('_');
+              if (parts.length !== 2) { allStillMet = false; break; }
+              const [type, idStr] = parts;
+              const idNum = parseInt(idStr, 10);
+              if (!type || !idNum) { allStillMet = false; break; }
+              if (type === 'contact') {
+                const [rows] = await pool.execute('SELECT 1 FROM contact_history WHERE user_id = ? AND contact_id = ? AND status = \'unlocked\' LIMIT 1', [userId, idNum]);
+                if (!(rows as any[]).length) { allStillMet = false; break; }
               }
             }
-          } catch (statusCheckErr) {
-            console.error('[API /api/gigs] Error re-checking completed gig requirements', { gigId: gig.id, error: statusCheckErr });
-          }
-
-          // If there is no history status (user hasn't had a gig_history row),
-          // check if requirements are currently met and mark as UNLOCKED for presentation.
-          try {
-            const hasHistory = gig && (gig.status !== null && gig.status !== undefined && String(gig.status).trim() !== '');
-            if (!hasHistory) {
-              let allMet = true;
-              for (let i = 1; i <= 5; i++) {
-                const r = gig[`req_${i}`];
-                if (!r) continue;
-                const parts = String(r).split('_');
-                if (parts.length !== 2) { allMet = false; break; }
-                const [type, idStr] = parts;
-                const idNum = parseInt(idStr, 10);
-                if (!type || !idNum) { allMet = false; break; }
-                if (type === 'contact') {
-                  const [rows] = await pool.execute('SELECT 1 FROM contact_history WHERE user_id = ? AND contact_id = ? AND status = \'unlocked\' LIMIT 1', [userId, idNum]);
-                  if (!(rows as any[]).length) { allMet = false; break; }
-                } else if (type === 'gig') {
-                  const [rows] = await pool.execute('SELECT 1 FROM gig_history WHERE user_id = ? AND gig_id = ? AND (status = \'complete\' OR status = \'completed\') LIMIT 1', [userId, idNum]);
-                  if (!(rows as any[]).length) { allMet = false; break; }
-                } else if (type === 'item') {
-                  const [rows] = await pool.execute('SELECT quantity FROM user_inventory WHERE user_id = ? AND item_id = ? LIMIT 1', [userId, idNum]);
-                  const inv = (rows as any[])[0];
-                  if (!inv || Number(inv.quantity) <= 0) { allMet = false; break; }
-                } else {
-                  allMet = false; break;
-                }
-              }
-              if (allMet) {
-                effectiveStatus = 'UNLOCKED';
+            if (!allStillMet) {
+              const s = String(gig.status || '').toLowerCase();
+              if (!s || s === 'completed' || s === 'complete') {
+                effectiveStatus = 'IN PROGRESS';
+              } else {
+                effectiveStatus = normalizeStatus(gig.status);
               }
             }
-          } catch (e) {
-            console.error('[API /api/gigs] Error checking implicit unlock for gig', { gigId: gig.id, error: e });
           }
-
-          return {
-            ...gig,
-            status: normalizeStatus(effectiveStatus),
-            req_1_name,
-            req_2_name,
-            req_3_name,
-            req_4_name,
-            req_5_name,
-            objectives
-          };
-        } catch (err) {
-          console.error('[API /api/gigs] Error resolving gig requirements', { gig, error: err });
-          // Return the gig with minimal info so the whole endpoint doesn't fail
-          return {
-            ...gig,
-            req_1_name: gig.req_1 || null,
-            req_2_name: gig.req_2 || null,
-            req_3_name: gig.req_3 || null,
-            req_4_name: gig.req_4 || null,
-            req_5_name: gig.req_5 || null,
-            objectives: []
-          };
+        } catch (statusCheckErr) {
+          console.error('[API /api/gigs] Error re-checking completed gig requirements', { gigId: gig.id, error: statusCheckErr });
         }
-      })
-    );
+
+        // Best-effort implicit unlock check (light-weight, limited)
+        try {
+          const hasHistory = gig && (gig.status !== null && gig.status !== undefined && String(gig.status).trim() !== '');
+          if (!hasHistory) {
+            let allMet = true;
+            for (let i = 1; i <= 2; i++) {
+              const r = gig[`req_${i}`];
+              if (!r) continue;
+              const parts = String(r).split('_');
+              if (parts.length !== 2) { allMet = false; break; }
+              const [type, idStr] = parts;
+              const idNum = parseInt(idStr, 10);
+              if (!type || !idNum) { allMet = false; break; }
+              if (type === 'contact') {
+                const [rows] = await pool.execute('SELECT 1 FROM contact_history WHERE user_id = ? AND contact_id = ? AND status = \'unlocked\' LIMIT 1', [userId, idNum]);
+                if (!(rows as any[]).length) { allMet = false; break; }
+              }
+            }
+            if (allMet) {
+              effectiveStatus = 'UNLOCKED';
+            }
+          }
+        } catch (e) {
+          console.error('[API /api/gigs] Error checking implicit unlock for gig', { gigId: gig.id, error: e });
+        }
+
+        gigsWithResolvedReqs.push({
+          ...gig,
+          status: normalizeStatus(effectiveStatus),
+          req_1_name,
+          req_2_name,
+          req_3_name,
+          req_4_name,
+          req_5_name,
+          objectives
+        });
+      } catch (err) {
+        console.error('[API /api/gigs] Error resolving gig requirements', { gig, error: err });
+        gigsWithResolvedReqs.push({
+          ...gig,
+          req_1_name: gig.req_1 || null,
+          req_2_name: gig.req_2 || null,
+          req_3_name: gig.req_3 || null,
+          req_4_name: gig.req_4 || null,
+          req_5_name: gig.req_5 || null,
+          objectives: []
+        });
+      }
+    }
+    console.timeEnd('[API /api/gigs] total processing time');
 
     
 

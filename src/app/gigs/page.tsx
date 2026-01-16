@@ -40,34 +40,62 @@ export default function GigsPage() {
   const navData = useNavData(userFid || 300187);
   const searchParams = useSearchParams();
   const sortMode = searchParams.get('sort') || 'newest';
+  // Load gigs with simple retry/backoff to avoid transient API failures
+  async function loadGigs() {
+    setError('');
+    setLoading(true);
+    const maxAttempts = 3;
+    let attempt = 1;
+    const url = `/api/gigs?fid=${userFid}&sort=${sortMode}`;
 
-  useEffect(() => {
-    if (userLoading || !userFid) return;
-
-    async function loadGigs() {
+    while (attempt <= maxAttempts) {
       try {
-        const response = await fetch(`/api/gigs?fid=${userFid}&sort=${sortMode}`);
-        if (!response.ok) throw new Error('Failed to fetch gigs');
-        
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`Failed to fetch gigs (status ${response.status})`);
         const data = await response.json();
         setGigs(data.gigs || []);
+        setError('');
+        break;
       } catch (err: any) {
-        setError(err.message);
-        console.error('Error loading gigs:', err);
+        console.error(`Gigs fetch attempt ${attempt} failed:`, err);
+        if (attempt === maxAttempts) {
+          setError(err?.message || 'Failed to fetch gigs');
+        } else {
+          // Exponential backoff
+          await new Promise(res => setTimeout(res, 300 * attempt));
+        }
       } finally {
-        setLoading(false);
+        attempt++;
       }
     }
 
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    if (userLoading || !userFid) return;
     loadGigs();
   }, [userFid, userLoading, sortMode]);
+
+  const handleRetry = () => {
+    loadGigs();
+  };
 
   if (error) {
     return (
       <div className="frame-container frame-main flex items-center justify-center min-h-screen">
-        <div className="p-6 bg-gray-900 rounded shadow-lg max-w-2xl">
+        <div className="p-6 bg-gray-900 rounded shadow-lg max-w-2xl text-center">
           <div className="text-lg font-bold text-red-400 mb-2">Failed to load gigs</div>
-          <div className="text-sm text-gray-300 mb-2">{error}</div>
+          <div className="text-sm text-gray-300 mb-4">{error}</div>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              className="btn-cx btn-cx-primary"
+              onClick={handleRetry}
+            >
+              Retry
+            </button>
+            <a href="/dashboard" className="btn-cx btn-cx-secondary">Back</a>
+          </div>
         </div>
       </div>
     );
@@ -87,12 +115,16 @@ export default function GigsPage() {
     <div className="frame-container frame-main">
 
       <div className="frame-body pt-6 pb-2 px-6">
-        <NavStrip 
-          username={navData.username}
-          userProfileImage={navData.profileImage}
-          credits={navData.credits}
-          cxBalance={navData.cxBalance}
-        />
+        {(!userLoading && userFid) ? (
+          <NavStrip 
+            username={navData.username}
+            userProfileImage={navData.profileImage}
+            credits={navData.credits}
+            cxBalance={navData.cxBalance}
+          />
+        ) : (
+          <div className="w-full h-[34px]" />
+        )}
       </div>
 
       <div className="pt-5 pb-2 px-6 flex flex-row gap-3">
