@@ -6,6 +6,8 @@ import ZoneCard from '../../../../components/ZoneCard';
 import NavDrawer from '../../../../components/NavDrawer';
 import { useNavData } from '../../../../hooks/useNavData';
 import { useAuthenticatedUser } from '../../../../hooks/useAuthenticatedUser';
+import { useCountdownTimer } from '../../../../hooks/useCountdownTimer';
+import { ActionResultsSummary } from '../../../../components/ActionResultsSummary';
 
 interface District {
   id: number;
@@ -48,6 +50,11 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
   const [loading, setLoading] = useState(true);
   const [activeJobs, setActiveJobs] = useState<any[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isStartingExplore, setIsStartingExplore] = useState(false);
+  const [activeExplore, setActiveExplore] = useState<any | null>(null);
+  const [isLoadingResults, setIsLoadingResults] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [exploreResults, setExploreResults] = useState<any>(null);
 
   useEffect(() => {
     params.then(({ id }) => {
@@ -73,6 +80,11 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
           setDistrict(districtData.district);
           setZones(districtData.zones || []);
           setHistory(districtData.history || []);
+          // Detect an in-progress district-level Exploring action and set activeExplore
+          const inProgress = (districtData.history || []).find((h: any) =>
+            h.action_type === 'Exploring' && h.end_time && !h.result_status && (h.zone_id === null || h.zone_id === undefined)
+          );
+          if (inProgress) setActiveExplore(inProgress);
         }
 
         // Process user location
@@ -99,6 +111,83 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
 
   const handleBackToCity = () => {
     router.push('/city');
+  };
+
+  const { timeRemaining, isComplete } = useCountdownTimer(activeExplore?.end_time || null);
+
+  const handleViewResults = async () => {
+    if (!activeExplore || isLoadingResults || !userFid || !districtId) return;
+    setIsLoadingResults(true);
+    try {
+      const res = await fetch(`/api/districts/${districtId}/explore-results?fid=${userFid}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ historyId: activeExplore.id })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setExploreResults(data);
+        setShowResults(true);
+      } else {
+        console.error('Failed to fetch explore results', await res.text());
+      }
+    } catch (err) {
+      console.error('Failed to fetch scout results', err);
+    } finally {
+      setIsLoadingResults(false);
+    }
+  };
+
+  const handleBackFromResults = async () => {
+    // Dismiss the explore action if present
+    if (exploreResults && exploreResults.historyId) {
+      try {
+        await fetch(`/api/districts/${districtId}/dismiss-explore`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fid: userFid, historyId: exploreResults.historyId })
+        });
+      } catch (err) {
+        console.warn('Failed to dismiss district explore action:', err);
+      }
+    }
+
+    setShowResults(false);
+    setExploreResults(null);
+    setActiveExplore(null);
+
+    try {
+      const [districtRes, alertsRes, jobsRes] = await Promise.all([
+        fetch(`/api/districts/${districtId}?fid=${userFid}`),
+        fetch(`/api/alerts?fid=${userFid}`),
+        fetch(`/api/active-jobs?fid=${userFid}`)
+      ]);
+
+      if (districtRes.ok) {
+        const districtData = await districtRes.json();
+        setDistrict(districtData.district);
+        setZones(districtData.zones || []);
+        setHistory(districtData.history || []);
+        const inProgress = (districtData.history || []).find((h: any) =>
+          h.action_type === 'Exploring' && h.end_time && !h.result_status && (h.zone_id === null || h.zone_id === undefined)
+        );
+        if (inProgress) setActiveExplore(inProgress);
+      }
+
+      if (alertsRes.ok) {
+        const alertsData = await alertsRes.json();
+        if (alertsData.location?.zoneId) {
+          setCurrentLocationId(alertsData.location.zoneId);
+        }
+      }
+
+      if (jobsRes.ok) {
+        const jobsData = await jobsRes.json();
+        setActiveJobs(jobsData.jobs || []);
+      }
+    } catch (err) {
+      console.error('Failed to reload district after results:', err);
+    }
   };
 
   if (loading) {
@@ -171,6 +260,104 @@ export default function DistrictDetailPage({ params }: { params: Promise<{ id: s
         </button>
         <div className="masthead">DISTRICT</div>
       </div>
+
+      <div className="pt-2 pb-4 px-6">
+        <button
+          className={`btn-cx btn-cx-primary w-full ${isStartingExplore ? 'opacity-70 cursor-wait' : ''}`}
+          onClick={async () => {
+            if (!userFid || !districtId || isStartingExplore) return;
+            setIsStartingExplore(true);
+            try {
+              const res = await fetch(`/api/districts/${districtId}/explore?fid=${userFid}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ staminaCost: 15 })
+              });
+                if (res.ok) {
+                const data = await res.json();
+                // If API returned the created explore action, set it so timer displays
+                if (data.scoutAction) {
+                  // backward compatibility: scoutAction key may be present
+                        setActiveExplore(data.scoutAction);
+                }
+                if (data.exploreAction) {
+                  setActiveExplore(data.exploreAction);
+                }
+                  // Refresh active jobs to reflect the new scout action
+                  const jobsRes = await fetch(`/api/active-jobs?fid=${userFid}`);
+                  if (jobsRes.ok) {
+                    const jobsData = await jobsRes.json();
+                    setActiveJobs(jobsData.jobs || []);
+                  }
+                } else {
+                      const errText = await res.text();
+                      console.error('Failed to start district explore:', errText);
+              }
+            } catch (err) {
+              console.error('Failed to start district explore:', err);
+            } finally {
+              setIsStartingExplore(false);
+            }
+          }}
+          disabled={isStartingExplore}
+        >
+          {isStartingExplore ? 'EXPLORING...' : 'EXPLORE DISTRICT'}
+        </button>
+      </div>
+
+      {/* Active district explore timer / view results */}
+      {activeExplore && !showResults && (
+        <CxCard className="mb-6">
+          <div className="text-center">
+            {!isComplete ? (
+              <>
+                <h3 className="text-white font-bold uppercase mb-2">Exploring District</h3>
+                <p className="text-gray-300 mb-4">{timeRemaining}</p>
+                <div className="w-full bg-gray-700 rounded-full h-2">
+                  <div 
+                    className="bg-fuschia h-2 rounded-full transition-all duration-1000"
+                    style={{
+                      width: `${Math.max(0, Math.min(100, 
+                        ((new Date().getTime() - new Date(activeExplore.timestamp).getTime()) / 
+                        (new Date(activeExplore.end_time).getTime() - new Date(activeExplore.timestamp).getTime())) * 100
+                      ))}%`
+                    }}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-green-400 mb-4">Exploration Complete</p>
+                <button 
+                  className="btn-cx btn-cx-primary"
+                  onClick={handleViewResults}
+                  disabled={isLoadingResults}
+                >
+                  {isLoadingResults ? 'LOADING...' : 'VIEW RESULTS'}
+                </button>
+              </>
+            )}
+          </div>
+        </CxCard>
+      )}
+      {/* Explore Results */}
+      {showResults && exploreResults && (
+        <div className="mb-6 px-6">
+          <CxCard>
+            <div className="text-center mb-4">
+              <h3 className="text-white font-bold uppercase mb-2">Results Summary</h3>
+            </div>
+            <ActionResultsSummary
+              actionName="Explore"
+              xpGained={exploreResults.xpGained || 0}
+              discovery={exploreResults.discoveredZone ? { type: 'zone', name: exploreResults.discoveredZone.name } : null}
+            />
+            <div className="mt-4 text-center">
+              <button className="btn-cx w-full btn-cx-primary" onClick={handleBackFromResults}>BACK</button>
+            </div>
+          </CxCard>
+        </div>
+      )}
 
       <div className="frame-body">
         {/* District Map */}

@@ -38,7 +38,8 @@ export async function POST(request: NextRequest) {
         (SELECT COUNT(DISTINCT zone_id) FROM user_zone_history WHERE user_id = ? AND zone_id IS NOT NULL) as discovered,
         (SELECT COUNT(*) FROM zones z 
          INNER JOIN zone_districts zd ON z.district = zd.id 
-         WHERE zd.active = 1) as total
+         LEFT JOIN zone_type zt ON z.zone_type = zt.id
+         WHERE zd.active = 1 AND (zt.name IS NULL OR zt.name != 'underground')) as total
       `,
       [userId]
     );
@@ -83,7 +84,9 @@ export async function POST(request: NextRequest) {
                 (SELECT COUNT(*) FROM points_of_interest WHERE zone_id = z.id) as poi_count
          FROM zones z
          INNER JOIN zone_districts zd ON z.district = zd.id
+         LEFT JOIN zone_type zt ON z.zone_type = zt.id
          WHERE zd.active = 1
+           AND (zt.name IS NULL OR zt.name != 'underground')
            AND z.id NOT IN (
              SELECT DISTINCT zone_id 
              FROM user_zone_history 
