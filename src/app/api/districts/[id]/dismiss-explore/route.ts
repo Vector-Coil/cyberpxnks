@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDbPool } from '../../../../../../lib/db';
-import { validateFid, handleApiError } from '../../../../../../lib/api/errors';
-import { getUserIdByFid } from '../../../../../../lib/api/userUtils';
-import { logger } from '../../../../../../lib/logger';
+import { getDbPool } from '../../../../../lib/db';
+import { validateFid, handleApiError } from '../../../../../lib/api/errors';
+import { getUserIdByFid } from '../../../../../lib/api/userUtils';
+import { logger } from '../../../../../lib/logger';
 
 export async function POST(request: NextRequest) {
   try {
