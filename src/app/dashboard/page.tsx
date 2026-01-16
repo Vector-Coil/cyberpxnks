@@ -818,13 +818,13 @@ export default function Dashboard() {
                 return (
                   <div key={jobKey} className="flex items-center gap-3 p-3 bg-gray-800/50 rounded">
                     <div className="flex-1">
-                      <Link href={job.action_type === 'OvernetScan' ? '/grid' : job.zone_id ? `/city/${job.zone_id}` : '/city'} className="text-cyan-400 hover:text-cyan-300 font-semibold uppercase text-sm">
-                        {job.location || job.zone_name || 'City'}
+                      <Link href={job.action_type === 'OvernetScan' ? '/grid' : job.zone_id ? `/city/${job.zone_id}` : job.district_id ? `/city/district/${job.district_id}` : '/city'} className="text-cyan-400 hover:text-cyan-300 font-semibold uppercase text-sm">
+                        {job.location || job.zone_name || job.district_name || 'City'}
                       </Link>
                       <p className="text-gray-400 text-xs mt-1">
                         {job.action_type === 'Breached' && `Breaching ${job.poi_name || 'Terminal'}`}
                         {job.action_type === 'Scouted' && 'Scouting'}
-                        {job.action_type === 'Exploring' && 'Exploring'}
+                        {job.action_type === 'Exploring' && (job.district_name ? `Exploring ${job.district_name}` : 'Exploring')}
                         {job.action_type === 'OvernetScan' && 'Overnet Scan'}
                         {job.action_type === 'RemoteBreach' && `Remote Breach ${job.poi_name || 'Terminal'}`}
                       </p>

@@ -17,20 +17,23 @@ export async function GET(request: NextRequest) {
       `SELECT 
         uzh.id,
         uzh.zone_id,
+        uzh.district_id,
         uzh.action_type,
         uzh.timestamp,
         uzh.end_time,
         uzh.poi_id,
         z.name as zone_name,
         poi.name as poi_name,
+        zd.name as district_name,
         CASE 
           WHEN uzh.action_type = 'OvernetScan' THEN 'Cyberspace'
-          WHEN uzh.action_type = 'Exploring' THEN 'City'
+          WHEN uzh.action_type = 'Exploring' THEN COALESCE(zd.name, 'City')
           ELSE z.name
         END as location
       FROM user_zone_history uzh
       LEFT JOIN zones z ON uzh.zone_id = z.id
       LEFT JOIN points_of_interest poi ON uzh.poi_id = poi.id
+      LEFT JOIN zone_districts zd ON uzh.district_id = zd.id
       WHERE uzh.user_id = ? 
       AND uzh.action_type IN ('Breached', 'Scouted', 'Exploring', 'OvernetScan', 'RemoteBreach')
       AND (uzh.result_status IS NULL OR uzh.result_status = '')

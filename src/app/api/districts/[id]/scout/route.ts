@@ -102,9 +102,9 @@ export async function POST(request: NextRequest) {
 
     const [insertResult] = await dbPool.query<ResultSetHeader>(
       `INSERT INTO user_zone_history 
-       (user_id, zone_id, action_type, timestamp, end_time) 
-       VALUES (?, NULL, 'Exploring', ?, ?)`,
-      [userId, timestamp, endTime]
+       (user_id, zone_id, district_id, action_type, timestamp, end_time) 
+       VALUES (?, NULL, ?, 'Exploring', ?, ?)`,
+      [userId, districtId, timestamp, endTime]
     );
 
     await logActivity(userId, 'action', 'district_explore_started', Math.floor(COOLDOWNS.CITY_EXPLORE / 1000), null, `Started scouting district ${districtId}`);
