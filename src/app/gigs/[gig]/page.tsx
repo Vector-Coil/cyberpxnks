@@ -38,7 +38,7 @@ export default async function GigDetailPage({ params }: { params: any }) {
     }
 
     // Ensure the current user has unlocked this gig (in gig_history); if not, redirect to the gigs list
-    const [ghCheck] = await pool.execute<any[]>('SELECT id, unlocked_at, status, last_completed_at FROM gig_history WHERE user_id = ? AND gig_id = ? LIMIT 1', [user.id, gigId]);
+    const [ghCheck] = await pool.execute<any[]>('SELECT id, unlocked_at, status, last_completed_at, started_at FROM gig_history WHERE user_id = ? AND gig_id = ? LIMIT 1', [user.id, gigId]);
     const ghRow = (ghCheck as any[])[0] ?? null;
     if (!ghRow) {
       redirect('/gigs');
