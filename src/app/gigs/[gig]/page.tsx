@@ -270,7 +270,7 @@ export default async function GigDetailPage({ params }: { params: any }) {
         }
 
         if (hr.last_completed_at) {
-          const gain = hr.gain ?? hr.xp_gain ?? hr.xp ?? hr.reward ?? hr.points ?? hr.xp_gained ?? null;
+          const gain = hr.last_gains_data ?? hr.gains_data ?? hr.gain ?? hr.xp_gain ?? hr.xp ?? hr.reward ?? hr.points ?? hr.xp_gained ?? null;
           historyEvents.push({
             type: 'completed',
             date: hr.last_completed_at,
@@ -304,6 +304,8 @@ export default async function GigDetailPage({ params }: { params: any }) {
       status,
       unlocked_at,
       isNew,
+      duration: gRow.duration ?? 0,
+      started_at: ghRow.started_at ?? null,
       requirements,
       objectives,
       objective: gRow.objective ?? gRow.gig_objective ?? gRow.gigObjective ?? null

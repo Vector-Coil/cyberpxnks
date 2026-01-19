@@ -1,7 +1,9 @@
-'use client';
+"use client";
 import React, { useState } from 'react';
 import { NavStrip } from '../../../components/CxShared';
 import { useAuthenticatedUser } from '../../../hooks/useAuthenticatedUser';
+import GigResultsSummary from '../../../components/GigResultsSummary';
+import { useCountdownTimer } from '../../../hooks/useCountdownTimer';
 
 interface GigDetailClientProps {
   gigData: {
@@ -15,6 +17,8 @@ interface GigDetailClientProps {
     status: string | null;
     unlocked_at?: string | null;
     isNew: boolean;
+    duration?: number;
+    started_at?: string | null;
     requirements: Array<{ text: string; met: boolean }>;
     objective?: string;
     objectives?: string[];
@@ -36,6 +40,13 @@ export default function GigDetailClient({ gigData, historyEvents, navData }: Gig
   const { userFid, isLoading: userLoading } = useAuthenticatedUser();
   const [requirementsState, setRequirementsState] = useState<Array<{ text: string; met: boolean }>>(gigData.requirements || []);
   const [validating, setValidating] = useState(false);
+  const [results, setResults] = useState<any | null>(null);
+  const [historyState, setHistoryState] = useState(historyEvents || []);
+
+  // Countdown setup
+  const durationMinutes = Number(gigData.duration || 0);
+  const endTime = (gigData.started_at && durationMinutes > 0) ? new Date(new Date(gigData.started_at).getTime() + durationMinutes * 60 * 1000) : null;
+  const { timeRemaining, isComplete } = useCountdownTimer(endTime);
 
   // Poll validation for started gigs so UI updates if inventory changes
   React.useEffect(() => {
@@ -51,7 +62,6 @@ export default function GigDetailClient({ gigData, historyEvents, navData }: Gig
         setValidating(true);
         const res = await fetch(`/api/gigs/${gigData.id}/validate`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userFid })
         });
         if (res.ok) {
@@ -185,20 +195,19 @@ export default function GigDetailClient({ gigData, historyEvents, navData }: Gig
                 }
 
                 // Determine if all requirements are met (client-side flag from server)
-                const allRequirementsMet = Array.isArray(requirementsState) && requirementsState.length > 0 && requirementsState.every(r => r.met === true);
+                const allRequirementsMet = Array.isArray(requirementsState) ? requirementsState.every(r => r.met === true) : true;
 
                 // If a gig is started/in-progress but requirements are NOT met,
-                // show a disabled 'IN PROGRESS' button rather than exposing the
-                // start flow (which would fail) or the completion CTA.
+                // show a disabled 'IN PROGRESS' button.
                 if ((statusNorm === 'STARTED' || statusNorm === 'IN PROGRESS') && !allRequirementsMet) {
                   return (<button className={'btn-cx btn-cx-disabled btn-cx-full'} disabled aria-disabled="true">IN PROGRESS</button>);
                 }
 
-                if ((statusNorm === 'STARTED' || statusNorm === 'IN PROGRESS') && allRequirementsMet) {
-                  // Allow completion when in-progress and requirements met
-                  btnLabel = 'COMPLETE';
-                  isDisabled = false;
-                  btnClass = 'btn-cx btn-cx-primary btn-cx-full';
+                // If started/in-progress and requirements met, allow completion
+                if (statusNorm === 'STARTED' || statusNorm === 'IN PROGRESS') {
+                  // If this gig has a duration, require the countdown to finish
+                  const requiresTimer = durationMinutes > 0;
+                  const canComplete = allRequirementsMet && (!requiresTimer || isComplete);
 
                   const handleCompleteGig = async () => {
                     if (!userFid) { alert('Not authenticated'); return; }
@@ -208,23 +217,24 @@ export default function GigDetailClient({ gigData, historyEvents, navData }: Gig
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ userFid }),
                       });
-                      if (res.ok) {
-                        const json = await res.json().catch(() => null);
-                        if (json && json.results) {
-                          const parts: string[] = [];
-                          if (json.results.credits && json.results.credits > 0) parts.push(`+${json.results.credits} Credits`);
-                          if (Array.isArray(json.results.items) && json.results.items.length > 0) parts.push(`Items: ${json.results.items.map((i: any) => i.name).join(', ')}`);
-                          if (Array.isArray(json.results.unlockedGigs) && json.results.unlockedGigs.length > 0) parts.push(`Unlocked: ${json.results.unlockedGigs.map((g: any) => g.gig_code).join(', ')}`);
-                          if (parts.length > 0) {
-                            alert(`Gig completed — ${parts.join('; ')}`);
-                          } else {
-                            alert('Gig completed');
-                          }
-                        }
-                        // reload to refresh state
-                        window.location.reload();
+                      const json = await res.json().catch(() => null);
+                      if (res.ok && json && json.results) {
+                        setResults(json.results);
+
+                        const parts: string[] = [];
+                        if (json.results.credits && json.results.credits > 0) parts.push(`+${json.results.credits} Credits`);
+                        if (Array.isArray(json.results.items) && json.results.items.length > 0) parts.push(`Items: ${json.results.items.map((i: any) => i.name).join(', ')}`);
+                        if (Array.isArray(json.results.unlockedGigs) && json.results.unlockedGigs.length > 0) parts.push(`Unlocked: ${json.results.unlockedGigs.map((g: any) => g.gig_code).join(', ')}`);
+                        const gainsText = parts.join('; ');
+
+                        const completedEvent = {
+                          type: 'completed',
+                          date: new Date().toISOString(),
+                          gain: gainsText || null
+                        };
+                        setHistoryState((h: any[]) => [completedEvent, ...h]);
                       } else {
-                        const err = await res.json().catch(() => null);
+                        const err = json ?? { error: 'Failed to complete gig' };
                         alert('Failed to complete gig' + (err?.error ? `: ${err.error}` : ''));
                       }
                     } catch (e) {
@@ -232,7 +242,14 @@ export default function GigDetailClient({ gigData, historyEvents, navData }: Gig
                     }
                   };
 
-                  return (<button className={btnClass} onClick={handleCompleteGig}>{btnLabel}</button>);
+                  return (
+                    <div>
+                      {requiresTimer && (
+                        <div className="mb-2 text-sm text-gray-300">Time remaining: <span className="text-blue-300">{timeRemaining || 'calculating...'}</span></div>
+                      )}
+                      <button className={canComplete ? 'btn-cx btn-cx-primary btn-cx-full' : 'btn-cx btn-cx-disabled btn-cx-full'} onClick={canComplete ? handleCompleteGig : undefined} disabled={!canComplete} aria-disabled={!canComplete}>{canComplete ? 'COMPLETE' : (requiresTimer ? 'IN PROGRESS' : 'COMPLETE')}</button>
+                    </div>
+                  );
                 }
 
                 if (isDisabled) {
@@ -269,8 +286,8 @@ export default function GigDetailClient({ gigData, historyEvents, navData }: Gig
               <h3 className="text-center meta-heading">Gig History</h3>
 
               <div className="mt-4 space-y-3">
-                {historyEvents && historyEvents.length > 0 ? (
-                  historyEvents.map((event, idx) => {
+                {historyState && historyState.length > 0 ? (
+                  historyState.map((event, idx) => {
                     if (event.type === 'unlocked') {
                       return (
                         <div key={`u-${idx}`} className="flex items-center gap-3 text-gray-300">
