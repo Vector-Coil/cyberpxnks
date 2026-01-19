@@ -23,11 +23,11 @@ export async function POST(request: NextRequest, context: { params: Promise<{ gi
     }
 
     const keys = Object.keys(reqRow || {});
-    const objectiveKeys = keys.filter(k => /(^obj\b|^obj_|^objective|^objective_|^obj\d|obj_\d)/i.test(k)).slice(0, 5);
+    const requirementKeys = keys.filter(k => /(^req\b|req_|requirement|requirement\b|^r\d)/i.test(k)).slice(0, 5);
 
     const requirements: Array<{ text: string; met: boolean }> = [];
 
-    for (const key of objectiveKeys) {
+    for (const key of requirementKeys) {
       const raw = (reqRow as any)[key] ?? null;
       if (!raw || String(raw).trim() === '') continue;
       const parts = String(raw).split('_');

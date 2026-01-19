@@ -53,12 +53,8 @@ export async function POST(request: NextRequest, context: { params: Promise<{ gi
 
     // Update gig_history to mark completed and increment completed_count
     await pool.execute(
-      `UPDATE gig_history SET status = 'completed', last_completed_at = NOW(), completed_count = COALESCE(completed_count, 0) + 1, gain = ? WHERE user_id = ? AND gig_id = ?`,
-      [
-        `${gRow.reward_credits ? `+${gRow.reward_credits} Credits` : ''}${grantedItems.length ? (gRow.reward_credits ? '; ' : '') + grantedItems.map(i => i.name).join(', ') : ''}`,
-        user.id,
-        gigId
-      ]
+      `UPDATE gig_history SET status = 'completed', last_completed_at = NOW(), completed_count = COALESCE(completed_count, 0) + 1 WHERE user_id = ? AND gig_id = ?`,
+      [user.id, gigId]
     );
 
     return NextResponse.json({ ok: true, grantedItems });
