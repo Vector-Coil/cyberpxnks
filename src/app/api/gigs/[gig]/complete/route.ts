@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDbPool } from '../../../../../lib/db';
-import { getUserByFid } from '../../../../../lib/navUtils';
+import { getUserByFid, getNavStripData } from '../../../../../lib/navUtils';
 
 export async function POST(request: NextRequest, context: { params: Promise<{ gig: string }> }) {
   try {
@@ -32,6 +32,10 @@ export async function POST(request: NextRequest, context: { params: Promise<{ gi
       return NextResponse.json({ error: 'Gig not started or already completed' }, { status: 400 });
     }
 
+    // Capture pre-existing gig_history entries so we can detect newly-unlocked gigs
+    const [preGhRows] = await pool.execute<any[]>('SELECT gig_id FROM gig_history WHERE user_id = ?', [user.id]);
+    const preGigIds = new Set((preGhRows as any[]).map(r => r.gig_id));
+
     // Grant rewards (do not consume requirements)
     const grantedItems: any[] = [];
     if (gRow.reward_item) {
@@ -57,7 +61,40 @@ export async function POST(request: NextRequest, context: { params: Promise<{ gi
       [user.id, gigId]
     );
 
-    return NextResponse.json({ ok: true, grantedItems });
+    // Trigger nav checks which may auto-unlock other gigs (this inserts gig_history rows)
+    try {
+      await getNavStripData(userFid);
+    } catch (e) {
+      // non-fatal
+      console.debug('NavStrip unlock trigger failed', e);
+    }
+
+    // Fetch newly unlocked gigs (those not present in preGigIds)
+    const newUnlocked: any[] = [];
+    try {
+      const [newRows] = await pool.execute<any[]>(
+        `SELECT gh.gig_id as id, g.gig_code as gig_code, g.title as title
+         FROM gig_history gh
+         JOIN gigs g ON gh.gig_id = g.id
+         WHERE gh.user_id = ? AND gh.unlocked_at IS NOT NULL`,
+        [user.id]
+      );
+      for (const r of (newRows as any[])) {
+        if (!preGigIds.has(r.id) && r.id !== gigId) {
+          newUnlocked.push({ id: r.id, gig_code: r.gig_code ?? r.title ?? `Gig ${r.id}` });
+        }
+      }
+    } catch (e) {
+      console.debug('Failed to fetch newly unlocked gigs', e);
+    }
+
+    const result = {
+      credits: gRow.reward_credits ? Number(gRow.reward_credits) : 0,
+      items: grantedItems,
+      unlockedGigs: newUnlocked
+    };
+
+    return NextResponse.json({ ok: true, results: result });
   } catch (e: any) {
     console.error('Complete gig API error:', e?.stack || e);
     return NextResponse.json({ error: 'Failed to complete gig', details: e instanceof Error ? e.message : String(e) }, { status: 500 });

@@ -209,6 +209,19 @@ export default function GigDetailClient({ gigData, historyEvents, navData }: Gig
                         body: JSON.stringify({ userFid }),
                       });
                       if (res.ok) {
+                        const json = await res.json().catch(() => null);
+                        if (json && json.results) {
+                          const parts: string[] = [];
+                          if (json.results.credits && json.results.credits > 0) parts.push(`+${json.results.credits} Credits`);
+                          if (Array.isArray(json.results.items) && json.results.items.length > 0) parts.push(`Items: ${json.results.items.map((i: any) => i.name).join(', ')}`);
+                          if (Array.isArray(json.results.unlockedGigs) && json.results.unlockedGigs.length > 0) parts.push(`Unlocked: ${json.results.unlockedGigs.map((g: any) => g.gig_code).join(', ')}`);
+                          if (parts.length > 0) {
+                            alert(`Gig completed — ${parts.join('; ')}`);
+                          } else {
+                            alert('Gig completed');
+                          }
+                        }
+                        // reload to refresh state
                         window.location.reload();
                       } else {
                         const err = await res.json().catch(() => null);
