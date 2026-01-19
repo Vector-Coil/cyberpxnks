@@ -169,6 +169,14 @@ export default function GigDetailClient({ gigData, historyEvents, navData }: Gig
                 
               </div>
 
+              {/* Debug: show timing info to help diagnose countdown */}
+              <div className="mb-3 text-xs text-gray-500">
+                <div>Debug: started_at: {String(gigData.started_at ?? 'null')}</div>
+                <div>Debug: duration (minutes): {String(durationMinutes)}</div>
+                <div>Debug: computed end: {endTime ? endTime.toISOString() : 'null'}</div>
+                <div>Debug: timer display: {timeRemaining || 'n/a'}</div>
+              </div>
+
             </div>
           </div>
 
