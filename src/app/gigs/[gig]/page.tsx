@@ -304,8 +304,8 @@ export default async function GigDetailPage({ params }: { params: any }) {
       status,
       unlocked_at,
       isNew,
-      duration: gRow.duration ?? 0,
-      started_at: ghRow.started_at ?? null,
+      duration: Number(gRow.duration ?? 0),
+      started_at: ghRow.started_at ? new Date(ghRow.started_at).toISOString() : null,
       requirements,
       objectives,
       objective: gRow.objective ?? gRow.gig_objective ?? gRow.gigObjective ?? null
